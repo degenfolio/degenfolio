@@ -18,5 +18,9 @@ export const AccountManager: React.FC = ({
         addressBook.addresses.filter(a => addressBook.isSelf(a))
       } addresses`}
     </Typography>
+
+    <Typography>
+      {`We are ${setAddressBookJson ? "" : "NOT "}able to update the addressBook`}
+    </Typography>
   </>);
 };
