@@ -7,7 +7,7 @@ import { getAddressBook } from "valuemachine";
 import "./App.css";
 import { AccountManager } from "./components/AccountManager";
 
-const store = getLocalStore(localStorage as any);
+const store = getLocalStore(localStorage);
 const logger = getLogger("warn");
 
 // localstorage keys

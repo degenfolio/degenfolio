@@ -38,7 +38,7 @@ export const aaveParser = (
   _logger: Logger,
 ): Transaction => {
 
-  if (aaveAddresses.some(entry => smeq(ethTx.from as string, entry.address as string))) {
+  if (aaveAddresses.some(entry => smeq(ethTx.from, entry.address))) {
     tx.sources = rmDups([aaveSource, ...tx.sources]) as TransactionSource[];
   }
 
