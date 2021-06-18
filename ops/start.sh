@@ -86,6 +86,8 @@ then
 
 else
   server_image="${project}_builder:$version"
+  server_db="$root/.server-db"
+  mkdir -p "$server_db"
   server_service="server:
     image: '$server_image'
     $common
@@ -93,7 +95,7 @@ else
     entrypoint: 'bash modules/server/ops/entry.sh'
     volumes:
       - '$root:/root'
-      - '$root/.server-db:/data'"
+      - '$server_db:/data'"
 
 fi
 bash "$root/ops/pull-images.sh" "$server_image"
@@ -121,7 +123,7 @@ else
       PUBLIC_URL: ''
     volumes:
       - '$root:/root'
-    working_dir: '/root'"
+    working_dir: '/root/modules/client'"
 
 fi
 bash "$root/ops/pull-images.sh" "$webserver_image"

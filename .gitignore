@@ -1,5 +1,13 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# local only
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.server-db
+
 # build
 .flags
 .config
@@ -19,10 +27,5 @@ dist
 
 # misc
 .DS_Store
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
 .docker-compose.yml
 *.log*
