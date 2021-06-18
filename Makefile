@@ -99,7 +99,12 @@ node-modules: builder package.json
 	$(docker_run) "lerna bootstrap --hoist"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-client: node-modules $(shell find modules/client/src $(find_options))
+adapters: node-modules $(shell find modules/adapters/src $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/adapters && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+client: adapters $(shell find modules/client/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
