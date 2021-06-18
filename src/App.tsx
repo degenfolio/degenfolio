@@ -1,27 +1,45 @@
-import React from "react";
+import { getLogger, getLocalStore } from "@valuemachine/utils";
+import { StoreKeys } from "@valuemachine/types";
+import React, { useState, useEffect } from "react";
+import { getAddressBook } from "valuemachine";
 
-import logo from "./logo.svg";
 import "./App.css";
+import { AccountManager } from "./components/AccountManager";
 
-function App() {
+const store = getLocalStore(localStorage);
+const logger = getLogger("warn");
+
+// localstorage keys
+const {
+  AddressBook: AddressBookStore,
+} = StoreKeys;
+
+const App: React.FC = () => {
+
+  // Load stored JSON data from localstorage
+  const [addressBookJson, setAddressBookJson] = useState(store.load(AddressBookStore));
+
+  // Parse JSON data into utilities
+  const [addressBook, setAddressBook] = useState(getAddressBook({
+    json: addressBookJson,
+    logger,
+  }));
+
+  useEffect(() => {
+    if (!addressBookJson) return;
+    console.log(`Refreshing ${addressBookJson.length} address book entries`);
+    store.save(AddressBookStore, addressBookJson);
+    setAddressBook(getAddressBook({
+      json: addressBookJson,
+      logger
+    }));
+  }, [addressBookJson]);
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <AccountManager addressBook={addressBook} setAddressBookJson={setAddressBookJson}/>
     </div>
   );
-}
+};
 
 export default App;
