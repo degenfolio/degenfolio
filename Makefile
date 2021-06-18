@@ -85,6 +85,11 @@ pull-semver:
 dls:
 	@docker service ls && echo '=====' && docker container ls -a
 
+test-adapters: adapters
+	bash ops/test-unit.sh adapters test
+watch-adapters: adapters
+	bash ops/test-unit.sh adapters watch
+
 ########################################
 # Real Build Rules
 

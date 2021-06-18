@@ -1,6 +1,11 @@
 #!/bin/bash
 
-cmd="${1:-test}"
+unit=$1
+cmd="${2:-test}"
+
+if [[ -d "modules/$unit" ]]
+then cd "modules/$unit" || exit 1
+fi
 
 if [[ "$CI" == "true" ]]
 then opts="--forbid-only"
@@ -10,12 +15,12 @@ fi
 if [[ "${cmd##*-}" == "test" ]]
 then
   set -o pipefail
-  echo "Starting tester"
+  echo "Starting $unit tester"
   exec npm run test -- $opts
 
 elif [[ "${cmd##*-}" == "watch" ]]
 then
-  echo "Starting watcher"
+  echo "Starting $unit watcher"
 
   function getChecksum {
     find "${src[@]}" -type f -not -name "*.swp" -exec sha256sum {} \; | sha256sum;
