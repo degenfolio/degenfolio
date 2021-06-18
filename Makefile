@@ -96,18 +96,12 @@ builder: $(shell find ops/builder $(find_options))
 
 node-modules: builder package.json
 	$(log_start)
-	$(docker_run) "lerna bootstrap --hoist"
+	$(docker_run) "npm install"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-client-bundle: core $(shell find src $(find_options))
+client-bundle: node-modules $(shell find src $(find_options))
 	$(log_start)
 	$(docker_run) "npm run build"
-	$(log_finish) && mv -f $(totalTime) .flags/$@
-
-proxy: $(shell find ops/proxy $(find_options))
-	$(log_start)
-	docker build --file ops/proxy/Dockerfile $(image_cache) --tag $(project)_proxy ops/proxy
-	docker tag $(project)_proxy $(project)_proxy:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 webserver: client-bundle $(shell find ops/webserver $(find_options))

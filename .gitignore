@@ -2,6 +2,8 @@
 
 # build
 .flags
+.config
+.npm
 
 # dependencies
 /node_modules

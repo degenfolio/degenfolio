@@ -5,7 +5,7 @@ import {
   AddressBookJson,
 } from "@valuemachine/types";
 
-export const AccountManager: React.FC = ({
+export const AccountManager = ({
   addressBook,
   setAddressBookJson,
 }: {
@@ -20,7 +20,9 @@ export const AccountManager: React.FC = ({
     </Typography>
 
     <Typography>
-      {`We are ${setAddressBookJson ? "" : "NOT "}able to update the addressBook`}
+      {`We are ${
+        typeof setAddressBookJson === "function" ? "" : "NOT "
+      }able to update the addressBook`}
     </Typography>
   </>);
 };

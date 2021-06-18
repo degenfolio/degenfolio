@@ -9,5 +9,5 @@ export const appAddresses = [
 ];
 
 export const appParsers = [
-  ...aaveParser,
+  aaveParser,
 ];
