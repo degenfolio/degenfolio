@@ -13,6 +13,8 @@
   },
   "homepage": "https://github.com/degenfolio/degenfolio#readme",
   "scripts": {
+    "start-stack": "bash ops/start.sh",
+    "stop-stack": "bash ops/stop.sh",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
