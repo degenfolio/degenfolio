@@ -15,7 +15,7 @@ export const AccountManager = ({
   return (<>
     <Typography>
       {`Our addressBook contains ${
-        addressBook.addresses.filter(a => addressBook.isSelf(a))
+        addressBook.addresses.filter(a => addressBook.isSelf(a)).length
       } addresses`}
     </Typography>
 
