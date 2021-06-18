@@ -1,10 +1,11 @@
-import { getLogger, getLocalStore } from "@valuemachine/utils";
-import { StoreKeys } from "@valuemachine/types";
+import { getLogger, getLocalStore, smeq } from "@valuemachine/utils";
+import { AddressBookJson, StoreKeys } from "@valuemachine/types";
 import React, { useState, useEffect } from "react";
 import { getAddressBook } from "valuemachine";
 
 import "./App.css";
 import { AccountManager } from "./components/AccountManager";
+import { appAddresses } from "./adapters";
 
 const store = getLocalStore(localStorage as any);
 const logger = getLogger("warn");
@@ -13,6 +14,15 @@ const logger = getLogger("warn");
 const {
   AddressBook: AddressBookStore,
 } = StoreKeys;
+
+const mergeAppAddresses = (addressBookJson: AddressBookJson): AddressBookJson => {
+  for (const appEntry of appAddresses) {
+    if (!addressBookJson.some(entry => smeq(entry.address, appEntry.address))) {
+      addressBookJson.push(appEntry);
+    }
+  }
+  return addressBookJson;
+};
 
 const App: React.FC = () => {
 
@@ -28,9 +38,10 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!addressBookJson) return;
     console.log(`Refreshing ${addressBookJson.length} address book entries`);
-    store.save(AddressBookStore, addressBookJson);
+    const newAddressBookJson = mergeAppAddresses(addressBookJson);
+    store.save(AddressBookStore, newAddressBookJson);
     setAddressBook(getAddressBook({
-      json: addressBookJson,
+      json: newAddressBookJson,
       logger
     }));
   }, [addressBookJson]);

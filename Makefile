@@ -86,7 +86,7 @@ dls:
 	@docker service ls && echo '=====' && docker container ls -a
 
 ########################################
-# Common Prerequisites
+# Real Build Rules
 
 builder: $(shell find ops/builder $(find_options))
 	$(log_start)
@@ -96,17 +96,17 @@ builder: $(shell find ops/builder $(find_options))
 
 node-modules: builder package.json
 	$(log_start)
-	$(docker_run) "npm install"
+	$(docker_run) "lerna bootstrap --hoist"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-client-bundle: node-modules $(shell find src $(find_options))
+client: node-modules $(shell find modules/client/src $(find_options))
 	$(log_start)
-	$(docker_run) "npm run build"
+	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-webserver: client-bundle $(shell find ops/webserver $(find_options))
+webserver: client $(shell find modules/client/ops $(find_options))
 	$(log_start)
-	docker build --file ops/webserver/Dockerfile $(cache_from) --tag $(project)_webserver:latest .
+	docker build --file modules/client/ops/Dockerfile $(cache_from) --tag $(project)_webserver:latest modules/client
 	docker tag $(project)_webserver:latest $(project)_webserver:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
