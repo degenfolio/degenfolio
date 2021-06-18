@@ -66,8 +66,36 @@ common="networks:
 ########################################
 # Server config
 
-server_internal_port="8080";
-server_image="bohendo/valuemachine:v0.1.0";
+server_internal_port=8080
+server_env="environment:
+      DEGENFOLIO_ETHERSCAN_KEY: '$DEGENFOLIO_ETHERSCAN_KEY'
+      DEGENFOLIO_LOG_LEVEL: '$DEGENFOLIO_LOG_LEVEL'
+      DEGENFOLIO_PORT: '$server_internal_port'
+      DEGENFOLIO_PROD: '$DEGENFOLIO_PROD'
+"
+
+if [[ "$DEGENFOLIO_PROD" == "true" ]]
+then
+  server_image="${project}:$version"
+  server_service="server:
+    image: '$server_image'
+    $common
+    $server_env
+    volumes:
+      - 'data:/data'"
+
+else
+  server_image="${project}_builder:$version"
+  server_service="server:
+    image: '$server_image'
+    $common
+    $server_env
+    entrypoint: 'bash modules/server/ops/entry.sh'
+    volumes:
+      - '$root:/root'
+      - '$root/.server-db:/data'"
+
+fi
 bash "$root/ops/pull-images.sh" "$server_image"
 
 ########################################
@@ -150,16 +178,7 @@ services:
     volumes:
       - 'certs:/etc/letsencrypt'
 
-  server:
-    image: '$server_image'
-    $common
-    environment:
-      VM_ETHERSCAN_KEY: '$DEGENFOLIO_ETHERSCAN_KEY'
-      VM_LOG_LEVEL: '$DEGENFOLIO_LOG_LEVEL'
-      VM_PORT: '$server_internal_port'
-      VM_PROD: 'true'
-    volumes:
-      - 'data:/data'
+  $server_service
 
   $webserver_service
 

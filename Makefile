@@ -45,7 +45,7 @@ start: dev
 	bash ops/start.sh
 
 start-prod:
-	VM_PROD=true bash ops/start.sh
+	DEGENFOLIO_PROD=true bash ops/start.sh
 
 stop:
 	bash ops/stop.sh
@@ -54,7 +54,7 @@ restart: dev stop
 	bash ops/start.sh
 
 restart-prod: stop
-	VM_PROD=true bash ops/start.sh
+	DEGENFOLIO_PROD=true bash ops/start.sh
 
 clean: stop
 	rm -rf build
@@ -99,20 +99,37 @@ node-modules: builder $(shell find modules/*/package.json $(find_options))
 	$(docker_run) "lerna bootstrap --hoist"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
+########################################
+# Typescript -> Javascript
+
 adapters: node-modules $(shell find modules/adapters/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/adapters && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-client: adapters $(shell find modules/client/src $(find_options))
+client-bundle: adapters $(shell find modules/client/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-webserver: client $(shell find modules/client/ops $(find_options))
+server-bundle: adapters $(shell find modules/server/src $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/server && npm run build"
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+########################################
+# Docker Images
+
+webserver: client-bundle $(shell find modules/client/ops $(find_options))
 	$(log_start)
 	docker build --file modules/client/ops/Dockerfile $(cache_from) --tag $(project)_webserver:latest modules/client
 	docker tag $(project)_webserver:latest $(project)_webserver:$(commit)
+	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+server: server-bundle $(shell find modules/server/ops $(find_options))
+	$(log_start)
+	docker build --file modules/server/ops/Dockerfile $(image_cache) --tag $(project) modules/server
+	docker tag $(project) $(project):$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 proxy: $(shell find ops/proxy $(find_options))
