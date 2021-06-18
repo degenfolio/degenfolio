@@ -1,3 +1,4 @@
+import { appAddresses } from "@degenfolio/adapters";
 import { getLogger, getLocalStore, smeq } from "@valuemachine/utils";
 import { AddressBookJson, StoreKeys } from "@valuemachine/types";
 import React, { useState, useEffect } from "react";
@@ -5,7 +6,6 @@ import { getAddressBook } from "valuemachine";
 
 import "./App.css";
 import { AccountManager } from "./components/AccountManager";
-import { appAddresses } from "./adapters";
 
 const store = getLocalStore(localStorage as any);
 const logger = getLogger("warn");

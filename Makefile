@@ -36,7 +36,7 @@ $(shell mkdir -p .flags)
 ########################################
 # Command & Control Aliases
 
-default: dev
+default: adapters
 dev: proxy node-modules
 prod: dev webserver
 all: prod
@@ -94,7 +94,7 @@ builder: $(shell find ops/builder $(find_options))
 	docker tag $(project)_builder:latest $(project)_builder:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
-node-modules: builder package.json
+node-modules: builder $(shell find modules/*/package.json $(find_options))
 	$(log_start)
 	$(docker_run) "lerna bootstrap --hoist"
 	$(log_finish) && mv -f $(totalTime) .flags/$@

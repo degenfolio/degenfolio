@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "Portfolio analysis adapters",
   "license": "GPL-3.0-or-later",
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "ts-mocha --check-leaks --exit --timeout 60000 'src/**/*.test.ts'"
@@ -16,11 +17,11 @@
     "valuemachine": "0.1.0"
   },
   "devDependencies": {
-    "@types/node": "15.0.2",
+    "@types/node": "15.12.3",
     "chai": "4.3.4",
     "chai-as-promised": "7.1.1",
     "mocha": "9.0.0",
     "ts-mocha": "8.0.0",
-    "typescript": "4.2.4"
+    "typescript": "4.3.4"
   }
 }
