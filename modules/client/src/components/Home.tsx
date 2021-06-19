@@ -4,14 +4,21 @@ import Tab from "@material-ui/core/Tab";
 import Tabs from "@material-ui/core/Tabs";
 import { makeStyles } from "@material-ui/core/styles";
 import TabContext from "@material-ui/lab/TabContext";
+import SpeedDial from "@material-ui/lab/SpeedDial";
+import SpeedDialAction from "@material-ui/lab/SpeedDialAction";
 import TabPanel from "@material-ui/lab/TabPanel";
+// Icons
 import AccountIcon from "@material-ui/icons/AccountCircle";
 import BarChartIcon from "@material-ui/icons/BarChart";
+import AddIcon from "@material-ui/icons/Add";
+import ImportAddressBookIcon from '@material-ui/icons/ImportContacts';
+// ValueMachine
 import { getLogger, getLocalStore } from "@valuemachine/utils";
 import { getAddressBook } from "@valuemachine/transactions";
 import { StoreKeys } from "@valuemachine/types";
 
 import { mergeAppAddresses } from "../utils";
+import { getFabStyle } from "../style";
 
 import { AccountContext, AccountManager } from "./AccountManager";
 
@@ -24,6 +31,7 @@ const useStyles = makeStyles( theme => ({
   panel: {
     marginTop: theme.spacing(8),
   },
+  speedDial: getFabStyle(theme),
 }));
 
 const store = getLocalStore(localStorage);
@@ -36,6 +44,7 @@ const { AddressBook: AddressBookStore } = StoreKeys;
 export const Home = () => {
   const classes = useStyles();
   const [tab, setTab] = useState("addressBook");
+  const [open, setOpen] = useState<boolean>(false);
 
   // Load stored JSON data from localstorage
   const [addressBookJson, setAddressBookJson] = useState(store.load(AddressBookStore));
@@ -81,6 +90,31 @@ export const Home = () => {
           </Tabs>
         </AppBar>
       </TabContext>
+      <SpeedDial
+        FabProps={ { id: "fab" } }
+        ariaLabel="fab"
+        icon={<AddIcon />}
+        onClose={() => setOpen(false)}
+        onOpen={() => setOpen(true)}
+        open={open}
+        key="fab-add-address"
+        className={classes.speedDial}
+      >
+        <SpeedDialAction
+          FabProps={ { id: "fab-add-address" } }
+          icon={<AccountIcon />}
+          key="fab-add-address"
+          onClick={() => console.log("Add address")}
+          tooltipTitle="Add address"
+        />
+        <SpeedDialAction
+          FabProps={ { id: "fab-import-addressBook" } }
+          icon={<ImportAddressBookIcon />}
+          key="fab-import-addressBook"
+          onClick={() => console.log("Import address book")}
+          tooltipTitle="Import address book"
+        />
+      </SpeedDial>
     </AccountContext.Provider>
   );
 };
