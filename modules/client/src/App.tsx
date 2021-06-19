@@ -1,11 +1,8 @@
 import CssBaseline from "@material-ui/core/CssBaseline";
 import { ThemeProvider, createMuiTheme } from "@material-ui/core/styles";
 import useMediaQuery from "@material-ui/core/useMediaQuery";
-import { AddressBookJson, StoreKeys } from "@valuemachine/types";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useMemo } from "react";
 
-import "./App.css";
-import { AccountManager } from "./components/AccountManager";
 import { Home } from "./components/Home";
 
 const App: React.FC = () => {
@@ -26,9 +23,6 @@ const App: React.FC = () => {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Home />
-      <div className="App">
-        <AccountManager />
-      </div>
     </ThemeProvider>
   );
 };
