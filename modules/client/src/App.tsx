@@ -41,7 +41,6 @@ const App: React.FC = () => {
 
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
 
-  console.log(prefersDarkMode)
   const theme = useMemo(
     () =>
       createMuiTheme({
@@ -67,11 +66,9 @@ const App: React.FC = () => {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Home />
-      {/*
       <div className="App">
         <AccountManager addressBook={addressBook} setAddressBookJson={setAddressBookJson}/>
       </div>
-      */}
     </ThemeProvider>
   );
 };
