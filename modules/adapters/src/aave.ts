@@ -48,7 +48,7 @@ export const aaveParser = (
     tx.sources = rmDups([aaveSource, ...tx.sources]) as TransactionSource[];
   }
 
-  // TODO: implement this for real
+  // Incorporating aave adapter
 
   return tx;
 };
