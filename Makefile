@@ -37,7 +37,7 @@ $(shell mkdir -p .flags)
 # Command & Control Aliases
 
 default: adapters
-dev: proxy node-modules
+dev: proxy adapters
 prod: dev webserver
 all: prod
 
