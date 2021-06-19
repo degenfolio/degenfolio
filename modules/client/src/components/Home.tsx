@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import AppBar from "@material-ui/core/AppBar";
 import Tab from "@material-ui/core/Tab";
 import Tabs from "@material-ui/core/Tabs";
@@ -7,6 +7,7 @@ import TabContext from "@material-ui/lab/TabContext";
 import TabPanel from "@material-ui/lab/TabPanel";
 import AccountIcon from "@material-ui/icons/AccountCircle";
 import BarChartIcon from '@material-ui/icons/BarChart';
+import { AccountContext, AccountManager } from "./AccountManager";
 
 const useStyles = makeStyles( theme => ({
   appbar: {
@@ -23,6 +24,8 @@ export const Home = () => {
   const classes = useStyles();
   const [tab, setTab] = useState("wallet");
 
+  const { addressBook, setAddressBookJson } = useContext(AccountContext);
+
   const updateSelection = (event: React.ChangeEvent<{}>, selectedTab: string) => {
     setTab(selectedTab);
   };
@@ -31,7 +34,9 @@ export const Home = () => {
     <>
       <TabContext value={tab}>
         <TabPanel value="account" className={classes.panel}>
-          Account
+          <AccountContext.Provider value={{ addressBook, setAddressBookJson }}>
+            <AccountManager />
+          </AccountContext.Provider>
         </TabPanel>
         <TabPanel value="wallet" className={classes.panel}> Portfolio </TabPanel>
 
