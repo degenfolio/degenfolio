@@ -11,7 +11,7 @@ import TabPanel from "@material-ui/lab/TabPanel";
 import AccountIcon from "@material-ui/icons/AccountCircle";
 import BarChartIcon from "@material-ui/icons/BarChart";
 import AddIcon from "@material-ui/icons/Add";
-import ImportAddressBookIcon from '@material-ui/icons/ImportContacts';
+import ImportAddressBookIcon from "@material-ui/icons/ImportContacts";
 // ValueMachine
 import { getLogger, getLocalStore } from "@valuemachine/utils";
 import { getAddressBook } from "@valuemachine/transactions";
@@ -44,7 +44,9 @@ const { AddressBook: AddressBookStore } = StoreKeys;
 export const Home = () => {
   const classes = useStyles();
   const [tab, setTab] = useState("addressBook");
-  const [open, setOpen] = useState<boolean>(false);
+  const [openSpeedDial, setOpenSpeedDial] = useState<boolean>(false);
+  const [openDialog, setOpenDialog] = useState<boolean>(false);
+  const [addNewAddress, setAddNewAddress] = useState(false);
 
   // Load stored JSON data from localstorage
   const [addressBookJson, setAddressBookJson] = useState(store.load(AddressBookStore));
@@ -73,7 +75,6 @@ export const Home = () => {
     <AccountContext.Provider value={{ addressBook, setAddressBookJson }}>
       <TabContext value={tab}>
         <TabPanel value="account" className={classes.panel}>
-          <AccountManager />
         </TabPanel>
         <TabPanel value="addressBook" className={classes.panel}> Portfolio </TabPanel>
 
@@ -94,9 +95,9 @@ export const Home = () => {
         FabProps={ { id: "fab" } }
         ariaLabel="fab"
         icon={<AddIcon />}
-        onClose={() => setOpen(false)}
-        onOpen={() => setOpen(true)}
-        open={open}
+        onClose={() => setOpenSpeedDial(false)}
+        onOpen={() => setOpenSpeedDial(true)}
+        open={openSpeedDial}
         key="fab-add-address"
         className={classes.speedDial}
       >
@@ -104,17 +105,28 @@ export const Home = () => {
           FabProps={ { id: "fab-add-address" } }
           icon={<AccountIcon />}
           key="fab-add-address"
-          onClick={() => console.log("Add address")}
+          onClick={() => {
+            setAddNewAddress(true);
+            setOpenDialog(true);
+          }}
           tooltipTitle="Add address"
         />
         <SpeedDialAction
           FabProps={ { id: "fab-import-addressBook" } }
           icon={<ImportAddressBookIcon />}
           key="fab-import-addressBook"
-          onClick={() => console.log("Import address book")}
+          onClick={() => {
+            setAddNewAddress(false);
+            setOpenDialog(true);
+          }}
           tooltipTitle="Import address book"
         />
       </SpeedDial>
+      <AccountManager
+        addNewAddress={addNewAddress}
+        openDialog={openDialog}
+        setOpenDialog={setOpenDialog}
+      />
     </AccountContext.Provider>
   );
 };
