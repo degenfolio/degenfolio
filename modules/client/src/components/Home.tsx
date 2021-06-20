@@ -66,8 +66,7 @@ export const Home = () => {
       logger
     });
     const externalAddresses = getExternalAddress(newAddressBook);
-    console.log(externalAddresses);
-    // logger(externalAddress);
+    store.save(AddressBookStore, externalAddresses);
     setAddressBook(newAddressBook);
 
   }, [addressBookJson]);

@@ -1,6 +1,11 @@
 import { appAddresses } from "@degenfolio/adapters";
 import { smeq } from "@valuemachine/utils";
-import { AddressBookJson, AddressEntry, AddressBook, AddressCategories } from "@valuemachine/types";
+import { AddressBookJson,
+  AddressEntry,
+  AddressBook,
+  ExternalCategories,
+  ExternalCategory,
+ } from "@valuemachine/types";
 
 export const mergeAppAddresses = (addressBookJson: AddressBookJson): AddressBookJson => {
   // Create deep copy of addressBook and return new instance.
@@ -25,13 +30,9 @@ export const mergeAddresses = (ab1: AddressBookJson, ab2: AddressBookJson): Addr
 };
 
 export const getExternalAddress = (addressBook: AddressBook): AddressBookJson => {
-  const externAddresses = addressBook.json.filter((a: AddressEntry) => {
-
-    const isExternal = ()
-      Object.keys(AddressCategories).some(category => addressBook.isCategory(category));
-    console.log(isExternal)
-    return isExternal
-  }
+  return addressBook.json.filter((a: AddressEntry) =>
+    Object.keys(ExternalCategories).some(category =>
+      addressBook.isCategory(category as ExternalCategory)(a.address)
     )
-  return externAddresses;
-}
+  )
+};
