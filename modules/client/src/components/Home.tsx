@@ -17,7 +17,7 @@ import { getLogger, getLocalStore } from "@valuemachine/utils";
 import { getAddressBook } from "@valuemachine/transactions";
 import { StoreKeys } from "@valuemachine/types";
 
-import { mergeAppAddresses } from "../utils";
+import { getExternalAddress, mergeAppAddresses } from "../utils";
 import { getFabStyle } from "../style";
 
 import { AccountContext, AccountManager } from "./AccountManager";
@@ -61,10 +61,15 @@ export const Home = () => {
     if (!addressBookJson) return;
     console.log(`Refreshing ${addressBookJson.length} address book entries`);
     const newAddressBookJson = mergeAppAddresses(addressBookJson);
-    setAddressBook(getAddressBook({
+    const newAddressBook = getAddressBook({
       json: newAddressBookJson,
       logger
-    }));
+    });
+    const externalAddresses = getExternalAddress(newAddressBook);
+    console.log(externalAddresses);
+    // logger(externalAddress);
+    setAddressBook(newAddressBook);
+
   }, [addressBookJson]);
 
   const updateSelection = (event: React.ChangeEvent<{}>, selectedTab: string) => {

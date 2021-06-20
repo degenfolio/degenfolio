@@ -7,7 +7,6 @@ import Button from "@material-ui/core/IconButton";
 import { makeStyles } from "@material-ui/core/styles";
 // Icons
 import CancelIcon from "@material-ui/icons/Cancel";
-import AddIcon from "@material-ui/icons/Add";
 
 import { AddNewAddress } from "./AddNewAddress";
 
@@ -41,10 +40,7 @@ export const AccountManager = ({
       <Button className={classes.closeDialog} onClick={() => setOpenDialog(false)} color="primary">
         <CancelIcon />
       </Button>
-      {addNewAddress ? <AddNewAddress /> : <div> Import New Address</div>}
-      <Button onClick={() => setOpenDialog(false)} color="primary">
-        <AddIcon />
-      </Button>
+      {addNewAddress ? <AddNewAddress setOpenDialog={setOpenDialog} /> : <div> Import New Address</div>}
     </Dialog>
   );
 };
