@@ -1,7 +1,6 @@
 import { getLogger } from "@valuemachine/utils";
 import express from "express";
 
-import { chainDataRouter } from "./chaindata";
 import { env } from "./env";
 import { pricesRouter } from "./prices";
 import { transactionsRouter } from "./transactions";
@@ -15,7 +14,6 @@ const app = express();
 
 app.use(express.json());
 
-app.use("/chaindata", chainDataRouter);
 app.use("/prices", pricesRouter);
 app.use("/transactions", transactionsRouter);
 

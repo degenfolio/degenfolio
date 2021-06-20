@@ -2,7 +2,6 @@ import {
   AddressBook,
   AddressBookJson,
   AddressCategories,
-  ChainData,
   EthTransaction,
   Logger,
   Transaction,
@@ -40,7 +39,6 @@ export const aaveParser = (
   tx: Transaction,
   ethTx: EthTransaction,
   _addressBook: AddressBook,
-  _chainData: ChainData,
   _logger: Logger,
 ): Transaction => {
 
