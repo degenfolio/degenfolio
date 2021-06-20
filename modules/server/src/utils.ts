@@ -1,8 +1,8 @@
 import fs from "fs";
 
 import { hexDataLength, isHexString } from "@ethersproject/bytes";
-import { getChainData } from "@valuemachine/transactions";
 import { getFileStore, getLogger } from "@valuemachine/utils";
+import { getChainData } from "valuemachine";
 
 import { env } from "./env";
 

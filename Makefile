@@ -38,8 +38,8 @@ $(shell mkdir -p .flags)
 
 default: adapters
 dev: proxy adapters
-prod: dev webserver
-all: prod
+prod: proxy server webserver
+all: dev prod
 
 start: dev
 	bash ops/start.sh
