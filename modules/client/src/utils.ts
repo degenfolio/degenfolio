@@ -5,7 +5,7 @@ import { AddressBookJson,
   AddressBook,
   ExternalCategories,
   ExternalCategory,
- } from "@valuemachine/types";
+} from "@valuemachine/types";
 
 export const mergeAppAddresses = (addressBookJson: AddressBookJson): AddressBookJson => {
   // Create deep copy of addressBook and return new instance.
@@ -34,5 +34,5 @@ export const getExternalAddress = (addressBook: AddressBook): AddressBookJson =>
     Object.keys(ExternalCategories).some(category =>
       addressBook.isCategory(category as ExternalCategory)(a.address)
     )
-  )
+  );
 };

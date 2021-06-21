@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 import AppBar from "@material-ui/core/AppBar";
 import Tab from "@material-ui/core/Tab";
 import Tabs from "@material-ui/core/Tabs";
@@ -21,12 +22,18 @@ import { getExternalAddress, mergeAppAddresses } from "../utils";
 import { getFabStyle } from "../style";
 
 import { AccountContext, AccountManager } from "./AccountManager";
+import { NavBar } from "./NavBar";
 
 const useStyles = makeStyles( theme => ({
   appbar: {
     flex: 1,
     bottom: 0,
     top: "auto",
+  },
+  navbar: {
+    flex: 1,
+    bottom: "auto",
+    top: 0,
   },
   panel: {
     marginTop: theme.spacing(8),
@@ -48,6 +55,22 @@ export const Home = () => {
   const [openDialog, setOpenDialog] = useState<boolean>(false);
   const [addNewAddress, setAddNewAddress] = useState(false);
 
+  const syncAddressBook = async () => {
+    while (true) {
+      try {
+        console.log(`Attempting to fetch for addressBook`, addressBookJson)
+        const res = await axios.post("/api/transactions/eth", { addressBook: addressBookJson})
+        if (res.status === 200 && typeof(res.data) === "object") {
+          return res.data
+        }
+        console.log(res)
+      } catch (e) {
+        console.warn(e);
+      }
+      await new Promise((res) => setTimeout(res, 10000))
+    }
+  }
+
   // Load stored JSON data from localstorage
   const [addressBookJson, setAddressBookJson] = useState(store.load(AddressBookStore));
 
@@ -59,6 +82,7 @@ export const Home = () => {
 
   useEffect(() => {
     if (!addressBookJson) return;
+    // syncAddressBook();
     console.log(`Refreshing ${addressBookJson.length} address book entries`);
     const newAddressBookJson = mergeAppAddresses(addressBookJson);
     const newAddressBook = getAddressBook({
@@ -76,7 +100,8 @@ export const Home = () => {
   };
 
   return (
-    <AccountContext.Provider value={{ addressBook, setAddressBookJson }}>
+    <AccountContext.Provider value={{ addressBook, setAddressBookJson, syncAddressBook }}>
+      <NavBar />
       <TabContext value={tab}>
         <TabPanel value="account" className={classes.panel}>
         </TabPanel>
