@@ -15,8 +15,8 @@ import AddIcon from "@material-ui/icons/Add";
 import ImportAddressBookIcon from "@material-ui/icons/ImportContacts";
 // ValueMachine
 import { getLogger, getLocalStore } from "@valuemachine/utils";
-import { getAddressBook } from "@valuemachine/transactions";
 import { StoreKeys } from "@valuemachine/types";
+import { getAddressBook } from "valuemachine";
 
 import { getExternalAddress, mergeAppAddresses } from "../utils";
 import { getFabStyle } from "../style";
@@ -58,18 +58,18 @@ export const Home = () => {
   const syncAddressBook = async () => {
     while (true) {
       try {
-        console.log(`Attempting to fetch for addressBook`, addressBookJson)
-        const res = await axios.post("/api/transactions/eth", { addressBook: addressBookJson})
+        console.log(`Attempting to fetch for addressBook`, addressBookJson);
+        const res = await axios.post("/api/transactions/eth", { addressBook: addressBookJson });
         if (res.status === 200 && typeof(res.data) === "object") {
-          return res.data
+          return res.data;
         }
-        console.log(res)
+        console.log(res);
       } catch (e) {
         console.warn(e);
       }
-      await new Promise((res) => setTimeout(res, 10000))
+      await new Promise((res) => setTimeout(res, 10000));
     }
-  }
+  };
 
   // Load stored JSON data from localstorage
   const [addressBookJson, setAddressBookJson] = useState(store.load(AddressBookStore));

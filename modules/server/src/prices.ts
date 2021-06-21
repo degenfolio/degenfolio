@@ -1,6 +1,6 @@
-import { getPrices } from "@valuemachine/core";
 import { getLogger } from "@valuemachine/utils";
 import express from "express";
+import { getPrices } from "valuemachine";
 
 import { env } from "./env";
 import {
