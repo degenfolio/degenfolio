@@ -16,7 +16,7 @@ import ImportAddressBookIcon from "@material-ui/icons/ImportContacts";
 // ValueMachine
 import { getLogger, getLocalStore } from "@valuemachine/utils";
 import { StoreKeys } from "@valuemachine/types";
-import { getAddressBook } from "valuemachine";
+import { getAddressBook, getTransactions } from "valuemachine";
 
 import { getExternalAddress, mergeAppAddresses } from "../utils";
 import { getFabStyle } from "../style";
@@ -46,7 +46,7 @@ const store = getLocalStore(localStorage);
 const logger = getLogger("warn");
 
 // localstorage keys
-const { AddressBook: AddressBookStore } = StoreKeys;
+const { AddressBook: AddressBookStore, Transactions: TransactionsStore } = StoreKeys;
 
 export const Home = () => {
   const classes = useStyles();
@@ -54,6 +54,20 @@ export const Home = () => {
   const [openSpeedDial, setOpenSpeedDial] = useState<boolean>(false);
   const [openDialog, setOpenDialog] = useState<boolean>(false);
   const [addNewAddress, setAddNewAddress] = useState(false);
+  // Load stored JSON data from localstorage
+  const [addressBookJson, setAddressBookJson] = useState(store.load(AddressBookStore));
+  const [transactionsJson, setTransactionsJson] = useState(store.load(TransactionsStore));
+
+  // Parse JSON data into utilities
+  const [addressBook, setAddressBook] = useState(getAddressBook({
+    json: addressBookJson,
+    logger,
+  }));
+  const [transactions, setTransacions] = useState(getTransactions({
+    json: transactionsJson,
+    logger,
+  }))
+
 
   const syncAddressBook = async () => {
     while (true) {
@@ -61,7 +75,8 @@ export const Home = () => {
         console.log(`Attempting to fetch for addressBook`, addressBookJson);
         const res = await axios.post("/api/transactions/eth", { addressBook: addressBookJson });
         if (res.status === 200 && typeof(res.data) === "object") {
-          return res.data;
+          setTransactionsJson(res.data);
+          return;
         }
         console.log(res);
       } catch (e) {
@@ -71,18 +86,9 @@ export const Home = () => {
     }
   };
 
-  // Load stored JSON data from localstorage
-  const [addressBookJson, setAddressBookJson] = useState(store.load(AddressBookStore));
-
-  // Parse JSON data into utilities
-  const [addressBook, setAddressBook] = useState(getAddressBook({
-    json: addressBookJson,
-    logger,
-  }));
-
   useEffect(() => {
     if (!addressBookJson) return;
-    // syncAddressBook();
+    syncAddressBook();
     console.log(`Refreshing ${addressBookJson.length} address book entries`);
     const newAddressBookJson = mergeAppAddresses(addressBookJson);
     const newAddressBook = getAddressBook({
@@ -98,6 +104,17 @@ export const Home = () => {
   const updateSelection = (event: React.ChangeEvent<{}>, selectedTab: string) => {
     setTab(selectedTab);
   };
+
+  useEffect(() => {
+    if (!transactionsJson) return;
+    store.save(TransactionsStore, transactionsJson);
+    const newTransactions = getTransactions({
+      json: transactionsJson,
+      logger,
+    })
+    console.log(newTransactions);
+    setTransacions(newTransactions);
+  }, [transactionsJson]);
 
   return (
     <AccountContext.Provider value={{ addressBook, setAddressBookJson, syncAddressBook }}>

@@ -21,7 +21,7 @@ const useStyles = makeStyles((theme) => ({
 export const AccountContext = createContext({} as {
   addressBook: AddressBook,
   setAddressBookJson: (val: AddressBookJson) => void,
-  syncAddressBook: (val: AddressBookJson) => Promise<TransactionsJson>,
+  syncAddressBook: (val: AddressBookJson) => Promise<void>,
 });
 
 export const AccountManager = ({
