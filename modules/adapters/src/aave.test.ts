@@ -11,7 +11,7 @@ import {
 
 const { Expense, SwapIn, SwapOut } = TransferCategories;
 const logger = testLogger.child({ module: `Test${aaveSource}`,
-  // level: "debug", // Uncomment to enable verbose logging
+  level: "debug", // Uncomment to enable verbose logging
 });
 
 describe(aaveSource, () => {

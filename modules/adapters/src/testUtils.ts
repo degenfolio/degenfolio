@@ -16,6 +16,8 @@ import { getAddressBook, getChainData } from "valuemachine";
 import { use } from "chai";
 import promised from "chai-as-promised";
 
+import { appAddresses, appParsers } from ".";
+
 use(promised);
 
 export { expect } from "chai";
@@ -41,7 +43,10 @@ export const parseEthTx = async ({
   storePath: string;
 }): Promise<Transaction> => {
   const addressBook = getAddressBook({
-    json: [{ address: selfAddress, name: "test-self", category: AddressCategories.Self }],
+    json: [
+      { address: selfAddress, name: "test-self", category: AddressCategories.Self },
+      ...appAddresses,
+    ],
     logger: testLogger,
   });
   const testStore = getFileStore(path.join(__dirname, storePath || "./testData"), fs);
@@ -62,5 +67,5 @@ export const parseEthTx = async ({
     store: testStore,
   });
   await chainData.syncTransaction(hash, env.etherscanKey);
-  return chainData.getTransaction(hash, addressBook);
+  return chainData.getTransaction(hash, addressBook, appParsers);
 };
