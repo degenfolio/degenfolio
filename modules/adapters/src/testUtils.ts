@@ -1,10 +1,18 @@
-import { getAddressBook } from "valuemachine";
+import fs from "fs";
+import path from "path";
+
+import { AddressZero } from "@ethersproject/constants";
 import {
-  AddressBook,
-  AddressBookJson,
+  Address,
   AddressCategories,
+  Bytes32,
+  emptyChainData,
+  EthCall,
+  Logger,
+  Transaction,
 } from "@valuemachine/types";
-import { getLogger } from "@valuemachine/utils";
+import { getFileStore, getLogger } from "@valuemachine/utils";
+import { getAddressBook, getChainData } from "valuemachine";
 import { use } from "chai";
 import promised from "chai-as-promised";
 
@@ -18,21 +26,41 @@ export const env = {
 };
 
 export const testLogger = getLogger(env.logLevel).child({ module: "TestUtils" });
-testLogger.info(env, `Starting tests in env`);
 
-export const AddressOne = "0x1111111111111111111111111111111111111111";
-export const AddressTwo = "0x2222222222222222222222222222222222222222";
-export const AddressThree = "0x3333333333333333333333333333333333333333";
-export const testToken = "0x9999999999999999999999999999999999999999";
-export const getTestAddressBook = (json: AddressBookJson = []): AddressBook =>
-  getAddressBook({
-    json: [
-      { name: "Self1", category: AddressCategories.Self, address: AddressOne },
-      { name: "Self2", category: AddressCategories.Self, address: AddressTwo },
-      { name: "NotMe", category: AddressCategories.Private, address: AddressThree },
-      { name: "TestToken", category: AddressCategories.ERC20, address: testToken },
-      ...json,
-    ],
+export const parseEthTx = async ({
+  hash,
+  selfAddress,
+  calls,
+  logger,
+  storePath,
+}: {
+  hash: Bytes32;
+  selfAddress: Address;
+  calls?: EthCall[];
+  logger?: Logger;
+  storePath: string;
+}): Promise<Transaction> => {
+  const addressBook = getAddressBook({
+    json: [{ address: selfAddress, name: "test-self", category: AddressCategories.Self }],
     logger: testLogger,
   });
-
+  const testStore = getFileStore(path.join(__dirname, storePath || "./testData"), fs);
+  const chainData = getChainData({
+    json: {
+      ...emptyChainData,
+      calls: !calls ? [] : calls.map(call => ({
+        block: 1,
+        from: AddressZero,
+        timestamp: "2000-01-01T01:00:00.000Z",
+        to: AddressZero,
+        value: "0.1",
+        ...call,
+        hash
+      })),
+    },
+    logger,
+    store: testStore,
+  });
+  await chainData.syncTransaction(hash, env.etherscanKey);
+  return chainData.getTransaction(hash, addressBook);
+};
