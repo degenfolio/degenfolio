@@ -30,6 +30,7 @@ const v1MarketAddresses = [
 const v2MarketAddresses = [
   { name: "aDAI", address: "0x028171bca77440897b824ca71d1c56cac55b68a3" },
   { name: "aAAVE", address: "0xffc97d72e13e01096502cb8eb52dee56f74dad7b" },
+  { name: "aBAT", address: "0x05ec93c0365baaeabf7aeffb0972ea7ecdd39cf1" },
 ].map(row => ({ ...row, category: AddressCategories.Defi })) as AddressBookJson;
 
 
