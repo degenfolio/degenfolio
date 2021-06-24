@@ -18,11 +18,9 @@ export const NavBar = () => {
   const [syncing, setSyncing] = useState(false);
   const { addressBook, setAddressBookJson } = useContext(AccountContext);
 
-  console.log(addressBook);
-
   return (
-      <AppBar color="inherit" position="fixed" className={classes.navbar}>
-        Sync
-      </AppBar>
-  )
-}
+    <AppBar color="inherit" position="fixed" className={classes.navbar}>
+      Sync
+    </AppBar>
+  );
+};

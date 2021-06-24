@@ -5,24 +5,20 @@ import Tab from "@material-ui/core/Tab";
 import Tabs from "@material-ui/core/Tabs";
 import { makeStyles } from "@material-ui/core/styles";
 import TabContext from "@material-ui/lab/TabContext";
-import SpeedDial from "@material-ui/lab/SpeedDial";
-import SpeedDialAction from "@material-ui/lab/SpeedDialAction";
 import TabPanel from "@material-ui/lab/TabPanel";
 // Icons
 import AccountIcon from "@material-ui/icons/AccountCircle";
 import BarChartIcon from "@material-ui/icons/BarChart";
-import AddIcon from "@material-ui/icons/Add";
-import ImportAddressBookIcon from "@material-ui/icons/ImportContacts";
 // ValueMachine
 import { getLogger, getLocalStore } from "@valuemachine/utils";
 import { StoreKeys } from "@valuemachine/types";
 import { getAddressBook, getTransactions } from "valuemachine";
 
 import { getExternalAddress, mergeAppAddresses } from "../utils";
-import { getFabStyle } from "../style";
 
-import { AccountContext, AccountManager } from "./AccountManager";
+import { AccountContext } from "./AccountManager";
 import { NavBar } from "./NavBar";
+import { AccountFAB } from "./AccountFAB";
 
 const useStyles = makeStyles( theme => ({
   appbar: {
@@ -30,15 +26,9 @@ const useStyles = makeStyles( theme => ({
     bottom: 0,
     top: "auto",
   },
-  navbar: {
-    flex: 1,
-    bottom: "auto",
-    top: 0,
-  },
   panel: {
     marginTop: theme.spacing(8),
   },
-  speedDial: getFabStyle(theme),
 }));
 
 const store = getLocalStore(localStorage);
@@ -50,39 +40,46 @@ const { AddressBook: AddressBookStore, Transactions: TransactionsStore } = Store
 
 export const Home = () => {
   const classes = useStyles();
-  const [tab, setTab] = useState("addressBook");
-  const [openSpeedDial, setOpenSpeedDial] = useState<boolean>(false);
-  const [openDialog, setOpenDialog] = useState<boolean>(false);
-  const [addNewAddress, setAddNewAddress] = useState(false);
+  const [tab, setTab] = useState("portfolio");
   // Load stored JSON data from localstorage
   const [addressBookJson, setAddressBookJson] = useState(store.load(AddressBookStore));
-  const [transactionsJson, setTransactionsJson] = useState(store.load(TransactionsStore));
 
   // Parse JSON data into utilities
   const [addressBook, setAddressBook] = useState(getAddressBook({
     json: addressBookJson,
     logger,
   }));
-  const [transactions, setTransacions] = useState(getTransactions({
-    json: transactionsJson,
+  const [transactions, setTransactions] = useState(getTransactions({
+    json: store.load(TransactionsStore),
     logger,
   }))
 
 
+  const updateSelection = (event: React.ChangeEvent<{}>, selectedTab: string) => {
+    setTab(selectedTab);
+  };
+
   const syncAddressBook = async () => {
-    while (true) {
-      try {
-        console.log(`Attempting to fetch for addressBook`, addressBookJson);
-        const res = await axios.post("/api/transactions/eth", { addressBook: addressBookJson });
-        if (res.status === 200 && typeof(res.data) === "object") {
-          setTransactionsJson(res.data);
-          return;
+    if (addressBookJson?.length) {
+      while (true) {
+        try {
+          console.log(`Attempting to fetch for addressBook`, addressBookJson);
+          const res = await axios.post("/api/transactions/eth", { addressBook: addressBookJson });
+          if (res.status === 200 && typeof(res.data) === "object") {
+            const newTransactions = getTransactions({
+              json: res.data,
+              logger,
+            })
+            // If csv merge it to transactions
+            setTransactions(newTransactions);
+            return;
+          }
+          console.log(res);
+        } catch (e) {
+          console.warn(e);
         }
-        console.log(res);
-      } catch (e) {
-        console.warn(e);
+        await new Promise((res) => setTimeout(res, 10000));
       }
-      await new Promise((res) => setTimeout(res, 10000));
     }
   };
 
@@ -90,39 +87,32 @@ export const Home = () => {
     if (!addressBookJson) return;
     syncAddressBook();
     console.log(`Refreshing ${addressBookJson.length} address book entries`);
-    const newAddressBookJson = mergeAppAddresses(addressBookJson);
     const newAddressBook = getAddressBook({
-      json: newAddressBookJson,
+      json: addressBookJson,
       logger
     });
-    const externalAddresses = getExternalAddress(newAddressBook);
-    store.save(AddressBookStore, externalAddresses);
+
+    // Externally owned accounts. Address category Private, Public or Self
+    store.save(AddressBookStore, newAddressBook.json);
     setAddressBook(newAddressBook);
 
   }, [addressBookJson]);
 
-  const updateSelection = (event: React.ChangeEvent<{}>, selectedTab: string) => {
-    setTab(selectedTab);
-  };
-
   useEffect(() => {
-    if (!transactionsJson) return;
-    store.save(TransactionsStore, transactionsJson);
-    const newTransactions = getTransactions({
-      json: transactionsJson,
-      logger,
-    })
-    console.log(newTransactions);
-    setTransacions(newTransactions);
-  }, [transactionsJson]);
+    if (!transactions?.json?.length) return;
+    store.save(TransactionsStore, transactions.json);
+  }, [transactions]);
 
   return (
     <AccountContext.Provider value={{ addressBook, setAddressBookJson, syncAddressBook }}>
       <NavBar />
       <TabContext value={tab}>
-        <TabPanel value="account" className={classes.panel}>
+        <TabPanel value="portfolio" className={classes.panel}>
+          Portfolio
         </TabPanel>
-        <TabPanel value="addressBook" className={classes.panel}> Portfolio </TabPanel>
+        <TabPanel value="addressBook" className={classes.panel}>
+          <AccountFAB />
+        </TabPanel>
 
         <AppBar color="inherit" position="fixed" className={classes.appbar}>
           <Tabs
@@ -131,48 +121,11 @@ export const Home = () => {
             indicatorColor="primary"
             variant="fullWidth"
           >
-            <Tab value="addressBook" icon={<BarChartIcon />} aria-label="addressBook" />
-            <Tab value="account" icon={<AccountIcon />} aria-label="account" />
-
+            <Tab value="portfolio" icon={<BarChartIcon />} aria-label="addressBook" />
+            <Tab value="addressBook" icon={<AccountIcon />} aria-label="account" />
           </Tabs>
         </AppBar>
       </TabContext>
-      <SpeedDial
-        FabProps={ { id: "fab" } }
-        ariaLabel="fab"
-        icon={<AddIcon />}
-        onClose={() => setOpenSpeedDial(false)}
-        onOpen={() => setOpenSpeedDial(true)}
-        open={openSpeedDial}
-        key="fab-add-address"
-        className={classes.speedDial}
-      >
-        <SpeedDialAction
-          FabProps={ { id: "fab-add-address" } }
-          icon={<AccountIcon />}
-          key="fab-add-address"
-          onClick={() => {
-            setAddNewAddress(true);
-            setOpenDialog(true);
-          }}
-          tooltipTitle="Add address"
-        />
-        <SpeedDialAction
-          FabProps={ { id: "fab-import-addressBook" } }
-          icon={<ImportAddressBookIcon />}
-          key="fab-import-addressBook"
-          onClick={() => {
-            setAddNewAddress(false);
-            setOpenDialog(true);
-          }}
-          tooltipTitle="Import address book"
-        />
-      </SpeedDial>
-      <AccountManager
-        addNewAddress={addNewAddress}
-        openDialog={openDialog}
-        setOpenDialog={setOpenDialog}
-      />
     </AccountContext.Provider>
   );
 };

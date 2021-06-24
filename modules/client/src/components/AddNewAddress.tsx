@@ -16,7 +16,7 @@ export const AddNewAddress = ({
   setOpenDialog
 }: {setOpenDialog: (val: boolean) => void}) => {
   const { addressBook, setAddressBookJson } = useContext(AccountContext);
-  const [newEntry, setNewEntry] = useState({} as AddressEntry);
+  const [newEntry, setNewEntry] = useState({category: AddressCategories.Self} as AddressEntry);
 
   const handleEntryChange = (event: React.ChangeEvent<{name: string, value: string}>) => {
     const newNewEntry = { ...newEntry, [event.target.name]: event.target.value };
@@ -27,7 +27,7 @@ export const AddNewAddress = ({
     const newAddressBookJson = mergeAddresses([newEntry], addressBook.json);
     setAddressBookJson(newAddressBookJson);
     setOpenDialog(false);
-  }
+  };
 
   return (<>
     <DialogTitle id="form-dialog-title">Add new address</DialogTitle>
@@ -56,7 +56,7 @@ export const AddNewAddress = ({
       <Autocomplete
         options={Object.keys(AddressCategories)}
         autoSelect
-        value={newEntry.category || ""}
+        value={newEntry.category}
         onChange={(event, value) => {
           const newNewEntry = { ...newEntry, category: value as AddressCategory};
           setNewEntry(newNewEntry);
@@ -78,17 +78,3 @@ export const AddNewAddress = ({
     </Button>
   </>);
 };
-
-/*
-        {`Our addressBook contains ${
-          addressBook.addresses.length
-        } addresses of which ${
-          addressBook.addresses.filter(a => addressBook.isSelf(a)).length
-        } are ours`}
-        To subscribe to this website, please enter your email address here. We will send updates
-        occasionally.
-
-        {`We are ${
-          typeof setAddressBookJson === "function" ? "" : "NOT "
-        }able to update the addressBook`}
-*/
