@@ -18,7 +18,11 @@ transactionsRouter.post("/eth", async (req, res) => {
   if (!addressBookJson || !addressBookJson.length) { // TODO use getAddressBookErrors util
     return logAndSend(`A valid address book must be provided via POST body`, STATUS_YOUR_BAD);
   }
-  const addressBook = getAddressBook({ json: addressBookJson.concat(appAddresses), logger: log });
+  const addressBook = getAddressBook({
+    json: addressBookJson,
+    hardcoded: appAddresses,
+    logger: log,
+  });
   const selfAddresses = addressBook.json
     .map(entry => entry.address)
     .filter(address => isEthAddress(address))

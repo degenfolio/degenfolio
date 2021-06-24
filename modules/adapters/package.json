@@ -12,9 +12,9 @@
     "@ethersproject/bignumber": "5.3.0",
     "@ethersproject/constants": "5.3.0",
     "@ethersproject/units": "5.3.0",
-    "@valuemachine/types": "0.3.0",
-    "@valuemachine/utils": "0.3.0",
-    "valuemachine": "0.3.0"
+    "@valuemachine/types": "0.4.0",
+    "@valuemachine/utils": "0.4.0",
+    "valuemachine": "0.4.0"
   },
   "devDependencies": {
     "@types/node": "15.12.3",

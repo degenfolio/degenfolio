@@ -9,12 +9,12 @@
   "dependencies": {
     "@degenfolio/adapters": "0.0.1",
     "@ethersproject/bytes": "5.3.0",
-    "@valuemachine/types": "0.3.0",
-    "@valuemachine/utils": "0.3.0",
+    "@valuemachine/types": "0.4.0",
+    "@valuemachine/utils": "0.4.0",
     "axios": "0.21.1",
     "express": "4.17.1",
     "nodemon": "2.0.7",
-    "valuemachine": "0.3.0"
+    "valuemachine": "0.4.0"
   },
   "devDependencies": {
     "@types/node": "15.12.3",

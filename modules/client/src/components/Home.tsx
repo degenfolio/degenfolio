@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+import { appAddresses } from "@degenfolio/adapters";
 import AppBar from "@material-ui/core/AppBar";
 import Tab from "@material-ui/core/Tab";
 import Tabs from "@material-ui/core/Tabs";
@@ -12,9 +11,9 @@ import BarChartIcon from "@material-ui/icons/BarChart";
 // ValueMachine
 import { getLogger, getLocalStore } from "@valuemachine/utils";
 import { StoreKeys } from "@valuemachine/types";
+import axios from "axios";
+import React, { useState, useEffect } from "react";
 import { getAddressBook, getTransactions } from "valuemachine";
-
-import { getExternalAddress, mergeAppAddresses } from "../utils";
 
 import { AccountContext } from "./AccountManager";
 import { NavBar } from "./NavBar";
@@ -47,13 +46,13 @@ export const Home = () => {
   // Parse JSON data into utilities
   const [addressBook, setAddressBook] = useState(getAddressBook({
     json: addressBookJson,
+    hardcoded: appAddresses,
     logger,
   }));
   const [transactions, setTransactions] = useState(getTransactions({
     json: store.load(TransactionsStore),
     logger,
-  }))
-
+  }));
 
   const updateSelection = (event: React.ChangeEvent<{}>, selectedTab: string) => {
     setTab(selectedTab);
@@ -69,7 +68,7 @@ export const Home = () => {
             const newTransactions = getTransactions({
               json: res.data,
               logger,
-            })
+            });
             // If csv merge it to transactions
             setTransactions(newTransactions);
             return;
@@ -85,17 +84,15 @@ export const Home = () => {
 
   useEffect(() => {
     if (!addressBookJson) return;
-    syncAddressBook();
     console.log(`Refreshing ${addressBookJson.length} address book entries`);
     const newAddressBook = getAddressBook({
       json: addressBookJson,
+      hardcoded: appAddresses,
       logger
     });
-
-    // Externally owned accounts. Address category Private, Public or Self
     store.save(AddressBookStore, newAddressBook.json);
     setAddressBook(newAddressBook);
-
+    syncAddressBook();
   }, [addressBookJson]);
 
   useEffect(() => {
