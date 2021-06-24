@@ -9,6 +9,11 @@ import SyncIcon from '@material-ui/icons/Sync';
 
 import { AccountContext } from "./AccountManager";
 import { Typography } from "@material-ui/core";
+import FormControl from "@material-ui/core/FormControl";
+import InputLabel from "@material-ui/core/InputLabel";
+import Select from "@material-ui/core/Select";
+import { Asset, Assets, FiatCurrencies } from "@valuemachine/types";
+import MenuItem from "@material-ui/core/MenuItem";
 
 const useStyles = makeStyles( theme => ({
   navbar: {
@@ -20,14 +25,36 @@ const useStyles = makeStyles( theme => ({
 
 export const NavBar = ({
   syncing,
-}: { syncing: boolean, }) => {
+  unit,
+  setUnit,
+}: { syncing: boolean, unit: Asset, setUnit: (val: Asset) => void }) => {
 
   const { addressBook, syncAddressBook } = useContext(AccountContext);
   const classes = useStyles();
 
+  const handleUnitChange = (event: React.ChangeEvent<{ value: unknown }>) => {
+    setUnit(event.target.value as Asset);
+  };
+
   return (
     <AppBar color="inherit" position="fixed" className={classes.navbar}>
       <Toolbar variant="dense">
+
+      <FormControl focused={false}>
+          <InputLabel id="select-unit-label">Units</InputLabel>
+          <Select
+            labelId="select-unit-label"
+            id="select-unit"
+            value={unit || Assets.ETH}
+            onChange={handleUnitChange}
+          >
+            {([Assets.ETH, Assets.BTC] as Asset[])
+              .concat(Object.keys({ ...FiatCurrencies }) as Asset[])
+              .map(asset => <MenuItem key={asset} value={asset}>{asset}</MenuItem>)
+            }
+          </Select>
+        </FormControl>
+
         <Typography>
           {syncing
             ? `Syncing ${addressBook?.json?.length} addresses`

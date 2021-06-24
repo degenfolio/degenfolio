@@ -10,7 +10,7 @@ import AccountIcon from "@material-ui/icons/AccountCircle";
 import BarChartIcon from "@material-ui/icons/BarChart";
 // ValueMachine
 import { getLogger, getLocalStore } from "@valuemachine/utils";
-import { StoreKeys } from "@valuemachine/types";
+import { Asset, Assets, StoreKey, StoreKeys } from "@valuemachine/types";
 import axios from "axios";
 import React, { useState, useEffect } from "react";
 import { getAddressBook, getTransactions, getValueMachine } from "valuemachine";
@@ -42,10 +42,13 @@ const {
   ValueMachine: ValueMachineStore,
 } = StoreKeys;
 
+const unitStore = "Unit";
+
 export const Home = () => {
   const classes = useStyles();
-  const [tab, setTab] = useState("portfolio");
   const [syncing, setSyncing] = useState(false);
+  const [tab, setTab] = useState("portfolio");
+  const [unit, setUnit] = useState(localStorage.getItem(unitStore) as Asset || Assets.ETH as Asset)
   // Load stored JSON data from localstorage
   const [addressBookJson, setAddressBookJson] = useState(store.load(AddressBookStore));
 
@@ -124,6 +127,10 @@ export const Home = () => {
   }, [addressBookJson]);
 
   useEffect(() => {
+    localStorage.setItem(unitStore, unit);
+  }, [unit]);
+
+  useEffect(() => {
     if (!transactions?.json?.length) return;
     setSyncing(false);
     store.save(TransactionsStore, transactions.json);
@@ -132,7 +139,7 @@ export const Home = () => {
 
   return (
     <AccountContext.Provider value={{ addressBook, setAddressBookJson, syncAddressBook, vm }}>
-      <NavBar syncing={syncing} />
+      <NavBar syncing={syncing} unit={unit} setUnit={setUnit} />
       <TabContext value={tab}>
         <TabPanel value="portfolio" className={classes.panel}>
           <Portfolio />

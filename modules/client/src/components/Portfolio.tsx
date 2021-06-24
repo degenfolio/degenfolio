@@ -70,7 +70,7 @@ export const Portfolio = () => {
     console.log("Generating graph data");
     formatChunksToGraphData();
 
-  }, [data]);
+  }, [vm]);
 
   if(!data.length) return <> Loading </>;
 
