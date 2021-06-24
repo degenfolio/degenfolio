@@ -1,11 +1,12 @@
 import React, { useState, useContext } from "react";
 import { useEffect } from "react";
-import { XYPlot, VerticalRectSeries, XAxis, RVTickFormat } from "react-vis";
+import { XYPlot, HorizontalRectSeries, XAxis, RVTickFormat, YAxis } from "react-vis";
 import { timeFormat } from "d3-time-format";
 
 import { AccountContext } from "./AccountManager";
 import { Prices } from "@valuemachine/types";
 import { mul } from "@valuemachine/utils";
+import { Typography } from "@material-ui/core";
 
 const getPriceCurrent = (asset: string) => {
   switch (asset) {
@@ -32,6 +33,7 @@ export const Portfolio = ({
 }: { prices: Prices }) => {
   const { vm } = useContext(AccountContext);
 
+  const [description, setDescription] = useState("");
   const [data, setData] = useState([] as Array<{x: number, y: number, x0: number, y0: number}>);
   const locale = timeFormat("%m/%y");
 
@@ -40,32 +42,28 @@ export const Portfolio = ({
     const chunks = vm.json.chunks;
 
     const newData = [] as Array<{x: number, y: number, x0: number, y0: number}>;
-    
+
+    const dates = chunks.reduce((output, chunk) => {
+      return Array.from(new Set(
+        output.concat([chunk.receiveDate, chunk.disposeDate || ""])
+      )).filter(d => !!d).sort();
+    }, [] as string[]);
+
+    console.log(dates);
+
     chunks.forEach((chunk) => {
       const currentDate = new Date();
-      const disposeDate = chunk.disposeDate
-        ? new Date(chunk.disposeDate).getTime()
-        : currentDate.getTime();
-        
-      // console.log(
-      //   value.asset,
-      //   {
-      //     x: new Date(value.receiveDate).getTime(),
-      //     y: quantity*getPriceHistorical(value.asset),
-      //     x0: disposeDate,
-      //     y0: quantity*getPriceCurrent(value.asset)
-      //   }
-      // );
+      const disposeDateIndex = dates.findIndex(d => d === chunk.disposeDate);
 
       newData.push(
         {
-          x: new Date(chunk.receiveDate).getTime(),
+          x: dates.findIndex(d => d === chunk.receiveDate),
           y: parseFloat(mul(
             chunk.quantity,
             prices.getPrice(chunk.receiveDate, chunk.asset) || "0",
           )
           ),
-          x0: disposeDate,
+          x0: disposeDateIndex >= 0 ? disposeDateIndex : dates.length,
           y0: parseFloat(mul(
             chunk.quantity,
             prices.getPrice(
@@ -77,6 +75,7 @@ export const Portfolio = ({
         }
       );
     });
+    console.log("new x/y data", newData);
     setData(newData);
   };
 
@@ -88,13 +87,32 @@ export const Portfolio = ({
 
   if(!data.length) return <> Loading </>;
 
-  return (
+  return (<>
+    <Typography>
+      {description}
+    </Typography>
     <XYPlot
       stackBy="y"
-      height={300} width={300}
+      height={300} width={600}
+      style={{
+        margin: "4em"
+      }}
     >
-      <XAxis tickFormat={locale as RVTickFormat} />
-      <VerticalRectSeries data={data} />
+      <XAxis style={{
+        line: {stroke: '#ADDDE1'},
+        ticks: {stroke: '#ADDDE1'},
+        text: {stroke: 'none', fill: '#6b6b76', fontWeight: 600}
+      }} />
+      <YAxis style={{
+        line: {stroke: '#ADDDE1'},
+        ticks: {stroke: '#ADDDE1'},
+        text: {stroke: 'none', fill: '#6b6b76', fontWeight: 600}
+      }} />
+      {}
+      <HorizontalRectSeries
+        data={data}
+        onSeriesMouseOver={(d) => console.log(d)}
+      />
     </XYPlot>
-  );
+  </>);
 };
