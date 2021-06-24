@@ -2,12 +2,13 @@ import {
   TransferCategories,
 } from "@valuemachine/types";
 
-import { aaveSource } from "./aave";
 import {
   parseEthTx,
   expect,
   testLogger,
-} from "./testUtils";
+} from "../testUtils";
+
+import { aaveSource } from "./aave";
 
 const { Expense, SwapIn, SwapOut } = TransferCategories;
 const logger = testLogger.child({ module: `Test${aaveSource}`,
