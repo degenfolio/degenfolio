@@ -1,4 +1,4 @@
-import { appParsers } from "@degenfolio/adapters";
+import { appAddresses, appParsers } from "@degenfolio/adapters";
 import { isAddress as isEthAddress } from "@ethersproject/address";
 import { getAddressBook } from "valuemachine";
 import { getLogger } from "@valuemachine/utils";
@@ -18,7 +18,7 @@ transactionsRouter.post("/eth", async (req, res) => {
   if (!addressBookJson || !addressBookJson.length) { // TODO use getAddressBookErrors util
     return logAndSend(`A valid address book must be provided via POST body`, STATUS_YOUR_BAD);
   }
-  const addressBook = getAddressBook({ json: addressBookJson, logger: log });
+  const addressBook = getAddressBook({ json: addressBookJson.concat(appAddresses), logger: log });
   const selfAddresses = addressBook.json
     .map(entry => entry.address)
     .filter(address => isEthAddress(address))
