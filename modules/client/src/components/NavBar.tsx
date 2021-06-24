@@ -1,8 +1,14 @@
 import React, { useState, useContext } from "react";
 import AppBar from "@material-ui/core/AppBar";
+import Toolbar from "@material-ui/core/Toolbar";
 import { makeStyles } from "@material-ui/core/styles";
+import IconButton from "@material-ui/core/IconButton";
+
+// Icons
+import SyncIcon from '@material-ui/icons/Sync';
 
 import { AccountContext } from "./AccountManager";
+import { Typography } from "@material-ui/core";
 
 const useStyles = makeStyles( theme => ({
   navbar: {
@@ -12,15 +18,26 @@ const useStyles = makeStyles( theme => ({
   },
 }));
 
-export const NavBar = () => {
+export const NavBar = ({
+  syncing,
+}: { syncing: boolean, }) => {
 
+  const { addressBook, syncAddressBook } = useContext(AccountContext);
   const classes = useStyles();
-  const [syncing, setSyncing] = useState(false);
-  const { addressBook, setAddressBookJson } = useContext(AccountContext);
 
   return (
     <AppBar color="inherit" position="fixed" className={classes.navbar}>
-      Sync
+      <Toolbar variant="dense">
+        <Typography>
+          {syncing
+            ? `Syncing ${addressBook?.json?.length} addresses`
+            : `Synced`
+          }
+        </Typography>
+        <IconButton edge="start" color="inherit" aria-label="sync" disabled={syncing} >
+          <SyncIcon />
+        </IconButton>
+      </Toolbar>
     </AppBar>
   );
 };

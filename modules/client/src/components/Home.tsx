@@ -40,6 +40,7 @@ const { AddressBook: AddressBookStore, Transactions: TransactionsStore } = Store
 export const Home = () => {
   const classes = useStyles();
   const [tab, setTab] = useState("portfolio");
+  const [syncing, setSyncing] = useState(false);
   // Load stored JSON data from localstorage
   const [addressBookJson, setAddressBookJson] = useState(store.load(AddressBookStore));
 
@@ -60,6 +61,7 @@ export const Home = () => {
 
   const syncAddressBook = async () => {
     if (addressBookJson?.length) {
+      setSyncing(true);
       while (true) {
         try {
           console.log(`Attempting to fetch for addressBook`, addressBookJson);
@@ -97,12 +99,13 @@ export const Home = () => {
 
   useEffect(() => {
     if (!transactions?.json?.length) return;
+    setSyncing(false);
     store.save(TransactionsStore, transactions.json);
   }, [transactions]);
 
   return (
     <AccountContext.Provider value={{ addressBook, setAddressBookJson, syncAddressBook }}>
-      <NavBar />
+      <NavBar syncing={syncing} />
       <TabContext value={tab}>
         <TabPanel value="portfolio" className={classes.panel}>
           Portfolio
