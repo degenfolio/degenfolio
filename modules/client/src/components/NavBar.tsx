@@ -21,6 +21,16 @@ const useStyles = makeStyles( theme => ({
     bottom: "auto",
     top: 0,
   },
+  sync: {
+    flexGrow: 1,
+    justifyContent: "right",
+    padding: theme.spacing(2),
+    display: "flex",
+  },
+  selector: {
+    padding: theme.spacing(1),
+    display: "flex",
+  }
 }));
 
 export const NavBar = ({
@@ -39,23 +49,24 @@ export const NavBar = ({
   return (
     <AppBar color="inherit" position="fixed" className={classes.navbar}>
       <Toolbar variant="dense">
-
+        <Typography className={classes.selector}>
+          Unit of Account 👉🏻
+        </Typography>
       <FormControl focused={false}>
-          <InputLabel id="select-unit-label">Units</InputLabel>
-          <Select
-            labelId="select-unit-label"
-            id="select-unit"
-            value={unit || Assets.ETH}
-            onChange={handleUnitChange}
-          >
-            {([Assets.ETH, Assets.BTC] as Asset[])
-              .concat(Object.keys({ ...FiatCurrencies }) as Asset[])
-              .map(asset => <MenuItem key={asset} value={asset}>{asset}</MenuItem>)
-            }
-          </Select>
-        </FormControl>
+        <Select
+          labelId="select-unit-label"
+          id="select-unit"
+          value={unit || Assets.ETH}
+          onChange={handleUnitChange}
+        >
+          {([Assets.ETH, Assets.BTC] as Asset[])
+            .concat(Object.keys({ ...FiatCurrencies }) as Asset[])
+            .map(asset => <MenuItem key={asset} value={asset}>{asset}</MenuItem>)
+          }
+        </Select>
+      </FormControl>
 
-        <Typography>
+        <Typography className={classes.sync}>
           {syncing
             ? `Syncing ${addressBook?.json?.length} addresses`
             : `Synced`

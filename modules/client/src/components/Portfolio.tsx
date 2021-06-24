@@ -4,6 +4,8 @@ import { XYPlot, VerticalRectSeries, XAxis, RVTickFormat } from "react-vis";
 import { timeFormat } from "d3-time-format";
 
 import { AccountContext } from "./AccountManager";
+import { Prices } from "@valuemachine/types";
+import { mul } from "@valuemachine/utils";
 
 const getPriceCurrent = (asset: string) => {
   switch (asset) {
@@ -25,7 +27,9 @@ const getPriceHistorical = (asset: string) => {
   }
 };
 
-export const Portfolio = () => {
+export const Portfolio = ({
+  prices
+}: { prices: Prices }) => {
   const { vm } = useContext(AccountContext);
 
   const [data, setData] = useState([] as Array<{x: number, y: number, x0: number, y0: number}>);
@@ -37,29 +41,39 @@ export const Portfolio = () => {
 
     const newData = [] as Array<{x: number, y: number, x0: number, y0: number}>;
     
-    chunks.forEach((value) => {
+    chunks.forEach((chunk) => {
       const currentDate = new Date();
-      const quantity = parseFloat(value.quantity) ;
-      const disposeDate = value.disposeDate
-        ? new Date(value.disposeDate).getTime()
+      const disposeDate = chunk.disposeDate
+        ? new Date(chunk.disposeDate).getTime()
         : currentDate.getTime();
         
-      console.log(
-        value.asset,
-        {
-          x: new Date(value.receiveDate).getTime(),
-          y: quantity*getPriceHistorical(value.asset),
-          x0: disposeDate,
-          y0: quantity*getPriceCurrent(value.asset)
-        }
-      );
+      // console.log(
+      //   value.asset,
+      //   {
+      //     x: new Date(value.receiveDate).getTime(),
+      //     y: quantity*getPriceHistorical(value.asset),
+      //     x0: disposeDate,
+      //     y0: quantity*getPriceCurrent(value.asset)
+      //   }
+      // );
 
       newData.push(
         {
-          x: new Date(value.receiveDate).getTime(),
-          y: quantity*getPriceHistorical(value.asset),
+          x: new Date(chunk.receiveDate).getTime(),
+          y: parseFloat(mul(
+            chunk.quantity,
+            prices.getPrice(chunk.receiveDate, chunk.asset) || "0",
+          )
+          ),
           x0: disposeDate,
-          y0: quantity*getPriceCurrent(value.asset)
+          y0: parseFloat(mul(
+            chunk.quantity,
+            prices.getPrice(
+              chunk.disposeDate || currentDate.toISOString(),
+              chunk.asset
+            ) || "0"
+          )
+          ),
         }
       );
     });

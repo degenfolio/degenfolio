@@ -10,10 +10,10 @@ import AccountIcon from "@material-ui/icons/AccountCircle";
 import BarChartIcon from "@material-ui/icons/BarChart";
 // ValueMachine
 import { getLogger, getLocalStore } from "@valuemachine/utils";
-import { Asset, Assets, StoreKey, StoreKeys } from "@valuemachine/types";
+import { Asset, Assets, Prices, StoreKey, StoreKeys } from "@valuemachine/types";
 import axios from "axios";
 import React, { useState, useEffect } from "react";
-import { getAddressBook, getTransactions, getValueMachine } from "valuemachine";
+import { getAddressBook, getTransactions, getValueMachine, getPrices } from "valuemachine";
 
 import { AccountContext } from "./AccountManager";
 import { NavBar } from "./NavBar";
@@ -40,6 +40,7 @@ const {
   AddressBook: AddressBookStore,
   Transactions: TransactionsStore,
   ValueMachine: ValueMachineStore,
+  Prices: PricesStore,
 } = StoreKeys;
 
 const unitStore = "Unit";
@@ -68,6 +69,13 @@ export const Home = () => {
     json: store.load(ValueMachineStore),
     logger,
   }));
+  const [prices, setPrices] = useState(getPrices({
+    json: store.load(PricesStore),
+    unit,
+    logger,
+    store,
+  })
+  );
 
   const updateSelection = (event: React.ChangeEvent<{}>, selectedTab: string) => {
     setTab(selectedTab);
@@ -98,6 +106,29 @@ export const Home = () => {
     }
   };
 
+  const syncPrices = async () => {
+    if (!vm || !unit || !prices) return;
+    try {
+      console.log(`Attempting to fetch for addressBook`, addressBookJson);
+      const res = await axios.post(`/api/prices/chunks/${unit}`, { chunks: vm.json.chunks });
+      if (res.status === 200 && typeof(res.data) === "object") {
+        prices.merge(res.data)
+        console.log(prices)
+        // If csv merge it to transactions
+        setPrices(getPrices({
+          json: prices.json,
+          logger,
+          store,
+          unit,
+         }));
+        return;
+      }
+      console.log(res);
+    } catch (e) {
+      console.warn(e);
+    }
+  }
+
   const processTransactions = async () => {
     const newVM = getValueMachine({
       addressBook,
@@ -112,6 +143,10 @@ export const Home = () => {
     console.log(newVM.json.chunks);
     setVM(newVM);
   }
+
+  useEffect(() => {
+    syncPrices();
+  }, [unit, vm.json]);
 
   useEffect(() => {
     if (!addressBookJson) return;
@@ -142,7 +177,7 @@ export const Home = () => {
       <NavBar syncing={syncing} unit={unit} setUnit={setUnit} />
       <TabContext value={tab}>
         <TabPanel value="portfolio" className={classes.panel}>
-          <Portfolio />
+          <Portfolio prices={prices} />
         </TabPanel>
         <TabPanel value="addressBook" className={classes.panel}>
           <AccountFAB />
