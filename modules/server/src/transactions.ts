@@ -1,7 +1,7 @@
 import { appAddresses, appParsers } from "@degenfolio/adapters";
 import { isAddress as isEthAddress } from "@ethersproject/address";
 import { getAddressBook } from "valuemachine";
-import { getLogger } from "@valuemachine/utils";
+import { chrono, getLogger } from "@valuemachine/utils";
 import express from "express";
 
 import { env } from "./env";
@@ -49,7 +49,7 @@ transactionsRouter.post("/eth", async (req, res) => {
         try {
           const start = Date.now();
           const transactionsJson = chainData.getTransactions(addressBook, appParsers);
-          res.json(transactionsJson);
+          res.json(transactionsJson.sort(chrono));
           log.info(`Returned ${transactionsJson.length} transactions at a rate of ${
             Math.round((100000 * transactionsJson.length)/(Date.now() - start)) / 100
           } tx/sec`);

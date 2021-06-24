@@ -16,7 +16,9 @@ export const AddNewAddress = ({
   setOpenDialog
 }: {setOpenDialog: (val: boolean) => void}) => {
   const { addressBook, setAddressBookJson } = useContext(AccountContext);
-  const [newEntry, setNewEntry] = useState({category: AddressCategories.Self} as AddressEntry);
+  const [newEntry, setNewEntry] = useState({
+    category: AddressCategories.Self
+  } as AddressEntry);
 
   const handleEntryChange = (event: React.ChangeEvent<{name: string, value: string}>) => {
     const newNewEntry = { ...newEntry, [event.target.name]: event.target.value };
@@ -58,7 +60,7 @@ export const AddNewAddress = ({
         autoSelect
         value={newEntry.category}
         onChange={(event, value) => {
-          const newNewEntry = { ...newEntry, category: value as AddressCategory};
+          const newNewEntry = { ...newEntry, category: value as AddressCategory };
           setNewEntry(newNewEntry);
         }}
         renderInput={(params) => (

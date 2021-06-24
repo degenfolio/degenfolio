@@ -1,6 +1,6 @@
 import React, { createContext, useContext } from "react";
 import Typography from "@material-ui/core/Typography";
-import { AddressBook, AddressBookJson, TransactionsJson, } from "@valuemachine/types";
+import { AddressBook, AddressBookJson, TransactionsJson, ValueMachine, } from "@valuemachine/types";
 import Paper from "@material-ui/core/Paper";
 import Dialog from "@material-ui/core/Dialog";
 import Button from "@material-ui/core/IconButton";
@@ -20,8 +20,9 @@ const useStyles = makeStyles((theme) => ({
 
 export const AccountContext = createContext({} as {
   addressBook: AddressBook,
+  vm: ValueMachine,
   setAddressBookJson: (val: AddressBookJson) => void,
-  syncAddressBook: (val: AddressBookJson) => Promise<void>,
+  syncAddressBook: () => Promise<void>,
 });
 
 export const AccountManager = ({

@@ -13,11 +13,12 @@ import { getLogger, getLocalStore } from "@valuemachine/utils";
 import { StoreKeys } from "@valuemachine/types";
 import axios from "axios";
 import React, { useState, useEffect } from "react";
-import { getAddressBook, getTransactions } from "valuemachine";
+import { getAddressBook, getTransactions, getValueMachine } from "valuemachine";
 
 import { AccountContext } from "./AccountManager";
 import { NavBar } from "./NavBar";
 import { AccountFAB } from "./AccountFAB";
+import { Portfolio } from "./Portfolio";
 
 const useStyles = makeStyles( theme => ({
   appbar: {
@@ -35,7 +36,11 @@ const store = getLocalStore(localStorage);
 const logger = getLogger("warn");
 
 // localstorage keys
-const { AddressBook: AddressBookStore, Transactions: TransactionsStore } = StoreKeys;
+const {
+  AddressBook: AddressBookStore,
+  Transactions: TransactionsStore,
+  ValueMachine: ValueMachineStore,
+} = StoreKeys;
 
 export const Home = () => {
   const classes = useStyles();
@@ -52,6 +57,12 @@ export const Home = () => {
   }));
   const [transactions, setTransactions] = useState(getTransactions({
     json: store.load(TransactionsStore),
+    logger,
+  }));
+
+  const [vm, setVM] = useState(getValueMachine({
+    addressBook,
+    json: store.load(ValueMachineStore),
     logger,
   }));
 
@@ -84,6 +95,21 @@ export const Home = () => {
     }
   };
 
+  const processTransactions = async () => {
+    const newVM = getValueMachine({
+      addressBook,
+      logger,
+    });
+   
+    for (const tx of transactions.json) {
+      newVM.execute(tx);
+      await new Promise(res => setTimeout(res, 1));
+    }
+    store.save(ValueMachineStore, newVM.json)
+    console.log(newVM.json.chunks);
+    setVM(newVM);
+  }
+
   useEffect(() => {
     if (!addressBookJson) return;
     console.log(`Refreshing ${addressBookJson.length} address book entries`);
@@ -101,14 +127,15 @@ export const Home = () => {
     if (!transactions?.json?.length) return;
     setSyncing(false);
     store.save(TransactionsStore, transactions.json);
+    processTransactions();
   }, [transactions]);
 
   return (
-    <AccountContext.Provider value={{ addressBook, setAddressBookJson, syncAddressBook }}>
+    <AccountContext.Provider value={{ addressBook, setAddressBookJson, syncAddressBook, vm }}>
       <NavBar syncing={syncing} />
       <TabContext value={tab}>
         <TabPanel value="portfolio" className={classes.panel}>
-          Portfolio
+          <Portfolio />
         </TabPanel>
         <TabPanel value="addressBook" className={classes.panel}>
           <AccountFAB />

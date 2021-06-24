@@ -34,7 +34,13 @@ export const NavBar = ({
             : `Synced`
           }
         </Typography>
-        <IconButton edge="start" color="inherit" aria-label="sync" disabled={syncing} >
+        <IconButton
+          edge="start"
+          color="inherit"
+          aria-label="sync"
+          disabled={syncing}
+          onClick={syncAddressBook}
+        >
           <SyncIcon />
         </IconButton>
       </Toolbar>
