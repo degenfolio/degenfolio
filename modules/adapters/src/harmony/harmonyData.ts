@@ -13,6 +13,7 @@ import {
 import {
   getLogger,
 } from "@valuemachine/utils";
+import axios from "axios";
 
 export const getHarmonyData = (params?: ChainDataParams): ChainData => {
   const { json: chainDataJson, logger, store } = params || {};
@@ -31,13 +32,32 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
     json.transactions.length
   } transactions from ${chainDataJson ? "input" : store ? "store" : "default"}`);
 
-  /* TODO: implement
-  const syncAddress = async (address: Address, key?: string): Promise<void> => {
-    log.info(`address=${address}, key=${key}`);
-    save();
+  ////////////////////////////////////////
+  // Internal Heleprs
+
+  // TODO: rm key param?
+  const syncAddress = async (address: Address, _key?: string): Promise<void> => {
+    const databc = {
+      jsonrpc: "2.0",
+      id: 1,
+      method: "hmyv2_getTransactionsHistory",
+      params: [
+        {
+          address, // : "one1rvaqpfukjsxz5gaqtjr8hz9mtqevr9p4gfuncs",
+          pageIndex: 0,
+          pageSize: 20,
+          fullTx: true,
+          txType: "ALL",
+          order: "ASC"
+        }
+      ]
+    };
+    const response = await axios.post("https://rpc.s0.b.hmny.io", databc);
+    console.log(response.data);
+    // TODO: save result to json
+    // save();
     return;
   };
-  */
 
   ////////////////////////////////////////
   // Exported Methods
@@ -57,6 +77,7 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
 
   const syncAddressBook = async (addressBook: AddressBook, key?: string): Promise<void> => {
     log.info(`addressBook has ${addressBook.json.length} entries, key=${key}`);
+    syncAddress(addressBook[0].address); // TODO: implement for real
     save();
     return;
   };
