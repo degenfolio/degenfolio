@@ -10,7 +10,7 @@ import AccountIcon from "@material-ui/icons/AccountCircle";
 import BarChartIcon from "@material-ui/icons/BarChart";
 // ValueMachine
 import { getLogger, getLocalStore } from "@valuemachine/utils";
-import { Asset, Assets, Prices, StoreKey, StoreKeys } from "@valuemachine/types";
+import { Asset, Assets, PriceList, StoreKeys } from "@valuemachine/types";
 import axios from "axios";
 import React, { useState, useEffect } from "react";
 import { getAddressBook, getTransactions, getValueMachine, getPrices } from "valuemachine";
@@ -33,7 +33,7 @@ const useStyles = makeStyles( theme => ({
 
 const store = getLocalStore(localStorage);
 
-const logger = getLogger("warn");
+const logger = getLogger("debug");
 
 // localstorage keys
 const {
@@ -113,7 +113,20 @@ export const Home = () => {
       const res = await axios.post(`/api/prices/chunks/${unit}`, { chunks: vm.json.chunks });
       if (res.status === 200 && typeof(res.data) === "object") {
         prices.merge(res.data)
-        console.log(prices)
+        const netWorth = vm.getNetWorth()
+
+        // Sync today's price
+        const today = (new Date()).toISOString();
+        const currentPrices = { [today]: { [unit]: {} } as PriceList };
+        for (const asset of Object.keys(netWorth)) {
+          const currentPrice = await axios.get(`/api/prices/${unit}/${asset}/${today}`);
+          if (currentPrice.status === 200 && typeof(currentPrice.data) === "number") {
+            currentPrices[today][unit][asset] = currentPrice.data.toString();
+          }
+        }
+
+        prices.merge(currentPrices);
+
         // If csv merge it to transactions
         setPrices(getPrices({
           json: prices.json,
@@ -123,7 +136,6 @@ export const Home = () => {
          }));
         return;
       }
-      console.log(res);
     } catch (e) {
       console.warn(e);
     }
