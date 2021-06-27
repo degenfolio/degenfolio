@@ -1,32 +1,14 @@
 import React, { useState, useContext } from "react";
 import { useEffect } from "react";
-import { XYPlot, HorizontalRectSeries, XAxis, RVTickFormat, YAxis, PolygonSeries, HorizontalGridLines } from "react-vis";
+import { XYPlot, XAxis, YAxis, PolygonSeries, HorizontalGridLines } from "react-vis";
 import { format } from "d3-format";
-
-import { AccountContext } from "./AccountManager";
-import { AssetChunk, Prices } from "@valuemachine/types";
+import { Asset, AssetChunk, PriceList, Prices } from "@valuemachine/types";
 import { mul } from "@valuemachine/utils";
 import { Typography } from "@material-ui/core";
+import axios from "axios";
 
-const getPriceCurrent = (asset: string) => {
-  switch (asset) {
-  case "DAI": return 1;
-  case "ETH": return 2400;
-  case "WBTC": return 35000;
-  case "UniV2_WBTC_ETH": return 2700000000;
-  default: return 1;
-  }
-};
-
-const getPriceHistorical = (asset: string) => {
-  switch (asset) {
-  case "DAI": return 1;
-  case "ETH": return 400;
-  case "WBTC": return 3500;
-  case "UniV2_WBTC_ETH": return 27000000;
-  default: return 1;
-  }
-};
+import { AccountContext } from "./AccountManager";
+import { fetchPrice } from "../utils";
 
 type SeriesData = Array<{
   series: Array<{x: number, y: number}>;
@@ -37,7 +19,7 @@ const getChunksByDate = (chunks: AssetChunk[], dates: string[]) => {
   const empty = dates.reduce((output, date) => {
     output[date] = [];
     return output;
-  }, {} as{ [date: string]: number[] });
+  }, {} as { [date: string]: number[] });
 
   return chunks.reduce((output, chunk, index) => {
     const i = dates.findIndex(d => d === chunk.receiveDate);
@@ -46,13 +28,14 @@ const getChunksByDate = (chunks: AssetChunk[], dates: string[]) => {
       output[date].push(index);
     });
     return output;
-  }, empty as {[date: string]: number[] })
+  }, empty as { [date: string]: number[] })
 };
 
 export const Portfolio = ({
-  prices
-}: { prices: Prices }) => {
-  const currentDate = new Date();
+  prices,
+  unit
+}: { prices: Prices, unit: Asset }) => {
+  const currentDate = (new Date()).toISOString();
   const { vm } = useContext(AccountContext);
 
   const [description, setDescription] = useState("");
@@ -61,99 +44,70 @@ export const Portfolio = ({
   const formatChunksToGraphData = () => {
     if (!vm?.json?.chunks?.length) return;
     const chunks = vm.json.chunks;
-
     const newData = [] as SeriesData;
 
     const dates = chunks.reduce((output, chunk) => {
       return Array.from(new Set(
-        output.concat([chunk.receiveDate, chunk.disposeDate || currentDate.toISOString()])
+        output.concat([chunk.receiveDate, chunk.disposeDate || currentDate])
       )).filter(d => d).sort();
     }, [] as string[]);
 
-    console.log(dates);
     const chunkByDate = getChunksByDate(chunks, dates);
+    // Sort date chunks by assets
+    // yoffset1 = yoffset2 + (dispose/receive)value
     console.log(chunkByDate);
 
     dates.slice(0,-1).forEach((date, index) => {
 
-      chunkByDate[date].forEach((chunkIndex) => {
-        const receiveValue = parseFloat(mul(
-          chunks[chunkIndex].quantity,
-          prices.getPrice(date, chunks[chunkIndex].asset) || "0",
-        ))
-        const disposeValue = parseFloat(mul(
-          chunks[chunkIndex].quantity,
-          prices.getPrice(dates[index + 1], chunks[chunkIndex].asset) || "0"
-        ));
+      let yReceivePrevPos = 0;
+      let yReceivePrevNeg = 0;
+      let yDisposePrevPos = 0;
+      let yDisposePrevNeg = 0;
+
+      chunkByDate[date].forEach(async (chunkIndex, xIndex, chunksByDate) => {
+        const receivePrice = prices.getPrice(date, chunks[chunkIndex].asset) ||
+          (await fetchPrice(unit, chunks[chunkIndex].asset, date)) ||
+          "0";
+        
+        const disposePrice = prices.getPrice(dates[index + 1], chunks[chunkIndex].asset) ||
+          (await fetchPrice(unit, chunks[chunkIndex].asset, dates[index + 1])) ||
+          "0";
+
+        const extraPrices = {
+          [date]: { [unit]: { [chunks[chunkIndex].asset]: receivePrice } },
+          [dates[index + 1]]: { [unit]: { [chunks[chunkIndex].asset]: disposePrice } },
+        }
+
+        prices.merge(extraPrices);
+
+        const receiveValue = parseFloat(mul(chunks[chunkIndex].quantity, receivePrice))
+        const disposeValue = parseFloat(mul(chunks[chunkIndex].quantity, disposePrice));
 
         newData.push({
           series: [
             {
               x: index,
-              y: 0,
+              y: receiveValue > 0 ? yReceivePrevPos : yReceivePrevNeg,
             },
             {
               x: index + 1,
-              y: 0,
+              y: disposeValue > 0 ? yDisposePrevPos : yDisposePrevNeg,
             },
             {
               x: index + 1,
-              y: disposeValue,
+              y: disposeValue > 0 ? yDisposePrevPos + disposeValue : yDisposePrevNeg + disposeValue,
             },
             {
               x: index,
-              y: receiveValue
+              y: receiveValue > 0 ? yReceivePrevPos + receiveValue : yDisposePrevNeg + receiveValue,
             },
           ],
           chunk: chunks[chunkIndex]
         });
-    })
+        disposeValue > 0 ? yDisposePrevPos += disposeValue : yDisposePrevNeg += disposeValue
+        receiveValue > 0 ? yReceivePrevPos += receiveValue : yReceivePrevNeg += receiveValue
 
-    /*
-    chunks.forEach((chunk) => {
-      const disposeDateIndex = dates.findIndex(d => d === chunk.disposeDate);
-      const receiveHeight = parseFloat(mul(
-        chunk.quantity,
-        prices.getPrice(chunk.receiveDate, chunk.asset) || "0",
-      ));
-      const disposeHeight = parseFloat(mul(
-        chunk.quantity,
-        prices.getPrice(
-          chunk.disposeDate || currentDate.toISOString(),
-          chunk.asset
-        ) || "0"
-      ));
-
-      // if (!chunk.disposeDate) {
-      //   console.log(disposeHeight)
-      //   console.log(chunk.quantity)
-      //   console.log(prices.getPrice(currentDate.toISOString(), chunk.asset))
-      // }
-
-      const y0 = 0;
-
-      newData.push({
-        series: [
-          {
-            x: dates.findIndex(d => d === chunk.receiveDate),
-            y: y0,
-          },
-          {
-            x: disposeDateIndex >= 0 ? disposeDateIndex : dates.length,
-            y: y0,
-          },
-          {
-            x: disposeDateIndex >= 0 ? disposeDateIndex : dates.length,
-            y: y0 + disposeHeight,
-          },
-          {
-            x: dates.findIndex(d => d === chunk.receiveDate),
-            y: y0 + receiveHeight
-          },
-        ],
-        chunk: chunk
-      });
-      */
+      })
     });
     console.log("new x/y data", newData);
     setData(newData);

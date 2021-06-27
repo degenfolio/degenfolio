@@ -19,6 +19,7 @@ import { AccountContext } from "./AccountManager";
 import { NavBar } from "./NavBar";
 import { AccountFAB } from "./AccountFAB";
 import { Portfolio } from "./Portfolio";
+import { fetchPrice } from "../utils";
 
 const useStyles = makeStyles( theme => ({
   appbar: {
@@ -118,10 +119,7 @@ export const Home = () => {
         const today = (new Date()).toISOString().split('T')[0];
         const currentPrices = { [today]: { [unit]: {} } as PriceList };
         for (const asset of Object.keys(netWorth)) {
-          const currentPrice = await axios.get(`/api/prices/${unit}/${asset}/${today}`);
-          if (currentPrice.status === 200 && typeof(currentPrice.data) === "number") {
-            currentPrices[today][unit][asset] = currentPrice.data.toString();
-          }
+            currentPrices[today][unit][asset] = await fetchPrice(unit, asset, today);
         }
 
         prices.merge(currentPrices);
@@ -188,7 +186,7 @@ export const Home = () => {
       <NavBar syncing={syncing} unit={unit} setUnit={setUnit} />
       <TabContext value={tab}>
         <TabPanel value="portfolio" className={classes.panel}>
-          <Portfolio prices={prices} />
+          <Portfolio prices={prices} unit={unit} />
         </TabPanel>
         <TabPanel value="addressBook" className={classes.panel}>
           <AccountFAB />
