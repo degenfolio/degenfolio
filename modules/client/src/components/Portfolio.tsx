@@ -1,7 +1,7 @@
 import React, { useState, useContext } from "react";
 import { useEffect } from "react";
-import { XYPlot, HorizontalRectSeries, XAxis, RVTickFormat, YAxis, PolygonSeries } from "react-vis";
-import { timeFormat } from "d3-time-format";
+import { XYPlot, HorizontalRectSeries, XAxis, RVTickFormat, YAxis, PolygonSeries, HorizontalGridLines } from "react-vis";
+import { format } from "d3-format";
 
 import { AccountContext } from "./AccountManager";
 import { AssetChunk, Prices } from "@valuemachine/types";
@@ -33,9 +33,26 @@ type SeriesData = Array<{
   chunk: AssetChunk;
 }>;
 
+const getChunksByDate = (chunks: AssetChunk[], dates: string[]) => {
+  const empty = dates.reduce((output, date) => {
+    output[date] = [];
+    return output;
+  }, {} as{ [date: string]: number[] });
+
+  return chunks.reduce((output, chunk, index) => {
+    const i = dates.findIndex(d => d === chunk.receiveDate);
+    const j = chunk.disposeDate ? dates.findIndex(d => d === chunk.disposeDate) : dates.length;
+    dates.slice(i,j).forEach((date) => {
+      output[date].push(index);
+    });
+    return output;
+  }, empty as {[date: string]: number[] })
+};
+
 export const Portfolio = ({
   prices
 }: { prices: Prices }) => {
+  const currentDate = new Date();
   const { vm } = useContext(AccountContext);
 
   const [description, setDescription] = useState("");
@@ -49,14 +66,51 @@ export const Portfolio = ({
 
     const dates = chunks.reduce((output, chunk) => {
       return Array.from(new Set(
-        output.concat([chunk.receiveDate, chunk.disposeDate || ""])
-      )).filter(d => !!d).sort();
+        output.concat([chunk.receiveDate, chunk.disposeDate || currentDate.toISOString()])
+      )).filter(d => d).sort();
     }, [] as string[]);
 
     console.log(dates);
+    const chunkByDate = getChunksByDate(chunks, dates);
+    console.log(chunkByDate);
 
+    dates.slice(0,-1).forEach((date, index) => {
+
+      chunkByDate[date].forEach((chunkIndex) => {
+        const receiveValue = parseFloat(mul(
+          chunks[chunkIndex].quantity,
+          prices.getPrice(date, chunks[chunkIndex].asset) || "0",
+        ))
+        const disposeValue = parseFloat(mul(
+          chunks[chunkIndex].quantity,
+          prices.getPrice(dates[index + 1], chunks[chunkIndex].asset) || "0"
+        ));
+
+        newData.push({
+          series: [
+            {
+              x: index,
+              y: 0,
+            },
+            {
+              x: index + 1,
+              y: 0,
+            },
+            {
+              x: index + 1,
+              y: disposeValue,
+            },
+            {
+              x: index,
+              y: receiveValue
+            },
+          ],
+          chunk: chunks[chunkIndex]
+        });
+    })
+
+    /*
     chunks.forEach((chunk) => {
-      const currentDate = new Date();
       const disposeDateIndex = dates.findIndex(d => d === chunk.disposeDate);
       const receiveHeight = parseFloat(mul(
         chunk.quantity,
@@ -69,6 +123,12 @@ export const Portfolio = ({
           chunk.asset
         ) || "0"
       ));
+
+      // if (!chunk.disposeDate) {
+      //   console.log(disposeHeight)
+      //   console.log(chunk.quantity)
+      //   console.log(prices.getPrice(currentDate.toISOString(), chunk.asset))
+      // }
 
       const y0 = 0;
 
@@ -93,6 +153,7 @@ export const Portfolio = ({
         ],
         chunk: chunk
       });
+      */
     });
     console.log("new x/y data", newData);
     setData(newData);
@@ -111,28 +172,38 @@ export const Portfolio = ({
       {description}
     </Typography>
     <XYPlot
-      stackBy="y"
+      margin={{left: 100}}
       height={300} width={600}
       style={{
         margin: "4em"
       }}
     >
+      <HorizontalGridLines />
       <XAxis style={{
         line: {stroke: '#ADDDE1'},
         ticks: {stroke: '#ADDDE1'},
         text: {stroke: 'none', fill: '#6b6b76', fontWeight: 600}
       }} />
-      <YAxis style={{
-        line: {stroke: '#ADDDE1'},
-        ticks: {stroke: '#ADDDE1'},
-        text: {stroke: 'none', fill: '#6b6b76', fontWeight: 600}
-      }} />
-      {data.map((value, index) =>
-        <PolygonSeries
+      <YAxis
+        style={{
+          line: {stroke: '#ADDDE1'},
+          ticks: {stroke: '#ADDDE1'},
+          text: {stroke: 'none', fill: '#6b6b76', fontWeight: 600}
+        }}
+        tickFormat={tick => format('.2s')(tick)}
+      />
+      {data.map((value, index) => {
+
+        const asset = value.chunk.asset;
+        const color = asset === "ETH" ? "green" : asset === "WBTC" ? "yellow" : "red"
+        return <PolygonSeries
+          color={color}
           key={index}
           data={value.series}
           onSeriesMouseOver={() => console.log(value.chunk)}
         />
+      }
+
       )}
     </XYPlot>
   </>);

@@ -115,8 +115,7 @@ export const Home = () => {
         prices.merge(res.data)
         const netWorth = vm.getNetWorth()
 
-        // Sync today's price
-        const today = (new Date()).toISOString();
+        const today = (new Date()).toISOString().split('T')[0];
         const currentPrices = { [today]: { [unit]: {} } as PriceList };
         for (const asset of Object.keys(netWorth)) {
           const currentPrice = await axios.get(`/api/prices/${unit}/${asset}/${today}`);
