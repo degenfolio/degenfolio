@@ -65,6 +65,7 @@ export const Portfolio = ({
       let yDisposePrevNeg = 0;
 
       chunkByDate[date].forEach(async (chunkIndex, xIndex, chunksByDate) => {
+        const asset = chunks[chunkIndex].asset;
         const receivePrice = prices.getPrice(date, chunks[chunkIndex].asset) ||
           (await fetchPrice(unit, chunks[chunkIndex].asset, date)) ||
           "0";
@@ -99,7 +100,7 @@ export const Portfolio = ({
             },
             {
               x: index,
-              y: receiveValue > 0 ? yReceivePrevPos + receiveValue : yDisposePrevNeg + receiveValue,
+              y: receiveValue > 0 ? yReceivePrevPos + receiveValue : yReceivePrevNeg + receiveValue,
             },
           ],
           chunk: chunks[chunkIndex]
