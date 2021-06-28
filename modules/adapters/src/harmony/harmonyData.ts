@@ -4,13 +4,13 @@ import {
   Bytes32,
   ChainData,
   ChainDataParams,
-  emptyChainData,
   EthParser,
   StoreKeys,
   Transaction,
   TransactionsJson,
 } from "@valuemachine/types";
 import {
+  getEmptyChainData,
   getLogger,
 } from "@valuemachine/utils";
 import axios from "axios";
@@ -19,7 +19,7 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
   const { json: chainDataJson, logger, store } = params || {};
 
   const log = (logger || getLogger()).child?.({ module: "ChainData" });
-  const json = chainDataJson || store?.load(StoreKeys.ChainData) || emptyChainData;
+  const json = chainDataJson || store?.load(StoreKeys.ChainData) || getEmptyChainData();
   const save = () => store
     ? store.save(StoreKeys.ChainData, json)
     : log.warn(`No store provided, can't save chain data`);
