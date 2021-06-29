@@ -12,6 +12,7 @@ KEY_HEADER='-----BEGIN OPENSSH PRIVATE KEY-----'
 
 echo "ssh-action activated!"
 echo "Executing command \"$CMD\" on host $HOST"
+echo "Got an ssh key with a length of ${#SSH_KEY} bytes"
 
 mkdir -p "$SSH_DIR"
 rm -f "$KEY_FILE" "$SSH_DIR/known_hosts"
