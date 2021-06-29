@@ -142,3 +142,9 @@ proxy: $(shell find ops/proxy $(find_options))
 	docker build --file ops/proxy/Dockerfile $(image_cache) --tag $(project)_proxy ops/proxy
 	docker tag $(project)_proxy $(project)_proxy:$(commit)
 	$(log_finish) && mv -f $(totalTime) .flags/$@
+
+ssh-action: $(shell find ops/ssh-action $(find_options))
+	$(log_start)
+	docker build --file ops/ssh-action/Dockerfile --tag $(project)_ssh_action ops/ssh-action
+	docker tag $(project)_ssh_action $(project)_ssh_action:$(commit)
+	$(log_finish) && mv -f $(totalTime) .flags/$@
