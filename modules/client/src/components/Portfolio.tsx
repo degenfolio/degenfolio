@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, LegacyRef } from "react";
 import { useEffect } from "react";
 import { XYPlot, XAxis, YAxis, PolygonSeries, HorizontalGridLines, Treemap } from "react-vis";
 import { format } from "d3-format";
@@ -9,6 +9,8 @@ import { Typography } from "@material-ui/core";
 import { AccountContext } from "./AccountManager";
 import { fetchPrice } from "../utils";
 import Popover from "@material-ui/core/Popover";
+import Popper from "@material-ui/core/Popper";
+import { useRef } from "react";
 
 type SeriesData = Array<{
   series: Array<{x: number, y: number}>;
@@ -39,9 +41,10 @@ export const Portfolio = ({
   const currentDate = (new Date()).toISOString();
   const { vm } = useContext(AccountContext);
 
-  const [description, setDescription] = useState("");
   const [data, setData] = useState([] as SeriesData);
-  const [anchorEl, setAnchorEl] = useState({ top: 200, left: 400 });
+  const [eventData, setEventData] = useState({ top: 200, left: 400 });
+  // const [anchorEl, setAnchorEl] = useStaLegacyRef<PolygonSeries>ent>(null);
+  const anchorEl = useRef();
   const [open, setOpen] = React.useState(false);
 
   const formatChunksToGraphData = () => {
@@ -124,12 +127,12 @@ export const Portfolio = ({
   }, [vm]);
 
   const handlePopoverOpen = (event: any) => {
-    console.log(event)
     setOpen(true);
-    setAnchorEl({
-      top: (event[0]?.x + event[1]?.x) * 20 + 200,
-      left: (event[0]?.y + event[1]?.y) * 10 + 400,
+    setEventData({
+      top: (event.event[0].x + event.event[1]?.x) * 20 + 200,
+      left: (event.event[0].y + event.event[1].y) * 10 + 400,
     })
+    console.log(eventData);
     // setAnchorEl(event.currentTarget);
   };
 
@@ -141,10 +144,11 @@ export const Portfolio = ({
   if(!data.length) return <> Loading </>;
 
   return (<>
+  { /**
+     * 
     <Popover
     id="mouse-over-popover"
     open={open}
-    anchorPosition={{ top: 200, left: 400 }}
     anchorOrigin={{
       vertical: 'bottom',
       horizontal: 'left',
@@ -157,10 +161,13 @@ export const Portfolio = ({
     disableRestoreFocus
   >
     <Typography>
-      {description}
-      Hello world
+      {anchorEl.left}, {anchorEl.top}
     </Typography>
   </Popover>
+     */ }
+    <Popper anchorEl={anchorEl.current} id="popper" open={open} placement="bottom-start">
+        <Typography>The content of the Popper.</Typography>
+    </Popper> 
     <XYPlot
       margin={{left: 100}}
       height={300} width={600}
@@ -191,7 +198,7 @@ export const Portfolio = ({
           key={index}
           data={value.series}
           onSeriesMouseOver={(d) => handlePopoverOpen(d)}
-          onSeriesMouseOut={handlePopoverClose}
+          onSeriesMouseOut={(event) => console.log(event)}
         />
       }
 
