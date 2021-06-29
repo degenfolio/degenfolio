@@ -16,7 +16,7 @@ const logger = testLogger.child({ module: `Test${aaveSource}`,
 });
 
 describe(aaveSource, () => {
-  it("should handle deposits to v2", async () => {
+  it.skip("should handle deposits to v2", async () => {
     const tx = await parseEthTx({
       selfAddress: "0x7d12d0d36f8291e8f7adec4cf59df6cc01d0ab97",
       hash: "0x23219928262c3933be579182cf8b466585b84d5e249413d3c9613837d51393e0",
