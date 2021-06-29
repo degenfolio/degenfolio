@@ -1,14 +1,14 @@
 import React, { useState, useContext } from "react";
 import { useEffect } from "react";
-import { XYPlot, XAxis, YAxis, PolygonSeries, HorizontalGridLines } from "react-vis";
+import { XYPlot, XAxis, YAxis, PolygonSeries, HorizontalGridLines, Treemap } from "react-vis";
 import { format } from "d3-format";
-import { Asset, AssetChunk, PriceList, Prices } from "@valuemachine/types";
+import { Asset, AssetChunk, Prices } from "@valuemachine/types";
 import { mul } from "@valuemachine/utils";
 import { Typography } from "@material-ui/core";
-import axios from "axios";
 
 import { AccountContext } from "./AccountManager";
 import { fetchPrice } from "../utils";
+import Popover from "@material-ui/core/Popover";
 
 type SeriesData = Array<{
   series: Array<{x: number, y: number}>;
@@ -27,6 +27,7 @@ const getChunksByDate = (chunks: AssetChunk[], dates: string[]) => {
     dates.slice(i,j).forEach((date) => {
       output[date].push(index);
     });
+
     return output;
   }, empty as { [date: string]: number[] })
 };
@@ -40,6 +41,8 @@ export const Portfolio = ({
 
   const [description, setDescription] = useState("");
   const [data, setData] = useState([] as SeriesData);
+  const [anchorEl, setAnchorEl] = useState({ top: 200, left: 400 });
+  const [open, setOpen] = React.useState(false);
 
   const formatChunksToGraphData = () => {
     if (!vm?.json?.chunks?.length) return;
@@ -53,7 +56,7 @@ export const Portfolio = ({
     }, [] as string[]);
 
     const chunkByDate = getChunksByDate(chunks, dates);
-    // Sort date chunks by assets
+    // Sort each date chunks by assets
     // yoffset1 = yoffset2 + (dispose/receive)value
     console.log(chunkByDate);
 
@@ -120,12 +123,44 @@ export const Portfolio = ({
 
   }, [vm]);
 
+  const handlePopoverOpen = (event: any) => {
+    console.log(event)
+    setOpen(true);
+    setAnchorEl({
+      top: (event[0]?.x + event[1]?.x) * 20 + 200,
+      left: (event[0]?.y + event[1]?.y) * 10 + 400,
+    })
+    // setAnchorEl(event.currentTarget);
+  };
+
+  const handlePopoverClose = () => {
+    setOpen(false);
+    // setAnchorEl(null);
+  };
+
   if(!data.length) return <> Loading </>;
 
   return (<>
+    <Popover
+    id="mouse-over-popover"
+    open={open}
+    anchorPosition={{ top: 200, left: 400 }}
+    anchorOrigin={{
+      vertical: 'bottom',
+      horizontal: 'left',
+    }}
+    transformOrigin={{
+      vertical: 'top',
+      horizontal: 'left',
+    }}
+    onClose={handlePopoverClose}
+    disableRestoreFocus
+  >
     <Typography>
       {description}
+      Hello world
     </Typography>
+  </Popover>
     <XYPlot
       margin={{left: 100}}
       height={300} width={600}
@@ -155,11 +190,13 @@ export const Portfolio = ({
           color={color}
           key={index}
           data={value.series}
-          onSeriesMouseOver={() => console.log(value.chunk)}
+          onSeriesMouseOver={(d) => handlePopoverOpen(d)}
+          onSeriesMouseOut={handlePopoverClose}
         />
       }
 
       )}
     </XYPlot>
-  </>);
+    </>
+  );
 };
