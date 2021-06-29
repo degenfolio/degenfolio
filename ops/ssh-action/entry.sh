@@ -54,8 +54,8 @@ echo "Running subbed command: $subbed_cmd"
 exec ssh -i "$KEY_FILE" -o StrictHostKeyChecking=no "$HOST" "bash -s" <<EOF
   set -e;
   # Run CMD in an up-to-date repo
-  git clone https://github.com/connext/vector.git || true;
-  cd vector;
+  git clone https://github.com/degenfolio/degenfolio.git || true;
+  cd degenfolio;
   git fetch --all --prune --tags;
   $subbed_cmd
   exit;

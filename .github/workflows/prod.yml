@@ -20,8 +20,7 @@ jobs:
 
   ssh:
     env:
-      MESSAGING_DOMAINNAME: oldmessaging.connext.network
-      TESTNET_DOMAINNAME: testnet-vector.connext.network
+      DOMAINNAME: degenfolio.degen.tax
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v1
@@ -41,9 +40,19 @@ jobs:
       - run: make test-adapters
 
   deploy:
-    runs-on: ubuntu-20.04
+    env:
+      DOMAINNAME: degenfolio.degen.tax
     needs: [build, ssh, test]
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v1
-      - run: make pull-latest
-      - run: make test-adapters
+      - name: deploy to prod
+        uses: ./ops/ssh-action/
+        with:
+          HOST: ubuntu@${{ env.DOMAINNAME }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          CMD: '
+            git checkout --force prod;
+            git reset --hard $GITHUB_SHA;
+            make restart-prod;
+          '

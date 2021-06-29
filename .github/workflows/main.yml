@@ -25,3 +25,16 @@ jobs:
       - uses: actions/checkout@v1
       - run: make pull-latest
       - run: make test-adapters
+
+  ssh:
+    env:
+      DOMAINNAME: degenfolio.degen.tax
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v1
+      - name: test connection to server
+        uses: ./ops/ssh-action/
+        with:
+          HOST: ubuntu@${{ env.DOMAINNAME }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          CMD: 'echo "Successfully connected to $DOMAINNAME: `hostname`";'
