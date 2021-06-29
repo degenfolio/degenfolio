@@ -7,8 +7,8 @@ CMD="$3"
 
 SSH_DIR="$HOME/.ssh"
 KEY_FILE="$SSH_DIR/id_rsa"
-KEY_FOOTER='-----END RSA PRIVATE KEY-----'
-KEY_HEADER='-----BEGIN RSA PRIVATE KEY-----'
+KEY_FOOTER='-----END OPENSSH PRIVATE KEY-----'
+KEY_HEADER='-----BEGIN OPENSSH PRIVATE KEY-----'
 
 echo "ssh-action activated!"
 echo "Executing command \"$CMD\" on host $HOST"
