@@ -11,6 +11,7 @@ import { fetchPrice } from "../utils";
 import Popover from "@material-ui/core/Popover";
 import Popper from "@material-ui/core/Popper";
 import { useRef } from "react";
+import Paper from "@material-ui/core/Paper";
 
 type SeriesData = Array<{
   series: Array<{x: number, y: number}>;
@@ -28,6 +29,7 @@ const getChunksByDate = (chunks: AssetChunk[], dates: string[]) => {
     const j = chunk.disposeDate ? dates.findIndex(d => d === chunk.disposeDate) : dates.length;
     dates.slice(i,j).forEach((date) => {
       output[date].push(index);
+      output[date].sort((a,b) => chunks[a].asset < chunks[b].asset ? 1 : 0)
     });
 
     return output;
@@ -42,10 +44,7 @@ export const Portfolio = ({
   const { vm } = useContext(AccountContext);
 
   const [data, setData] = useState([] as SeriesData);
-  const [eventData, setEventData] = useState({ top: 200, left: 400 });
-  // const [anchorEl, setAnchorEl] = useStaLegacyRef<PolygonSeries>ent>(null);
-  const anchorEl = useRef();
-  const [open, setOpen] = React.useState(false);
+  const [currentChunk, setCurrentChunk] = useState({} as AssetChunk);
 
   const formatChunksToGraphData = () => {
     if (!vm?.json?.chunks?.length) return;
@@ -122,88 +121,61 @@ export const Portfolio = ({
 
   useEffect(() => {
     console.log("Generating graph data");
+    if (!vm.json.chunks.length) return;
     formatChunksToGraphData();
+  }, [vm.json.chunks]);
 
-  }, [vm]);
-
-  const handlePopoverOpen = (event: any) => {
-    setOpen(true);
-    setEventData({
-      top: (event.event[0].x + event.event[1]?.x) * 20 + 200,
-      left: (event.event[0].y + event.event[1].y) * 10 + 400,
-    })
-    console.log(eventData);
-    // setAnchorEl(event.currentTarget);
-  };
-
-  const handlePopoverClose = () => {
-    setOpen(false);
-    // setAnchorEl(null);
+  const handlePopoverOpen = (event: any, chunk: AssetChunk) => {
+    console.log(chunk);
+    setCurrentChunk(chunk);
   };
 
   if(!data.length) return <> Loading </>;
 
-  return (<>
-  { /**
-     * 
-    <Popover
-    id="mouse-over-popover"
-    open={open}
-    anchorOrigin={{
-      vertical: 'bottom',
-      horizontal: 'left',
-    }}
-    transformOrigin={{
-      vertical: 'top',
-      horizontal: 'left',
-    }}
-    onClose={handlePopoverClose}
-    disableRestoreFocus
-  >
-    <Typography>
-      {anchorEl.left}, {anchorEl.top}
-    </Typography>
-  </Popover>
-     */ }
-    <Popper anchorEl={anchorEl.current} id="popper" open={open} placement="bottom-start">
-        <Typography>The content of the Popper.</Typography>
-    </Popper> 
-    <XYPlot
-      margin={{left: 100}}
-      height={300} width={600}
-      style={{
-        margin: "4em"
-      }}
-    >
-      <HorizontalGridLines />
-      <XAxis style={{
-        line: {stroke: '#ADDDE1'},
-        ticks: {stroke: '#ADDDE1'},
-        text: {stroke: 'none', fill: '#6b6b76', fontWeight: 600}
-      }} />
-      <YAxis
-        style={{
-          line: {stroke: '#ADDDE1'},
-          ticks: {stroke: '#ADDDE1'},
-          text: {stroke: 'none', fill: '#6b6b76', fontWeight: 600}
-        }}
-        tickFormat={tick => format('.2s')(tick)}
-      />
-      {data.map((value, index) => {
-
-        const asset = value.chunk.asset;
-        const color = asset === "ETH" ? "green" : asset === "WBTC" ? "yellow" : "red"
-        return <PolygonSeries
-          color={color}
-          key={index}
-          data={value.series}
-          onSeriesMouseOver={(d) => handlePopoverOpen(d)}
-          onSeriesMouseOut={(event) => console.log(event)}
-        />
-      }
-
-      )}
-    </XYPlot>
-    </>
+  return (
+    <Paper id="chunk-detail">
+      <Typography>
+        {`${currentChunk.quantity} ${currentChunk.asset}`}
+      </Typography>
+      <Typography> Received on: {currentChunk.receiveDate} </Typography>
+      <Typography>
+        {currentChunk.disposeDate
+          ? `Disposed on: ${currentChunk.disposeDate}`
+          : "Currently Held"
+        }
+      </Typography>
+      <div>
+        <XYPlot
+          margin={{left: 100}}
+          height={300} width={600}
+        >
+          <HorizontalGridLines />
+          <XAxis style={{
+            line: {stroke: '#ADDDE1'},
+            ticks: {stroke: '#ADDDE1'},
+            text: {stroke: 'none', fill: '#6b6b76', fontWeight: 600}
+          }} />
+          <YAxis
+            style={{
+              line: {stroke: '#ADDDE1'},
+              ticks: {stroke: '#ADDDE1'},
+              text: {stroke: 'none', fill: '#6b6b76', fontWeight: 600}
+            }}
+            tickFormat={tick => format('.2s')(tick)}
+          />
+          {data.map((value, index) => {
+            const asset = value.chunk.asset;
+            const color = asset === "ETH" ? "green" : asset === "WBTC" ? "yellow" : "red"
+            return <PolygonSeries
+              color={color}
+              key={index}
+              data={value.series}
+              onSeriesMouseOver={(d) => handlePopoverOpen(d, value.chunk)}
+              onSeriesMouseOut={(event) => console.log(event)}
+            />
+          })}
+        </XYPlot>
+      </div>
+    </Paper> 
   );
 };
