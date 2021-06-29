@@ -1,16 +1,21 @@
+import { AddressZero } from "@ethersproject/constants";
 import {
+  Address,
   AddressBook,
   AddressCategories,
   EthTransaction,
   Logger,
   Transaction,
   TransactionSource,
+  TransferCategories,
 } from "@valuemachine/types";
 import {
   rmDups,
   setAddressCategory,
 } from "@valuemachine/utils";
+import { publicAddresses } from "valuemachine";
 
+const { SwapIn, SwapOut } = TransferCategories;
 export const idleSource = "Idle";
 
 const govAddresses = [
@@ -18,7 +23,7 @@ const govAddresses = [
 ].map(setAddressCategory(AddressCategories.ERC20));
 
 const marketAddresses = [
-  { name: "idleDAI", address: "0x05ec93c0365baaeabf7aeffb0972ea7ecdd39cf1" },
+  { name: "idleDAIYield", address: "0x3fe7940616e5bc47b0775a0dccf6237893353bb4" },
 ].map(setAddressCategory(AddressCategories.ERC20));
 
 export const idleAddresses = [
@@ -32,15 +37,60 @@ export const idleAddresses = [
 export const idleParser = (
   tx: Transaction,
   ethTx: EthTransaction,
-  _addressBook: AddressBook,
+  addressBook: AddressBook,
   logger: Logger,
 ): Transaction => {
   const log = logger.child({ module: idleSource });
+  const { isSelf } = addressBook;
 
-  log.info(`Parser activated`);
+  const idleTokenToUnderlyingAddress = (idleAddress: Address): Address => {
+    const idleName = idleAddresses.find(entry => entry.address === idleAddress)?.name || "";
+    if (!idleName) return AddressZero;
+    const underlyingName = idleName.replace(/^idle/, "").replace(/(Yield|Safe)$/, "");
+    const underlyingAddress = publicAddresses.find(entry => entry.name === underlyingName)?.address;
+    log.info(`Mapped ${idleName} to underlying ${underlyingName} w address ${underlyingAddress}`);
+    return underlyingAddress;
+  };
 
-  if (idleAddresses.some(entry => ethTx.from === entry.address)) {
-    tx.sources = rmDups([idleSource, ...tx.sources]) as TransactionSource[];
+  for (const ethTxLog of ethTx.logs) {
+    const address = ethTxLog.address;
+    const asset = addressBook.getName(address);
+    if (marketAddresses.some(e => e.address === address)) {
+      tx.sources = rmDups([idleSource, ...tx.sources]) as TransactionSource[];
+      log.info(`Found interaction with Idle ${addressBook.getName(address)}`);
+
+      const underlyingAddress = idleTokenToUnderlyingAddress(address);
+      const underlyingAsset = addressBook.getName(underlyingAddress);
+
+      log.info(`Looking for associated ${underlyingAsset} transfer`);
+      const tokenTransfer = tx.transfers.find(transfer => transfer.asset === underlyingAsset);
+      if (isSelf(tokenTransfer?.to)) {
+        const iTokenTransfer = tx.transfers.find(transfer =>
+          transfer.asset === asset && isSelf(transfer.from)
+        );
+        if (iTokenTransfer) {
+          tokenTransfer.category = SwapIn;
+          iTokenTransfer.category = SwapOut;
+          tx.method = "Withdrawal";
+        } else {
+          log.warn(`Couldn't find an outgoing ${asset} transfer`);
+        }
+      } else if (isSelf(tokenTransfer?.from)) {
+        const iTokenTransfer = tx.transfers.find(transfer =>
+          transfer.asset === asset && isSelf(transfer.to)
+        );
+        if (iTokenTransfer) {
+          tokenTransfer.category = SwapOut;
+          iTokenTransfer.category = SwapIn;
+          tx.method = "Deposit";
+        } else {
+          log.warn(`Couldn't find an outgoing ${asset} transfer`);
+        }
+
+      } else {
+        log.warn(`Couldn't find a valid ${underlyingAsset} transfer`);
+      }
+    }
   }
 
   return tx;

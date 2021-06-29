@@ -1,4 +1,8 @@
 import {
+  TransferCategories,
+} from "@valuemachine/types";
+
+import {
   parseEthTx,
   expect,
   testLogger,
@@ -18,5 +22,22 @@ describe(idleSource, () => {
       logger,
     });
     expect(tx.sources).to.include(idleSource);
+    expect(tx.method).to.match(/deposit/i);
+    expect(tx.transfers[0].category).to.equal(TransferCategories.Expense);
+    expect(tx.transfers[1].category).to.equal(TransferCategories.SwapOut);
+    expect(tx.transfers[2].category).to.equal(TransferCategories.SwapIn);
+  });
+
+  it("should handle withdrawals from idle DAI", async () => {
+    const tx = await parseEthTx({
+      selfAddress: "0xbe8fe12b9eb1ca2a593e6c070c71c294b6fe9f00",
+      hash: "0x240991b841d2378c588d3bced7d477ac0405d1ba7cafac2e10f5a9451334cdd6",
+      logger,
+    });
+    expect(tx.sources).to.include(idleSource);
+    expect(tx.method).to.match(/withdrawal/i);
+    expect(tx.transfers[0].category).to.equal(TransferCategories.Expense);
+    expect(tx.transfers[1].category).to.equal(TransferCategories.SwapOut);
+    expect(tx.transfers[2].category).to.equal(TransferCategories.SwapIn);
   });
 });
