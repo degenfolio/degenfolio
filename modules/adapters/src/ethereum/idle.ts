@@ -24,6 +24,7 @@ const govAddresses = [
 
 const marketAddresses = [
   { name: "idleDAIYield", address: "0x3fe7940616e5bc47b0775a0dccf6237893353bb4" },
+  { name: "idleDAISafe", address: "0xa14ea0e11121e6e951e87c66afe460a00bcd6a16" },
 ].map(setAddressCategory(AddressCategories.ERC20));
 
 export const idleAddresses = [
