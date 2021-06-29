@@ -12,7 +12,7 @@ log.info(`Starting server in env: ${JSON.stringify(env, null, 2)}`);
 
 const app = express();
 
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 
 app.use("/prices", pricesRouter);
 app.use("/transactions", transactionsRouter);
