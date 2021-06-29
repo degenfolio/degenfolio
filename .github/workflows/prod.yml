@@ -1,0 +1,58 @@
+name: prod
+
+on:
+  push:
+    branches:
+      - prod
+
+jobs:
+  build:
+    env:
+      DOCKER_USER: ${{ secrets.DOCKER_USER }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v1
+      - run: make pull-latest
+      - run: make all
+      - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+      - run: make push-commit
+
+  ssh:
+    env:
+      DOMAINNAME: degenfolio.degen.tax
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v1
+      - name: test connection to server
+        uses: ./ops/ssh-action/
+        with:
+          HOST: ubuntu@${{ env.DOMAINNAME }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          CMD: 'echo "Successfully connected to $DOMAINNAME: `hostname`";'
+
+  test:
+    runs-on: ubuntu-20.04
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v1
+      - run: make pull-latest
+      - run: make test-adapters
+
+  deploy:
+    env:
+      DOMAINNAME: degenfolio.degen.tax
+    needs: [build, ssh, test]
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v1
+      - name: deploy to prod
+        uses: ./ops/ssh-action/
+        with:
+          HOST: ubuntu@${{ env.DOMAINNAME }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          CMD: '
+            git checkout --force prod;
+            git reset --hard $GITHUB_SHA;
+            make restart-prod;
+          '
