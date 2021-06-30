@@ -39,9 +39,10 @@ export const AccountManager = ({
       <Button className={classes.closeDialog} onClick={() => setOpenDialog(false)} color="primary">
         <CancelIcon />
       </Button>
-      {addNewAddress
-        ? <AddNewAddress setOpenDialog={setOpenDialog} />
-        : <div> Import New Address Book</div>
+      {
+        addNewAddress
+          ? <AddNewAddress setOpenDialog={setOpenDialog} />
+          : <div> Import New Address Book</div>
       }
     </Dialog>
   );

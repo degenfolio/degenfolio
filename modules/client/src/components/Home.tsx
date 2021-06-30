@@ -87,7 +87,7 @@ export const Home = () => {
   const syncAddressBook = async () => {
     if (addressBookJson?.length) {
       setSyncing({ state: true, msg: `Syncing ${addressBookJson.length} addresses` });
-      // eslint-disable-next-line
+      // eslint-disable-next-line no-constant-condition
       while (true) {
         try {
           console.log(`Attempting to fetch for addressBook`, addressBookJson);
@@ -127,14 +127,14 @@ export const Home = () => {
       prices.merge(currentPrices);
 
       // Fetch and merge prices for assets on each event date
-      vm.json.events.forEach(async (txEvent) => {
+      for (const txEvent of vm.json.events) {
         prices.merge((await fetchPriceForAssetsOnDate(
           unit,
           Object.keys(txEvent.newBalances),
           txEvent.date,
           prices
         )));
-      });
+      }
 
       // Set prices state to trigger re-render
       setPrices(getPrices({
@@ -167,7 +167,7 @@ export const Home = () => {
 
   useEffect(() => {
     syncPrices();
-    // eslint-disable-next-line
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unit, vm.json]);
 
   useEffect(() => {
@@ -181,7 +181,7 @@ export const Home = () => {
     store.save(AddressBookStore, newAddressBook.json);
     setAddressBook(newAddressBook);
     syncAddressBook();
-    // eslint-disable-next-line
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addressBookJson]);
 
   useEffect(() => {
@@ -193,7 +193,7 @@ export const Home = () => {
     setSyncing({ state: false, msg: "" });
     store.save(TransactionsStore, transactions.json);
     processTransactions();
-    // eslint-disable-next-line
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transactions]);
 
   return (

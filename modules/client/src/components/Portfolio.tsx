@@ -1,18 +1,18 @@
 import React, { useEffect, useState, useContext } from "react";
 import { XYPlot, XAxis, YAxis, PolygonSeries, HorizontalGridLines } from "react-vis";
 import { format } from "d3-format";
-import { AssetChunk, AssetChunks, Prices } from "@valuemachine/types";
+import { AssetChunk, Prices } from "@valuemachine/types";
 import { mul } from "@valuemachine/utils";
 import { Typography } from "@material-ui/core";
 import Paper from "@material-ui/core/Paper";
+import IconButton from "@material-ui/core/IconButton";
 import Grid from "@material-ui/core/Grid";
 // import makeStyles from "@material-ui/core/styles/makeStyles";
 // Icons
-import NextIcon from '@material-ui/icons/SkipNext';
-import PreviousIcon from '@material-ui/icons/SkipPrevious';
+import NextIcon from "@material-ui/icons/SkipNext";
+import PreviousIcon from "@material-ui/icons/SkipPrevious";
 
 import { AccountContext } from "./AccountManager";
-import IconButton from "@material-ui/core/IconButton";
 
 // const useStyles = makeStyles( theme => ({
 //   graph: {
@@ -54,7 +54,7 @@ const getChunksByDate = (chunks: AssetChunk[], dates: string[]) => {
 export const Portfolio = ({
   prices,
 }: { prices: Prices }) => {
-  const currentDate = (new Date()).toISOString();
+  // const currentDate = (new Date()).toISOString();
   const { vm } = useContext(AccountContext);
   // const classes = useStyles();
 
@@ -129,14 +129,14 @@ export const Portfolio = ({
     if (!vm.json.chunks.length) return;
     const dates = Array.from(new Set(vm.json.events.map(e => e.date))).sort();
     console.log(
-        paginateRange[0],
-        paginateRange[0] >= 0 ? paginateRange[1] : undefined
-      );
+      paginateRange[0],
+      paginateRange[0] >= 0 ? paginateRange[1] : undefined
+    );
 
     formatChunksToGraphData(dates.slice(
-        paginateRange[0],
-        paginateRange[0] >= 0 ? paginateRange[1] : undefined
-      ));
+      paginateRange[0],
+      paginateRange[0] >= 0 ? paginateRange[1] : undefined
+    ));
     // eslint-disable-next-line
   }, [vm.json.chunks, prices, paginateRange]);
 
@@ -167,7 +167,7 @@ export const Portfolio = ({
         <IconButton
           onClick={() => setPaginateRange([paginateRange[0]-30, paginateRange[0]])}
         >
-            <PreviousIcon />
+          <PreviousIcon />
         </IconButton>
       </Grid>
       <Grid item>
@@ -202,7 +202,9 @@ export const Portfolio = ({
         </XYPlot>
       </Grid>
       <Grid item>
-        <IconButton onClick={() => setPaginateRange([paginateRange[1], paginateRange[1]+30])}> <NextIcon /> </IconButton>
+        <IconButton onClick={
+          () => setPaginateRange([paginateRange[1], paginateRange[1]+30])
+        }> <NextIcon /> </IconButton>
       </Grid>
     </Grid>
   );
