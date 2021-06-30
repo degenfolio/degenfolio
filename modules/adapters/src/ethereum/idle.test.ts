@@ -11,7 +11,7 @@ import {
 import { idleSource } from "./idle";
 
 const logger = testLogger.child({ module: `Test${idleSource}`,
-  // level: "debug", // Uncomment to enable verbose logging
+  level: "debug", // Uncomment to enable verbose logging
 });
 
 describe(idleSource, () => {
@@ -43,7 +43,7 @@ describe(idleSource, () => {
     expect(tx.transfers[4].category).to.equal(TransferCategories.SwapIn);
   });
 
-  it.skip("should handle staking IDLE", async () => {
+  it.only("should handle staking IDLE", async () => {
     const tx = await parseEthTx({
       selfAddress: "0xabca81eef45234f11cb9b9f6f3626b24bb8ace3e",
       hash: "0x5ac6f4515725f036121fa897d370f782bee17806db305559e681044871e560b0",

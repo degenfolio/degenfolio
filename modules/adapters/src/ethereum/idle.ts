@@ -18,8 +18,11 @@ import { publicAddresses } from "valuemachine";
 const { SwapIn, SwapOut } = TransferCategories;
 export const idleSource = "Idle";
 
+const stkIDLE = "stkIDLE";
+
 const govAddresses = [
   { name: "IDLE", address: "0x875773784Af8135eA0ef43b5a374AaD105c5D39e" },
+  { name: stkIDLE, address: "0xaAC13a116eA7016689993193FcE4BadC8038136f" },
 ].map(setAddressCategory(AddressCategories.ERC20));
 
 const marketAddresses = [
@@ -56,7 +59,16 @@ export const idleParser = (
   for (const ethTxLog of ethTx.logs) {
     const address = ethTxLog.address;
     const asset = addressBook.getName(address);
-    if (marketAddresses.some(e => e.address === address)) {
+
+    if (govAddresses.some(e => e.address === address)) {
+      tx.sources = rmDups([idleSource, ...tx.sources]) as TransactionSource[];
+      const name = addressBook.getName(address);
+      log.info(`Found interaction with Idle ${name}`);
+      if (name === stkIDLE) {
+        // parse event
+      }
+
+    } else if (marketAddresses.some(e => e.address === address)) {
       tx.sources = rmDups([idleSource, ...tx.sources]) as TransactionSource[];
       log.info(`Found interaction with Idle ${addressBook.getName(address)}`);
 
