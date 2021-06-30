@@ -19,7 +19,7 @@ export const chainData = getChainData({ etherscanKey: env.etherscanKey, logger: 
 export const getLogAndSend = (res) => (message, code = STATUS_SUCCESS): void => {
   if (code === STATUS_SUCCESS) {
     log.child({ module: "Send" }).info(`Success: ${
-      typeof message === "string" ? message : JSON.stringify(message, null, 2)
+      typeof message === "string" ? message : JSON.stringify(message).substring(0, 120) + "..."
     }`);
   } else {
     log.child({ module: "Send" }).warn(`Error ${code}: ${message}`);

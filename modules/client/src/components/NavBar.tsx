@@ -1,19 +1,17 @@
-import React, { useState, useContext } from "react";
+import React, { useContext } from "react";
 import AppBar from "@material-ui/core/AppBar";
 import Toolbar from "@material-ui/core/Toolbar";
 import { makeStyles } from "@material-ui/core/styles";
+import MenuItem from "@material-ui/core/MenuItem";
 import IconButton from "@material-ui/core/IconButton";
-
+import FormControl from "@material-ui/core/FormControl";
+import Typography from "@material-ui/core/Typography";
+import Select from "@material-ui/core/Select";
 // Icons
-import SyncIcon from '@material-ui/icons/Sync';
+import SyncIcon from "@material-ui/icons/Sync";
+import { Asset, Assets, FiatCurrencies } from "@valuemachine/types";
 
 import { AccountContext } from "./AccountManager";
-import { Typography } from "@material-ui/core";
-import FormControl from "@material-ui/core/FormControl";
-import InputLabel from "@material-ui/core/InputLabel";
-import Select from "@material-ui/core/Select";
-import { Asset, Assets, FiatCurrencies } from "@valuemachine/types";
-import MenuItem from "@material-ui/core/MenuItem";
 
 const useStyles = makeStyles( theme => ({
   navbar: {
@@ -37,9 +35,9 @@ export const NavBar = ({
   syncing,
   unit,
   setUnit,
-}: { syncing: boolean, unit: Asset, setUnit: (val: Asset) => void }) => {
+}: { syncing: { state: boolean, msg: string }, unit: Asset, setUnit: (val: Asset) => void }) => {
 
-  const { addressBook, syncAddressBook } = useContext(AccountContext);
+  const { syncAddressBook } = useContext(AccountContext);
   const classes = useStyles();
 
   const handleUnitChange = (event: React.ChangeEvent<{ value: unknown }>) => {
@@ -50,25 +48,25 @@ export const NavBar = ({
     <AppBar color="inherit" position="fixed" className={classes.navbar}>
       <Toolbar variant="dense">
         <Typography className={classes.selector}>
-          Unit of Account 👉🏻
+          Unit of Account
         </Typography>
-      <FormControl focused={false}>
-        <Select
-          labelId="select-unit-label"
-          id="select-unit"
-          value={unit || Assets.ETH}
-          onChange={handleUnitChange}
-        >
-          {([Assets.ETH, Assets.BTC] as Asset[])
-            .concat(Object.keys({ ...FiatCurrencies }) as Asset[])
-            .map(asset => <MenuItem key={asset} value={asset}>{asset}</MenuItem>)
-          }
-        </Select>
-      </FormControl>
+        <FormControl focused={false}>
+          <Select
+            labelId="select-unit-label"
+            id="select-unit"
+            value={unit || Assets.ETH}
+            onChange={handleUnitChange}
+          >
+            {([Assets.ETH, Assets.BTC] as Asset[])
+              .concat(Object.keys({ ...FiatCurrencies }) as Asset[])
+              .map(asset => <MenuItem key={asset} value={asset}>{asset}</MenuItem>)
+            }
+          </Select>
+        </FormControl>
 
         <Typography className={classes.sync}>
-          {syncing
-            ? `Syncing ${addressBook?.json?.length} addresses`
+          {syncing.state
+            ? syncing.msg 
             : `Synced`
           }
         </Typography>
@@ -76,7 +74,7 @@ export const NavBar = ({
           edge="start"
           color="inherit"
           aria-label="sync"
-          disabled={syncing}
+          disabled={syncing.state}
           onClick={syncAddressBook}
         >
           <SyncIcon />
