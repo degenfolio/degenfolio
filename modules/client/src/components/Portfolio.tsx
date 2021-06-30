@@ -7,8 +7,12 @@ import { Typography } from "@material-ui/core";
 import Paper from "@material-ui/core/Paper";
 import Grid from "@material-ui/core/Grid";
 // import makeStyles from "@material-ui/core/styles/makeStyles";
+// Icons
+import NextIcon from '@material-ui/icons/SkipNext';
+import PreviousIcon from '@material-ui/icons/SkipPrevious';
 
 import { AccountContext } from "./AccountManager";
+import IconButton from "@material-ui/core/IconButton";
 
 // const useStyles = makeStyles( theme => ({
 //   graph: {
@@ -55,7 +59,7 @@ export const Portfolio = ({
   // const classes = useStyles();
 
   const [data, setData] = useState([] as SeriesData);
-  const [paginateRange, setPaginateRange] = useState([] as string[]);
+  const [paginateRange, setPaginateRange] = useState([0,30]);
   const [currentChunk, setCurrentChunk] = useState({} as AssetChunk);
 
   const formatChunksToGraphData = (dates: string[]) => {
@@ -124,11 +128,17 @@ export const Portfolio = ({
     console.log("Generating graph data");
     if (!vm.json.chunks.length) return;
     const dates = Array.from(new Set(vm.json.events.map(e => e.date))).sort();
-    setPaginateRange(dates.slice(0, 100));
+    console.log(
+        paginateRange[0],
+        paginateRange[0] >= 0 ? paginateRange[1] : undefined
+      );
 
-    formatChunksToGraphData(dates.slice(0,36));
+    formatChunksToGraphData(dates.slice(
+        paginateRange[0],
+        paginateRange[0] >= 0 ? paginateRange[1] : undefined
+      ));
     // eslint-disable-next-line
-  }, [vm.json.chunks, prices]);
+  }, [vm.json.chunks, prices, paginateRange]);
 
   const handlePopoverOpen = (event: any, chunk: AssetChunk) => {
     console.log(chunk);
@@ -152,6 +162,13 @@ export const Portfolio = ({
             }
           </Typography>
         </Paper> 
+      </Grid>
+      <Grid item>
+        <IconButton
+          onClick={() => setPaginateRange([paginateRange[0]-30, paginateRange[0]])}
+        >
+            <PreviousIcon />
+        </IconButton>
       </Grid>
       <Grid item>
         <XYPlot
@@ -183,6 +200,9 @@ export const Portfolio = ({
             />;
           })}
         </XYPlot>
+      </Grid>
+      <Grid item>
+        <IconButton onClick={() => setPaginateRange([paginateRange[1], paginateRange[1]+30])}> <NextIcon /> </IconButton>
       </Grid>
     </Grid>
   );
