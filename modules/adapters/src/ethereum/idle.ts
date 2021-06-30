@@ -1,4 +1,6 @@
 import { AddressZero } from "@ethersproject/constants";
+import { formatUnits } from "@ethersproject/units";
+import { Interface } from "@ethersproject/abi";
 import {
   Address,
   AddressBook,
@@ -12,16 +14,22 @@ import {
 import {
   rmDups,
   setAddressCategory,
+  parseEvent,
 } from "@valuemachine/utils";
 import { publicAddresses } from "valuemachine";
 
-const { SwapIn, SwapOut } = TransferCategories;
+const { Deposit, Withdraw, SwapIn, SwapOut } = TransferCategories;
+
 export const idleSource = "Idle";
 
+////////////////////////////////////////
+/// Addresses
+
+const IDLE = "IDLE";
 const stkIDLE = "stkIDLE";
 
 const govAddresses = [
-  { name: "IDLE", address: "0x875773784Af8135eA0ef43b5a374AaD105c5D39e" },
+  { name: IDLE, address: "0x875773784Af8135eA0ef43b5a374AaD105c5D39e" },
   { name: stkIDLE, address: "0xaAC13a116eA7016689993193FcE4BadC8038136f" },
 ].map(setAddressCategory(AddressCategories.ERC20));
 
@@ -34,6 +42,17 @@ export const idleAddresses = [
   ...govAddresses,
   ...marketAddresses,
 ];
+
+////////////////////////////////////////
+/// Interfaces
+
+const stkIDLEInterface = new Interface([
+  "event ApplyOwnership(address admin)",
+  "event CommitOwnership(address admin)",
+  "event Deposit(address indexed provider, uint256 value, uint256 indexed locktime, int128 type, uint256 ts)",
+  "event Supply(uint256 prevSupply, uint256 supply)",
+  "event Withdraw(address indexed provider, uint256 value, uint256 ts)",
+]);
 
 ////////////////////////////////////////
 /// Parser
@@ -60,14 +79,55 @@ export const idleParser = (
     const address = ethTxLog.address;
     const asset = addressBook.getName(address);
 
+    ////////////////////
+    // Stake/Unstake
     if (govAddresses.some(e => e.address === address)) {
       tx.sources = rmDups([idleSource, ...tx.sources]) as TransactionSource[];
       const name = addressBook.getName(address);
-      log.info(`Found interaction with Idle ${name}`);
       if (name === stkIDLE) {
-        // parse event
+        const event = parseEvent(stkIDLEInterface, ethTxLog);
+        log.info(event);
+        const account = `${stkIDLE}-${event.args.provider}`;
+
+        if (event.name === "Deposit") {
+          const value = formatUnits(
+            event.args.value,
+            addressBook.getDecimals(govAddresses.find(e => e.name === IDLE).address),
+          );
+          log.info(`Found ${event.name} ${name} event for ${value} ${IDLE}`);
+          const deposit = tx.transfers.find(transfer =>
+            transfer.asset === IDLE && transfer.quantity === value && isSelf(transfer.from)
+          );
+          if (deposit) {
+            deposit.category = Deposit;
+            deposit.to = account;
+            tx.method = "Stake";
+          } else {
+            log.warn(`Couldn't find an outgoing transfer of ${value} ${IDLE}`);
+          }
+
+        } else if (event.name === "Withdraw") {
+          const value = formatUnits(
+            event.args.value,
+            addressBook.getDecimals(govAddresses.find(e => e.name === IDLE).address),
+          );
+          log.info(`Found ${event.name} ${name} event for ${value} ${IDLE}`);
+          const withdraw = tx.transfers.find(transfer =>
+            transfer.asset === IDLE && transfer.quantity === value && isSelf(transfer.to)
+          );
+          if (withdraw) {
+            withdraw.category = Withdraw;
+            withdraw.from = account;
+            tx.method = "Unstake";
+          } else {
+            log.warn(`Couldn't find an outgoing transfer of ${value} ${IDLE}`);
+          }
+
+        }
       }
 
+    ////////////////////
+    // Deposit/Withdraw
     } else if (marketAddresses.some(e => e.address === address)) {
       tx.sources = rmDups([idleSource, ...tx.sources]) as TransactionSource[];
       log.info(`Found interaction with Idle ${addressBook.getName(address)}`);
