@@ -44,3 +44,21 @@ pricesRouter.post("/chunks/:unit", async (req, res) => {
     logAndSend(e.message, STATUS_YOUR_BAD);
   }
 });
+
+pricesRouter.post("/:unit/:date", async (req, res) => {
+  const logAndSend = getLogAndSend(res);
+  const { unit, date } = req.params;
+  const { assets } = req.body;
+  log.info(`Got request for ${unit} prices on ${date} for assets: [${assets.join(", ")}]`);
+  const prices = getPrices({ store, logger: log, unit: unit });
+  const output = {};
+  try {
+    for (const asset of assets) {
+      output[asset] = await prices.syncPrice(date, asset);
+    }
+    res.json({ [date]: { [unit]: output } });
+  } catch (e) {
+    log.error(e.stack);
+    logAndSend(e.message, STATUS_YOUR_BAD);
+  }
+});
