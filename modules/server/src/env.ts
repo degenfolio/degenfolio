@@ -1,4 +1,5 @@
 export const env = {
+  covalentKey: process.env.DEGENFOLIO_COVALENT_KEY || "",
   etherscanKey: process.env.DEGENFOLIO_ETHERSCAN_KEY || "",
   ethProvider: process.env.DEGENFOLIO_ETH_PROVIDER || process.env.VM_ETH_PROVIDER || "",
   logLevel: process.env.DEGENFOLIO_LOG_LEVEL || "info",
