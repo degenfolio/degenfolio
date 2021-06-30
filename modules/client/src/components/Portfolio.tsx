@@ -1,26 +1,25 @@
-import React, { useState, useContext, LegacyRef } from "react";
-import { useEffect } from "react";
-import { XYPlot, XAxis, YAxis, PolygonSeries, HorizontalGridLines, Treemap } from "react-vis";
+import React, { useEffect, useState, useContext } from "react";
+import { XYPlot, XAxis, YAxis, PolygonSeries, HorizontalGridLines } from "react-vis";
 import { format } from "d3-format";
 import { AssetChunk, AssetChunks, Prices } from "@valuemachine/types";
 import { mul } from "@valuemachine/utils";
 import { Typography } from "@material-ui/core";
 import Paper from "@material-ui/core/Paper";
 import Grid from "@material-ui/core/Grid";
-import makeStyles from "@material-ui/core/styles/makeStyles";
+// import makeStyles from "@material-ui/core/styles/makeStyles";
 
 import { AccountContext } from "./AccountManager";
 
-const useStyles = makeStyles( theme => ({
-  graph: {
-    [theme.breakpoints.up("md")]: {
-      width: 600,
-      height: 300,
-    },
-    width: 300,
-    height: 300,
-  }
-}));
+// const useStyles = makeStyles( theme => ({
+//   graph: {
+//     [theme.breakpoints.up("md")]: {
+//       width: 600,
+//       height: 300,
+//     },
+//     width: 300,
+//     height: 300,
+//   }
+// }));
 
 type SeriesData = Array<{
   series: Array<{x: number, y: number}>;
@@ -38,11 +37,11 @@ const getChunksByDate = (chunks: AssetChunk[], dates: string[]) => {
     const j = chunk.disposeDate ? dates.findIndex(d => d === chunk.disposeDate) : dates.length;
     dates.slice(i,j).forEach((date) => {
       output[date].push(index);
-      output[date].sort((a,b) => chunks[a].asset < chunks[b].asset ? 1 : 0)
+      output[date].sort((a,b) => chunks[a].asset < chunks[b].asset ? 1 : 0);
     });
 
     return output;
-  }, empty as { [date: string]: number[] })
+  }, empty as { [date: string]: number[] });
 };
 
 export const Portfolio = ({
@@ -50,8 +49,7 @@ export const Portfolio = ({
 }: { prices: Prices }) => {
   const currentDate = (new Date()).toISOString();
   const { vm } = useContext(AccountContext);
-  const classes = useStyles();
-  console.log(classes.graph)
+  // const classes = useStyles();
 
   const [data, setData] = useState([] as SeriesData);
   const [paginateRange, setPaginateRange] = useState([] as string[]);
@@ -80,12 +78,12 @@ export const Portfolio = ({
       let yDisposePrevPos = 0;
       let yDisposePrevNeg = 0;
 
-      chunkByDate[date].forEach(async (chunkIndex, xIndex, chunksByDate) => {
-        const asset = chunks[chunkIndex].asset;
+      chunkByDate[date].forEach(async (chunkIndex) => {
+        // const asset = chunks[chunkIndex].asset;
         const receivePrice = prices.getPrice(date, chunks[chunkIndex].asset) || "0";
         const disposePrice = prices.getPrice(dates[index + 1], chunks[chunkIndex].asset) || "0";
 
-        const receiveValue = parseFloat(mul(chunks[chunkIndex].quantity, receivePrice))
+        const receiveValue = parseFloat(mul(chunks[chunkIndex].quantity, receivePrice));
         const disposeValue = parseFloat(mul(chunks[chunkIndex].quantity, disposePrice));
 
         newData.push({
@@ -109,12 +107,12 @@ export const Portfolio = ({
           ],
           chunk: chunks[chunkIndex]
         });
-        disposeValue > 0 ? yDisposePrevPos += disposeValue : yDisposePrevNeg += disposeValue
-        receiveValue > 0 ? yReceivePrevPos += receiveValue : yReceivePrevNeg += receiveValue
+        disposeValue > 0 ? yDisposePrevPos += disposeValue : yDisposePrevNeg += disposeValue;
+        receiveValue > 0 ? yReceivePrevPos += receiveValue : yReceivePrevNeg += receiveValue;
 
-      })
+      });
     });
-    console.log("new x/y data", newData);
+    // console.log("new x/y data", newData);
     setData(newData);
   };
 
@@ -126,7 +124,8 @@ export const Portfolio = ({
 
     console.log(paginateRange);
     formatChunksToGraphData(vm.json.chunks.slice(0,100));
-  }, [vm.json.chunks, prices]);
+    // eslint-disable-next-line
+  }, [vm.json.chunks, prices, paginateRange]);
 
   const handlePopoverOpen = (event: any, chunk: AssetChunk) => {
     console.log(chunk);
@@ -153,32 +152,32 @@ export const Portfolio = ({
       </Grid>
       <Grid item>
         <XYPlot
-          margin={{left: 100}}
+          margin={{ left: 100 }}
           height={300} width={600}
         >
           <HorizontalGridLines />
           <XAxis style={{
-            line: {stroke: '#ADDDE1'},
-            ticks: {stroke: '#ADDDE1'},
-            text: {stroke: 'none', fill: '#6b6b76', fontWeight: 600}
+            line: { stroke: "#ADDDE1" },
+            ticks: { stroke: "#ADDDE1" },
+            text: { stroke: "none", fill: "#6b6b76", fontWeight: 600 }
           }} />
           <YAxis
             style={{
-              line: {stroke: '#ADDDE1'},
-              ticks: {stroke: '#ADDDE1'},
-              text: {stroke: 'none', fill: '#6b6b76', fontWeight: 600}
+              line: { stroke: "#ADDDE1" },
+              ticks: { stroke: "#ADDDE1" },
+              text: { stroke: "none", fill: "#6b6b76", fontWeight: 600 }
             }}
-            tickFormat={tick => format('.2s')(tick)}
+            tickFormat={ tick => format(".2s")(tick) }
           />
           {data.map((value, index) => {
             const asset = value.chunk.asset;
-            const color = asset === "ETH" ? "green" : asset === "WBTC" ? "yellow" : "red"
+            const color = asset === "ETH" ? "green" : asset === "WBTC" ? "yellow" : "red";
             return <PolygonSeries
               color={color}
               key={index}
               data={value.series}
               onSeriesMouseOver={(d) => handlePopoverOpen(d, value.chunk)}
-            />
+            />;
           })}
         </XYPlot>
       </Grid>

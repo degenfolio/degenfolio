@@ -31,14 +31,14 @@ export const fetchPriceForAssetsOnDate = async (
       if (!prices.getPrice(date, asset)){
         missingAssets.push(asset);
       }
-    })
+    });
 
     if (
       !missingAssets.length ||
       missingAssets.reduce(
         (skip: boolean, asset) =>
           skip && ( skipAssets.includes(asset) || asset.startsWith("Uni") || asset.startsWith("c"))
-      , true)
+        , true)
     ) return {} as PricesJson;
 
     try {
