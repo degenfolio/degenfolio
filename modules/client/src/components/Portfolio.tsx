@@ -62,6 +62,7 @@ export const Portfolio = ({
     // yoffset1 = yoffset2 + (dispose/receive)value
     console.log(chunkByDate);
 
+    // Exclude the last date
     dates.slice(0,-1).forEach((date, index) => {
 
       let yReceivePrevPos = 0;
@@ -71,20 +72,8 @@ export const Portfolio = ({
 
       chunkByDate[date].forEach(async (chunkIndex, xIndex, chunksByDate) => {
         const asset = chunks[chunkIndex].asset;
-        const receivePrice = prices.getPrice(date, chunks[chunkIndex].asset) ||
-          (await fetchPrice(unit, chunks[chunkIndex].asset, date)) ||
-          "0";
-        
-        const disposePrice = prices.getPrice(dates[index + 1], chunks[chunkIndex].asset) ||
-          (await fetchPrice(unit, chunks[chunkIndex].asset, dates[index + 1])) ||
-          "0";
-
-        const extraPrices = {
-          [date]: { [unit]: { [chunks[chunkIndex].asset]: receivePrice } },
-          [dates[index + 1]]: { [unit]: { [chunks[chunkIndex].asset]: disposePrice } },
-        }
-
-        prices.merge(extraPrices);
+        const receivePrice = prices.getPrice(date, chunks[chunkIndex].asset) || "0";
+        const disposePrice = prices.getPrice(dates[index + 1], chunks[chunkIndex].asset) || "0";
 
         const receiveValue = parseFloat(mul(chunks[chunkIndex].quantity, receivePrice))
         const disposeValue = parseFloat(mul(chunks[chunkIndex].quantity, disposePrice));

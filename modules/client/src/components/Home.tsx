@@ -10,7 +10,7 @@ import AccountIcon from "@material-ui/icons/AccountCircle";
 import BarChartIcon from "@material-ui/icons/BarChart";
 // ValueMachine
 import { getLogger, getLocalStore } from "@valuemachine/utils";
-import { Asset, Assets, PriceList, StoreKeys } from "@valuemachine/types";
+import { Asset, Assets, PriceList, PricesJson, StoreKeys } from "@valuemachine/types";
 import axios from "axios";
 import React, { useState, useEffect } from "react";
 import { getAddressBook, getTransactions, getValueMachine, getPrices } from "valuemachine";
@@ -19,7 +19,7 @@ import { AccountContext } from "./AccountManager";
 import { NavBar } from "./NavBar";
 import { AccountFAB } from "./AccountFAB";
 import { Portfolio } from "./Portfolio";
-import { fetchPrice } from "../utils";
+import { fetchPrice, fetchPriceForAssetsOnDate, fetchPricesForChunks } from "../utils";
 
 const useStyles = makeStyles( theme => ({
   appbar: {
@@ -94,7 +94,7 @@ export const Home = () => {
               json: res.data,
               logger,
             });
-            // If csv merge it to transactions
+            //TODO: If csv merge it to transactions
             setTransactions(newTransactions);
             return;
           }
@@ -111,28 +111,35 @@ export const Home = () => {
     if (!vm || !unit || !prices) return;
     try {
       console.log(`Attempting to fetch for addressBook`, addressBookJson);
-      const res = await axios.post(`/api/prices/chunks/${unit}`, { chunks: vm.json.chunks });
-      if (res.status === 200 && typeof(res.data) === "object") {
-        prices.merge(res.data)
-        const netWorth = vm.getNetWorth()
 
-        const today = (new Date()).toISOString().split('T')[0];
-        const currentPrices = { [today]: { [unit]: {} } as PriceList };
-        for (const asset of Object.keys(netWorth)) {
-            currentPrices[today][unit][asset] = await fetchPrice(unit, asset, today);
-        }
+      // Fetch and merge prices for all chunks
+      const chunkPrices = await fetchPricesForChunks(unit, vm.json.chunks);
+      prices.merge(chunkPrices);
 
-        prices.merge(currentPrices);
+      // Fetch and merge today's prices for currently held assets
+      const netWorth = vm.getNetWorth()
+      const today = (new Date()).toISOString().split('T')[0];
+      const currentPrices = await fetchPriceForAssetsOnDate(unit, Object.keys(netWorth), today);
+      prices.merge(currentPrices);
 
-        // If csv merge it to transactions
-        setPrices(getPrices({
-          json: prices.json,
-          logger,
-          store,
+      // Fetch and merge prices for assets on each event date
+      vm.json.events.forEach(async (txEvent) => {
+        prices.merge((await fetchPriceForAssetsOnDate(
           unit,
-         }));
-        return;
-      }
+          Object.keys(txEvent.newBalances),
+          txEvent.date
+        )));
+      });
+
+      // Set prices state to trigger re-render
+      setPrices(getPrices({
+        json: prices.json,
+        logger,
+        store,
+        unit,
+      }));
+
+      return;
     } catch (e) {
       console.warn(e);
     }
