@@ -37,17 +37,14 @@ pricesRouter.get("/:unit/:asset/:date", async (req, res) => {
   const prices = getPrices({ store, logger: log, unit: unit });
   try {
     let price = prices.getPrice(date, asset);
-    if (price) {
-      return logAndSend(price);
-    } else {
-      price = await fetchPrice(date, unit, asset);
-      if (!price) {
-        return logAndSend(`Couldn't get price for unit=${unit} asset=${asset} date=${date}`);
-      } else {
-        prices.setPrice(price, date, asset, unit);
-        return logAndSend(price);
-      }
-    }
+    if (price) return logAndSend(price);
+    price = await fetchPrice(date, unit, asset);
+    if (!price) return logAndSend(
+      `Couldn't get price unit=${unit} asset=${asset} date=${date}`,
+      STATUS_YOUR_BAD,
+    );
+    prices.setPrice(price, date, asset, unit);
+    return logAndSend(price);
   } catch (e) {
     log.error(e.stack);
     logAndSend(e.message, STATUS_YOUR_BAD);
@@ -78,9 +75,21 @@ pricesRouter.post("/:unit/:date", async (req, res) => {
   const output = {};
   try {
     for (const asset of assets) {
-      output[asset] = await prices.syncPrice(date, asset);
+      let price = prices.getPrice(date, asset);
+      if (price) {
+        output[asset] = price;
+      } else {
+        price = await fetchPrice(date, unit, asset);
+        if (price) {
+          prices.setPrice(price, date, asset, unit);
+          output[asset] = price;
+        } else {
+          log.warn(`Couldn't get price: unit=${unit} asset=${asset} date=${date}`);
+        }
+      }
     }
-    res.json({ [date]: { [unit]: output } });
+    log.info(`Success, returning ${Object.keys(output).length} prices`);
+    res.status(200).json({ [date]: { [unit]: output } });
   } catch (e) {
     log.error(e.stack);
     logAndSend(e.message, STATUS_YOUR_BAD);
