@@ -1,7 +1,5 @@
-import React, { createContext, useContext } from "react";
-import Typography from "@material-ui/core/Typography";
-import { AddressBook, AddressBookJson, TransactionsJson, ValueMachine, } from "@valuemachine/types";
-import Paper from "@material-ui/core/Paper";
+import React, { createContext } from "react";
+import { AddressBook, AddressBookJson, ValueMachine } from "@valuemachine/types";
 import Dialog from "@material-ui/core/Dialog";
 import Button from "@material-ui/core/IconButton";
 import { makeStyles } from "@material-ui/core/styles";
@@ -41,7 +39,11 @@ export const AccountManager = ({
       <Button className={classes.closeDialog} onClick={() => setOpenDialog(false)} color="primary">
         <CancelIcon />
       </Button>
-      {addNewAddress ? <AddNewAddress setOpenDialog={setOpenDialog} /> : <div> Import New Address Book</div>}
+      {
+        addNewAddress
+          ? <AddNewAddress setOpenDialog={setOpenDialog} />
+          : <div> Import New Address Book</div>
+      }
     </Dialog>
   );
 };

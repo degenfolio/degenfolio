@@ -1,7 +1,10 @@
-import { AddressBookJson, AssetChunks, PriceList, PricesJson } from "@valuemachine/types";
+import { AddressBookJson, AssetChunks, PricesJson } from "@valuemachine/types";
 import axios from "axios";
 
-export const fetchPricesForChunks = async (unit: string, chunks: AssetChunks): Promise<PricesJson> => {
+export const fetchPricesForChunks = async (
+  unit: string,
+  chunks: AssetChunks,
+): Promise<PricesJson> => {
   if (chunks.length) {
     try {
       const res = await axios.post(`/api/prices/chunks/${unit}`, { chunks });

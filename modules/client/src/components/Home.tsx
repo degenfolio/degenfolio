@@ -10,16 +10,17 @@ import AccountIcon from "@material-ui/icons/AccountCircle";
 import BarChartIcon from "@material-ui/icons/BarChart";
 // ValueMachine
 import { getLogger, getLocalStore } from "@valuemachine/utils";
-import { Asset, Assets, PriceList, PricesJson, StoreKeys } from "@valuemachine/types";
+import { Asset, Assets, StoreKeys } from "@valuemachine/types";
 import axios from "axios";
 import React, { useState, useEffect } from "react";
 import { getAddressBook, getTransactions, getValueMachine, getPrices } from "valuemachine";
+
+import { fetchPriceForAssetsOnDate, fetchPricesForChunks } from "../utils";
 
 import { AccountContext } from "./AccountManager";
 import { NavBar } from "./NavBar";
 import { AccountFAB } from "./AccountFAB";
 import { Portfolio } from "./Portfolio";
-import { fetchPrice, fetchPriceForAssetsOnDate, fetchPricesForChunks } from "../utils";
 
 const useStyles = makeStyles( theme => ({
   appbar: {
@@ -34,7 +35,7 @@ const useStyles = makeStyles( theme => ({
 
 const store = getLocalStore(localStorage);
 
-const logger = getLogger("debug");
+const logger = getLogger("warn");
 
 // localstorage keys
 const {
@@ -53,7 +54,7 @@ export const Home = () => {
     msg: ""
   });
   const [tab, setTab] = useState("addressBook");
-  const [unit, setUnit] = useState(localStorage.getItem(unitStore) as Asset || Assets.ETH as Asset)
+  const [unit, setUnit] = useState(localStorage.getItem(unitStore) as Asset || Assets.ETH as Asset);
   // Load stored JSON data from localstorage
   const [addressBookJson, setAddressBookJson] = useState(store.load(AddressBookStore));
   // Parse JSON data into utilities
@@ -86,6 +87,7 @@ export const Home = () => {
   const syncAddressBook = async () => {
     if (addressBookJson?.length) {
       setSyncing({ state: true, msg: `Syncing ${addressBookJson.length} addresses` });
+      // eslint-disable-next-line no-constant-condition
       while (true) {
         try {
           console.log(`Attempting to fetch for addressBook`, addressBookJson);
@@ -117,19 +119,19 @@ export const Home = () => {
       prices.merge(chunkPrices);
 
       // Fetch and merge today's prices for currently held assets
-      const netWorth = vm.getNetWorth()
-      const today = (new Date()).toISOString().split('T')[0];
+      const netWorth = vm.getNetWorth();
+      const today = (new Date()).toISOString().split("T")[0];
       const currentPrices = await fetchPriceForAssetsOnDate(unit, Object.keys(netWorth), today);
       prices.merge(currentPrices);
 
       // Fetch and merge prices for assets on each event date
-      vm.json.events.forEach(async (txEvent) => {
+      for (const txEvent of vm.json.events) {
         prices.merge((await fetchPriceForAssetsOnDate(
           unit,
           Object.keys(txEvent.newBalances),
           txEvent.date
         )));
-      });
+      }
 
       // Set prices state to trigger re-render
       setPrices(getPrices({
@@ -144,7 +146,7 @@ export const Home = () => {
     } catch (e) {
       console.warn(e);
     }
-  }
+  };
 
   const processTransactions = async () => {
     const newVM = getValueMachine({
@@ -156,12 +158,13 @@ export const Home = () => {
       newVM.execute(tx);
       await new Promise(res => setTimeout(res, 1));
     }
-    store.save(ValueMachineStore, newVM.json)
+    store.save(ValueMachineStore, newVM.json);
     setVM(newVM);
-  }
+  };
 
   useEffect(() => {
     syncPrices();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unit, vm.json]);
 
   useEffect(() => {
@@ -175,6 +178,7 @@ export const Home = () => {
     store.save(AddressBookStore, newAddressBook.json);
     setAddressBook(newAddressBook);
     syncAddressBook();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addressBookJson]);
 
   useEffect(() => {
@@ -186,6 +190,7 @@ export const Home = () => {
     setSyncing({ state: false, msg: "" });
     store.save(TransactionsStore, transactions.json);
     processTransactions();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transactions]);
 
   return (
