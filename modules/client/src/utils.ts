@@ -1,9 +1,10 @@
-import { AddressBookJson, AssetChunks, PricesJson } from "@valuemachine/types";
+import { AddressBookJson, AssetChunks, Prices, PricesJson } from "@valuemachine/types";
 import axios from "axios";
 
+const skipAssets= ["GRT", "PETH", "SAI", "SPANK", "GEN", "DAI" ];
+
 export const fetchPricesForChunks = async (
-  unit: string,
-  chunks: AssetChunks,
+  unit: string, chunks: AssetChunks
 ): Promise<PricesJson> => {
   if (chunks.length) {
     try {
@@ -21,11 +22,27 @@ export const fetchPricesForChunks = async (
 export const fetchPriceForAssetsOnDate = async (
   unit: string,
   assets: string[],
-  date: string
+  date: string,
+  prices: Prices
 ): Promise<PricesJson> => {
   if (assets.length) {
+    const missingAssets = [] as string[];
+    assets.forEach((asset) => {
+      if (!prices.getPrice(date, asset)){
+        missingAssets.push(asset);
+      }
+    });
+
+    if (
+      !missingAssets.length ||
+      missingAssets.reduce(
+        (skip: boolean, asset) =>
+          skip && ( skipAssets.includes(asset) || asset.startsWith("Uni") || asset.startsWith("c"))
+        , true)
+    ) return {} as PricesJson;
+
     try {
-      const res = await axios.post(`/api/prices/${unit}/${date}`, { assets });
+      const res = await axios.post(`/api/prices/${unit}/${date}`, { missingAssets });
       if (res.status === 200 && typeof(res.data) === "object") {
         return res.data;
       }

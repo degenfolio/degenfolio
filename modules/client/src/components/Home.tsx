@@ -121,7 +121,9 @@ export const Home = () => {
       // Fetch and merge today's prices for currently held assets
       const netWorth = vm.getNetWorth();
       const today = (new Date()).toISOString().split("T")[0];
-      const currentPrices = await fetchPriceForAssetsOnDate(unit, Object.keys(netWorth), today);
+      const currentPrices = await fetchPriceForAssetsOnDate(
+        unit, Object.keys(netWorth), today, prices
+      );
       prices.merge(currentPrices);
 
       // Fetch and merge prices for assets on each event date
@@ -129,7 +131,8 @@ export const Home = () => {
         prices.merge((await fetchPriceForAssetsOnDate(
           unit,
           Object.keys(txEvent.newBalances),
-          txEvent.date
+          txEvent.date,
+          prices
         )));
       }
 

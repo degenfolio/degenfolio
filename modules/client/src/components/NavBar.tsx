@@ -2,13 +2,14 @@ import React, { useContext } from "react";
 import AppBar from "@material-ui/core/AppBar";
 import Toolbar from "@material-ui/core/Toolbar";
 import { makeStyles } from "@material-ui/core/styles";
+import MenuItem from "@material-ui/core/MenuItem";
 import IconButton from "@material-ui/core/IconButton";
 import FormControl from "@material-ui/core/FormControl";
 import Typography from "@material-ui/core/Typography";
 import Select from "@material-ui/core/Select";
+// Icons
 import SyncIcon from "@material-ui/icons/Sync";
 import { Asset, Assets, FiatCurrencies } from "@valuemachine/types";
-import MenuItem from "@material-ui/core/MenuItem";
 
 import { AccountContext } from "./AccountManager";
 
