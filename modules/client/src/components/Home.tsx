@@ -48,12 +48,14 @@ const unitStore = "Unit";
 
 export const Home = () => {
   const classes = useStyles();
-  const [syncing, setSyncing] = useState(false);
-  const [tab, setTab] = useState("portfolio");
+  const [syncing, setSyncing] = useState({
+    state: false,
+    msg: ""
+  });
+  const [tab, setTab] = useState("addressBook");
   const [unit, setUnit] = useState(localStorage.getItem(unitStore) as Asset || Assets.ETH as Asset)
   // Load stored JSON data from localstorage
   const [addressBookJson, setAddressBookJson] = useState(store.load(AddressBookStore));
-
   // Parse JSON data into utilities
   const [addressBook, setAddressBook] = useState(getAddressBook({
     json: addressBookJson,
@@ -64,7 +66,6 @@ export const Home = () => {
     json: store.load(TransactionsStore),
     logger,
   }));
-
   const [vm, setVM] = useState(getValueMachine({
     addressBook,
     json: store.load(ValueMachineStore),
@@ -84,7 +85,7 @@ export const Home = () => {
 
   const syncAddressBook = async () => {
     if (addressBookJson?.length) {
-      setSyncing(true);
+      setSyncing({ state: true, msg: `Syncing ${addressBookJson.length} addresses` });
       while (true) {
         try {
           console.log(`Attempting to fetch for addressBook`, addressBookJson);
@@ -110,8 +111,7 @@ export const Home = () => {
   const syncPrices = async () => {
     if (!vm || !unit || !prices) return;
     try {
-      console.log(`Attempting to fetch for addressBook`, addressBookJson);
-
+      setSyncing({ state: true, msg: "Syncing Prices" });
       // Fetch and merge prices for all chunks
       const chunkPrices = await fetchPricesForChunks(unit, vm.json.chunks);
       prices.merge(chunkPrices);
@@ -139,6 +139,7 @@ export const Home = () => {
         unit,
       }));
 
+      setSyncing({ state: false, msg: "" });
       return;
     } catch (e) {
       console.warn(e);
@@ -156,7 +157,6 @@ export const Home = () => {
       await new Promise(res => setTimeout(res, 1));
     }
     store.save(ValueMachineStore, newVM.json)
-    console.log(newVM.json.chunks);
     setVM(newVM);
   }
 
@@ -183,7 +183,7 @@ export const Home = () => {
 
   useEffect(() => {
     if (!transactions?.json?.length) return;
-    setSyncing(false);
+    setSyncing({ state: false, msg: "" });
     store.save(TransactionsStore, transactions.json);
     processTransactions();
   }, [transactions]);
