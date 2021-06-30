@@ -88,8 +88,8 @@ export const Portfolio = ({
 
       chunkByDate[date].forEach(async (chunkIndex) => {
         // const asset = chunks[chunkIndex].asset;
-        const receivePrice = prices.getPrice(date, chunks[chunkIndex].asset) || "0";
-        const disposePrice = prices.getPrice(dates[index + 1], chunks[chunkIndex].asset) || "0";
+        const receivePrice = prices.getNearest(date, chunks[chunkIndex].asset) || "0";
+        const disposePrice = prices.getNearest(dates[index + 1], chunks[chunkIndex].asset) || "0";
 
         const receiveValue = parseFloat(mul(chunks[chunkIndex].quantity, receivePrice));
         const disposeValue = parseFloat(mul(chunks[chunkIndex].quantity, disposePrice));
