@@ -112,7 +112,7 @@ export const Portfolio = ({
     console.log("Generating graph data");
     if (!vm.json.chunks.length) return;
     formatChunksToGraphData();
-  }, [vm.json.chunks]);
+  }, [vm.json.chunks, unit]);
 
   const handlePopoverOpen = (event: any, chunk: AssetChunk) => {
     console.log(chunk);
