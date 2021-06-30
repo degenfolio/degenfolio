@@ -2,17 +2,25 @@ import React, { useState, useContext, LegacyRef } from "react";
 import { useEffect } from "react";
 import { XYPlot, XAxis, YAxis, PolygonSeries, HorizontalGridLines, Treemap } from "react-vis";
 import { format } from "d3-format";
-import { Asset, AssetChunk, Prices } from "@valuemachine/types";
+import { AssetChunk, AssetChunks, Prices } from "@valuemachine/types";
 import { mul } from "@valuemachine/utils";
 import { Typography } from "@material-ui/core";
-
-import { AccountContext } from "./AccountManager";
-import { fetchPrice } from "../utils";
-import Popover from "@material-ui/core/Popover";
-import Popper from "@material-ui/core/Popper";
-import { useRef } from "react";
 import Paper from "@material-ui/core/Paper";
 import Grid from "@material-ui/core/Grid";
+import makeStyles from "@material-ui/core/styles/makeStyles";
+
+import { AccountContext } from "./AccountManager";
+
+const useStyles = makeStyles( theme => ({
+  graph: {
+    [theme.breakpoints.up("md")]: {
+      width: 600,
+      height: 300,
+    },
+    width: 300,
+    height: 300,
+  }
+}));
 
 type SeriesData = Array<{
   series: Array<{x: number, y: number}>;
@@ -42,13 +50,15 @@ export const Portfolio = ({
 }: { prices: Prices }) => {
   const currentDate = (new Date()).toISOString();
   const { vm } = useContext(AccountContext);
+  const classes = useStyles();
+  console.log(classes.graph)
 
   const [data, setData] = useState([] as SeriesData);
+  const [paginateRange, setPaginateRange] = useState([] as string[]);
   const [currentChunk, setCurrentChunk] = useState({} as AssetChunk);
 
-  const formatChunksToGraphData = () => {
+  const formatChunksToGraphData = (chunks: AssetChunks) => {
     if (!vm?.json?.chunks?.length) return;
-    const chunks = vm.json.chunks;
     const newData = [] as SeriesData;
 
     const dates = chunks.reduce((output, chunk) => {
@@ -111,7 +121,11 @@ export const Portfolio = ({
   useEffect(() => {
     console.log("Generating graph data");
     if (!vm.json.chunks.length) return;
-    formatChunksToGraphData();
+    const dates = Array.from(new Set(vm.json.events.map(e => e.date))).sort();
+    setPaginateRange(dates.slice(0, 10));
+
+    console.log(paginateRange);
+    formatChunksToGraphData(vm.json.chunks.slice(0,100));
   }, [vm.json.chunks, prices]);
 
   const handlePopoverOpen = (event: any, chunk: AssetChunk) => {
@@ -137,7 +151,7 @@ export const Portfolio = ({
           </Typography>
         </Paper> 
       </Grid>
-      <div>
+      <Grid item>
         <XYPlot
           margin={{left: 100}}
           height={300} width={600}
@@ -164,11 +178,10 @@ export const Portfolio = ({
               key={index}
               data={value.series}
               onSeriesMouseOver={(d) => handlePopoverOpen(d, value.chunk)}
-              onSeriesMouseOut={(event) => console.log(event)}
             />
           })}
         </XYPlot>
-      </div>
+      </Grid>
     </Grid>
   );
 };
