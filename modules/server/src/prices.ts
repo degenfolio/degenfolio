@@ -73,7 +73,7 @@ pricesRouter.post("/:unit/:date", async (req, res) => {
   const logAndSend = getLogAndSend(res);
   const { unit, date } = req.params;
   const { assets } = req.body;
-  if (!assets?.length) logAndSend("A list of assets is required", STATUS_YOUR_BAD);
+  if (!assets?.length) return logAndSend("A list of assets is required", STATUS_YOUR_BAD);
   log.info(`Got request for ${unit} prices on ${date} for assets: [${assets?.join(", ")}]`);
   const output = {};
   for (const asset of assets) {
