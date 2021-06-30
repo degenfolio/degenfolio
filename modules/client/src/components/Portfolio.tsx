@@ -33,6 +33,9 @@ const getChunksByDate = (chunks: AssetChunk[], dates: string[]) => {
   }, {} as { [date: string]: number[] });
 
   return chunks.reduce((output, chunk, index) => {
+    if ( chunk.receiveDate > dates[dates.length - 1]) return output;
+    if (chunk.disposeDate && chunk.disposeDate < dates[0]) return output;
+
     const i = dates.findIndex(d => d === chunk.receiveDate);
     const j = chunk.disposeDate ? dates.findIndex(d => d === chunk.disposeDate) : dates.length;
     dates.slice(i,j).forEach((date) => {
@@ -55,15 +58,16 @@ export const Portfolio = ({
   const [paginateRange, setPaginateRange] = useState([] as string[]);
   const [currentChunk, setCurrentChunk] = useState({} as AssetChunk);
 
-  const formatChunksToGraphData = (chunks: AssetChunks) => {
+  const formatChunksToGraphData = (dates: string[]) => {
     if (!vm?.json?.chunks?.length) return;
+    const chunks = vm.json.chunks;
     const newData = [] as SeriesData;
 
-    const dates = chunks.reduce((output, chunk) => {
-      return Array.from(new Set(
-        output.concat([chunk.receiveDate, chunk.disposeDate || currentDate])
-      )).filter(d => d).sort();
-    }, [] as string[]);
+    // const dates = chunks.reduce((output, chunk) => {
+    //   return Array.from(new Set(
+    //     output.concat([chunk.receiveDate, chunk.disposeDate || currentDate])
+    //   )).filter(d => d).sort();
+    // }, [] as string[]);
 
     const chunkByDate = getChunksByDate(chunks, dates);
     // Sort each date chunks by assets
@@ -120,12 +124,11 @@ export const Portfolio = ({
     console.log("Generating graph data");
     if (!vm.json.chunks.length) return;
     const dates = Array.from(new Set(vm.json.events.map(e => e.date))).sort();
-    setPaginateRange(dates.slice(0, 10));
+    setPaginateRange(dates.slice(0, 100));
 
-    console.log(paginateRange);
-    formatChunksToGraphData(vm.json.chunks.slice(0,100));
+    formatChunksToGraphData(dates.slice(0,36));
     // eslint-disable-next-line
-  }, [vm.json.chunks, prices, paginateRange]);
+  }, [vm.json.chunks, prices]);
 
   const handlePopoverOpen = (event: any, chunk: AssetChunk) => {
     console.log(chunk);
