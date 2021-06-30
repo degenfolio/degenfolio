@@ -1,14 +1,17 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, LegacyRef } from "react";
 import { useEffect } from "react";
-import { XYPlot, XAxis, YAxis, PolygonSeries, HorizontalGridLines } from "react-vis";
+import { XYPlot, XAxis, YAxis, PolygonSeries, HorizontalGridLines, Treemap } from "react-vis";
 import { format } from "d3-format";
-import { Asset, AssetChunk, PriceList, Prices } from "@valuemachine/types";
+import { Asset, AssetChunk, Prices } from "@valuemachine/types";
 import { mul } from "@valuemachine/utils";
 import { Typography } from "@material-ui/core";
-import axios from "axios";
 
 import { AccountContext } from "./AccountManager";
 import { fetchPrice } from "../utils";
+import Popover from "@material-ui/core/Popover";
+import Popper from "@material-ui/core/Popper";
+import { useRef } from "react";
+import Paper from "@material-ui/core/Paper";
 
 type SeriesData = Array<{
   series: Array<{x: number, y: number}>;
@@ -26,7 +29,9 @@ const getChunksByDate = (chunks: AssetChunk[], dates: string[]) => {
     const j = chunk.disposeDate ? dates.findIndex(d => d === chunk.disposeDate) : dates.length;
     dates.slice(i,j).forEach((date) => {
       output[date].push(index);
+      output[date].sort((a,b) => chunks[a].asset < chunks[b].asset ? 1 : 0)
     });
+
     return output;
   }, empty as { [date: string]: number[] })
 };
@@ -38,8 +43,8 @@ export const Portfolio = ({
   const currentDate = (new Date()).toISOString();
   const { vm } = useContext(AccountContext);
 
-  const [description, setDescription] = useState("");
   const [data, setData] = useState([] as SeriesData);
+  const [currentChunk, setCurrentChunk] = useState({} as AssetChunk);
 
   const formatChunksToGraphData = () => {
     if (!vm?.json?.chunks?.length) return;
@@ -53,10 +58,11 @@ export const Portfolio = ({
     }, [] as string[]);
 
     const chunkByDate = getChunksByDate(chunks, dates);
-    // Sort date chunks by assets
+    // Sort each date chunks by assets
     // yoffset1 = yoffset2 + (dispose/receive)value
     console.log(chunkByDate);
 
+    // Exclude the last date
     dates.slice(0,-1).forEach((date, index) => {
 
       let yReceivePrevPos = 0;
@@ -66,20 +72,8 @@ export const Portfolio = ({
 
       chunkByDate[date].forEach(async (chunkIndex, xIndex, chunksByDate) => {
         const asset = chunks[chunkIndex].asset;
-        const receivePrice = prices.getPrice(date, chunks[chunkIndex].asset) ||
-          (await fetchPrice(unit, chunks[chunkIndex].asset, date)) ||
-          "0";
-        
-        const disposePrice = prices.getPrice(dates[index + 1], chunks[chunkIndex].asset) ||
-          (await fetchPrice(unit, chunks[chunkIndex].asset, dates[index + 1])) ||
-          "0";
-
-        const extraPrices = {
-          [date]: { [unit]: { [chunks[chunkIndex].asset]: receivePrice } },
-          [dates[index + 1]]: { [unit]: { [chunks[chunkIndex].asset]: disposePrice } },
-        }
-
-        prices.merge(extraPrices);
+        const receivePrice = prices.getPrice(date, chunks[chunkIndex].asset) || "0";
+        const disposePrice = prices.getPrice(dates[index + 1], chunks[chunkIndex].asset) || "0";
 
         const receiveValue = parseFloat(mul(chunks[chunkIndex].quantity, receivePrice))
         const disposeValue = parseFloat(mul(chunks[chunkIndex].quantity, disposePrice));
@@ -116,50 +110,61 @@ export const Portfolio = ({
 
   useEffect(() => {
     console.log("Generating graph data");
+    if (!vm.json.chunks.length) return;
     formatChunksToGraphData();
+  }, [vm.json.chunks, unit]);
 
-  }, [vm]);
+  const handlePopoverOpen = (event: any, chunk: AssetChunk) => {
+    console.log(chunk);
+    setCurrentChunk(chunk);
+  };
 
   if(!data.length) return <> Loading </>;
 
-  return (<>
-    <Typography>
-      {description}
-    </Typography>
-    <XYPlot
-      margin={{left: 100}}
-      height={300} width={600}
-      style={{
-        margin: "4em"
-      }}
-    >
-      <HorizontalGridLines />
-      <XAxis style={{
-        line: {stroke: '#ADDDE1'},
-        ticks: {stroke: '#ADDDE1'},
-        text: {stroke: 'none', fill: '#6b6b76', fontWeight: 600}
-      }} />
-      <YAxis
-        style={{
-          line: {stroke: '#ADDDE1'},
-          ticks: {stroke: '#ADDDE1'},
-          text: {stroke: 'none', fill: '#6b6b76', fontWeight: 600}
-        }}
-        tickFormat={tick => format('.2s')(tick)}
-      />
-      {data.map((value, index) => {
-
-        const asset = value.chunk.asset;
-        const color = asset === "ETH" ? "green" : asset === "WBTC" ? "yellow" : "red"
-        return <PolygonSeries
-          color={color}
-          key={index}
-          data={value.series}
-          onSeriesMouseOver={() => console.log(value.chunk)}
-        />
-      }
-
-      )}
-    </XYPlot>
-  </>);
+  return (
+    <Paper id="chunk-detail">
+      <Typography>
+        {`${currentChunk.quantity} ${currentChunk.asset}`}
+      </Typography>
+      <Typography> Received on: {currentChunk.receiveDate} </Typography>
+      <Typography>
+        {currentChunk.disposeDate
+          ? `Disposed on: ${currentChunk.disposeDate}`
+          : "Currently Held"
+        }
+      </Typography>
+      <div>
+        <XYPlot
+          margin={{left: 100}}
+          height={300} width={600}
+        >
+          <HorizontalGridLines />
+          <XAxis style={{
+            line: {stroke: '#ADDDE1'},
+            ticks: {stroke: '#ADDDE1'},
+            text: {stroke: 'none', fill: '#6b6b76', fontWeight: 600}
+          }} />
+          <YAxis
+            style={{
+              line: {stroke: '#ADDDE1'},
+              ticks: {stroke: '#ADDDE1'},
+              text: {stroke: 'none', fill: '#6b6b76', fontWeight: 600}
+            }}
+            tickFormat={tick => format('.2s')(tick)}
+          />
+          {data.map((value, index) => {
+            const asset = value.chunk.asset;
+            const color = asset === "ETH" ? "green" : asset === "WBTC" ? "yellow" : "red"
+            return <PolygonSeries
+              color={color}
+              key={index}
+              data={value.series}
+              onSeriesMouseOver={(d) => handlePopoverOpen(d, value.chunk)}
+              onSeriesMouseOut={(event) => console.log(event)}
+            />
+          })}
+        </XYPlot>
+      </div>
+    </Paper> 
+  );
 };

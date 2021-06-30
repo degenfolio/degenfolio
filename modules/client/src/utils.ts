@@ -1,5 +1,29 @@
-import { AddressBookJson } from "@valuemachine/types";
+import { AddressBookJson, AssetChunks, PriceList, PricesJson } from "@valuemachine/types";
 import axios from "axios";
+
+export const fetchPricesForChunks = async (unit: string, chunks: AssetChunks): Promise<PricesJson> => {
+  if (chunks.length) {
+    const res = await axios.post(`/api/prices/chunks/${unit}`, { chunks });
+    if (res.status === 200 && typeof(res.data) === "object") {
+      return res.data;
+    }
+  }
+  return {} as PricesJson;
+};
+
+export const fetchPriceForAssetsOnDate = async (
+  unit: string,
+  assets: string[],
+  date: string
+): Promise<PricesJson> => {
+  if (assets.length) {
+    const res = await axios.post(`/api/prices/${unit}/${date}`, { assets });
+    if (res.status === 200 && typeof(res.data) === "object") {
+      return res.data;
+    }
+  }
+  return {} as PricesJson;
+};
 
 export const fetchPrice = async (unit: string, asset: string, date: string): Promise<string> => {
   const currentPrice = await axios.get(`/api/prices/${unit}/${asset}/${date}`);

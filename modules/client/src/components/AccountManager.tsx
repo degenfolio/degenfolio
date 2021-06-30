@@ -34,7 +34,6 @@ export const AccountManager = ({
   openDialog: boolean,
   setOpenDialog: (val: boolean) => void
 }) => {
-  const { addressBook, setAddressBookJson } = useContext(AccountContext);
   const classes = useStyles();
 
   return (
