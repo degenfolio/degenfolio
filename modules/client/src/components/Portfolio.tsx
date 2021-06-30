@@ -38,8 +38,7 @@ const getChunksByDate = (chunks: AssetChunk[], dates: string[]) => {
 
 export const Portfolio = ({
   prices,
-  unit
-}: { prices: Prices, unit: Asset }) => {
+}: { prices: Prices }) => {
   const currentDate = (new Date()).toISOString();
   const { vm } = useContext(AccountContext);
 
@@ -112,7 +111,7 @@ export const Portfolio = ({
     console.log("Generating graph data");
     if (!vm.json.chunks.length) return;
     formatChunksToGraphData();
-  }, [vm.json.chunks, unit]);
+  }, [vm.json.chunks, prices]);
 
   const handlePopoverOpen = (event: any, chunk: AssetChunk) => {
     console.log(chunk);
