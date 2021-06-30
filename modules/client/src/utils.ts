@@ -3,9 +3,13 @@ import axios from "axios";
 
 export const fetchPricesForChunks = async (unit: string, chunks: AssetChunks): Promise<PricesJson> => {
   if (chunks.length) {
-    const res = await axios.post(`/api/prices/chunks/${unit}`, { chunks });
-    if (res.status === 200 && typeof(res.data) === "object") {
-      return res.data;
+    try {
+      const res = await axios.post(`/api/prices/chunks/${unit}`, { chunks });
+      if (res.status === 200 && typeof(res.data) === "object") {
+        return res.data;
+      }
+    } catch (e) {
+      console.warn(e);
     }
   }
   return {} as PricesJson;
@@ -17,9 +21,13 @@ export const fetchPriceForAssetsOnDate = async (
   date: string
 ): Promise<PricesJson> => {
   if (assets.length) {
-    const res = await axios.post(`/api/prices/${unit}/${date}`, { assets });
-    if (res.status === 200 && typeof(res.data) === "object") {
-      return res.data;
+    try {
+      const res = await axios.post(`/api/prices/${unit}/${date}`, { assets });
+      if (res.status === 200 && typeof(res.data) === "object") {
+        return res.data;
+      }
+    } catch (e) {
+      console.warn(e);
     }
   }
   return {} as PricesJson;

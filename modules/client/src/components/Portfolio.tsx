@@ -12,6 +12,7 @@ import Popover from "@material-ui/core/Popover";
 import Popper from "@material-ui/core/Popper";
 import { useRef } from "react";
 import Paper from "@material-ui/core/Paper";
+import Grid from "@material-ui/core/Grid";
 
 type SeriesData = Array<{
   series: Array<{x: number, y: number}>;
@@ -121,17 +122,21 @@ export const Portfolio = ({
   if(!data.length) return <> Loading </>;
 
   return (
-    <Paper id="chunk-detail">
-      <Typography>
-        {`${currentChunk.quantity} ${currentChunk.asset}`}
-      </Typography>
-      <Typography> Received on: {currentChunk.receiveDate} </Typography>
-      <Typography>
-        {currentChunk.disposeDate
-          ? `Disposed on: ${currentChunk.disposeDate}`
-          : "Currently Held"
-        }
-      </Typography>
+    <Grid container spacing={2}>
+      <Grid item xs={12} md={6} lg={4}>
+        <Paper id="chunk-detail">
+          <Typography>
+            {`${currentChunk.quantity} ${currentChunk.asset}`}
+          </Typography>
+          <Typography> Received on: {currentChunk.receiveDate} </Typography>
+          <Typography>
+            {currentChunk.disposeDate
+              ? `Disposed on: ${currentChunk.disposeDate}`
+              : "Currently Held"
+            }
+          </Typography>
+        </Paper> 
+      </Grid>
       <div>
         <XYPlot
           margin={{left: 100}}
@@ -164,6 +169,6 @@ export const Portfolio = ({
           })}
         </XYPlot>
       </div>
-    </Paper> 
+    </Grid>
   );
 };
