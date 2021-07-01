@@ -1,10 +1,10 @@
-import { HashZero } from "@ethersproject/constants";
 import { ChainData } from "@valuemachine/types";
 
 import {
   env,
   expect,
   getTestAddressBook,
+  testStore,
   testLogger,
 } from "../testUtils";
 
@@ -17,11 +17,13 @@ const logger = testLogger.child({ module: `TestPolygon`,
 describe("Polygon", () => {
   let polygonData: ChainData;
   // const testAddress1 = "0x1057Bea69c9ADD11c6e3dE296866AFf98366CFE3";
-  const addressBook = getTestAddressBook("0xada083a3c06ee526F827b43695F2DcFf5C8C892B");
-
+  const testAddress = "0xada083a3c06ee526F827b43695F2DcFf5C8C892B";
+  const testHash = "0x292ec1392e758f33e77bd077334b413e5337f86698e99396befc123f8579f9fa";
+  const addressBook = getTestAddressBook(testAddress);
   beforeEach(() => {
     polygonData = getPolygonData({
       covalentKey: env.covalentKey,
+      store: testStore,
       logger,
     });
   });
@@ -31,13 +33,11 @@ describe("Polygon", () => {
   });
 
   it.only("should sync a transaction", async () => {
-    await polygonData.syncTransaction(
-      "0x292ec1392e758f33e77bd077334b413e5337f86698e99396befc123f8579f9fa"
-    );
+    await polygonData.syncTransaction(testHash);
   });
 
-  it.skip("should parse a transaction", async () => {
-    polygonData.getTransaction(HashZero);
+  it.only("should parse a transaction", async () => {
+    polygonData.getTransaction(testHash, addressBook);
   });
 
   it.skip("should sync an address book", async () => {

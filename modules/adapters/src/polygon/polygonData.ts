@@ -9,7 +9,6 @@ import {
   EthParser,
   Logger,
   Store,
-  StoreKeys,
   Transaction,
   TransactionsJson,
 } from "@valuemachine/types";
@@ -19,6 +18,10 @@ import {
   getLogger,
 } from "@valuemachine/utils";
 import axios from "axios";
+
+import { parsePolygonTx } from "./parser";
+
+const PolygonStoreKey = "PolygonData";
 
 export const getPolygonData = (params?: {
   covalentKey: string;
@@ -30,14 +33,14 @@ export const getPolygonData = (params?: {
   const chainId = "137";
 
   const log = (logger || getLogger()).child?.({ module: "ChainData" });
-  const json = chainDataJson || store?.load(StoreKeys.ChainData) || getEmptyChainData();
+  const json = chainDataJson || store?.load(PolygonStoreKey) || getEmptyChainData();
   const save = () => store
-    ? store.save(StoreKeys.ChainData, json)
+    ? store.save(PolygonStoreKey, json)
     : log.warn(`No store provided, can't save chain data`);
 
   if (!covalentKey) throw new Error(`A covalent api key is required to sync polygon data`);
 
-  log.info(`Loaded harmony data containing ${
+  log.info(`Loaded polygon data containing ${
     json.transactions.length
   } transactions from ${chainDataJson ? "input" : store ? "store" : "default"}`);
 
@@ -158,15 +161,16 @@ export const getPolygonData = (params?: {
     return [];
   };
 
+
   const getTransaction = (
     hash: Bytes32,
     addressBook: AddressBook,
-    extraParsers?: EthParser[],
-  ): Transaction => {
-    // TODO: implement
-    log.info(`hash=${hash}, ${addressBook.json.length} addresses, ${extraParsers?.length} parsers`);
-    return {} as any;
-  };
+  ): Transaction =>
+    parsePolygonTx(
+      json.transactions.find(tx => tx.hash === hash),
+      addressBook,
+      logger,
+    );
 
   ////////////////////////////////////////
   // One more bit of init code before returning

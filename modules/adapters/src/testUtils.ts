@@ -32,6 +32,8 @@ export const env = {
   covalentKey: process.env.COVALENT_KEY || "",
 };
 
+export const testStore = getFileStore(path.join(__dirname, "./testData"), fs);
+
 export const testLogger = getLogger(env.logLevel).child({ module: "TestUtils" });
 
 export const getTestAddressBook = (address: Address): AddressBook => getAddressBook({
@@ -47,16 +49,13 @@ export const parseEthTx = async ({
   selfAddress,
   calls,
   logger,
-  storePath,
 }: {
   hash: Bytes32;
   selfAddress: Address;
   calls?: EthCall[];
   logger?: Logger;
-  storePath: string;
 }): Promise<Transaction> => {
   const addressBook = getTestAddressBook(selfAddress);
-  const testStore = getFileStore(path.join(__dirname, storePath || "./testData"), fs);
   const chainData = getChainData({
     json: {
       ...getEmptyChainData(),
