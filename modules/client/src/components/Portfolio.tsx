@@ -5,12 +5,9 @@ import { AssetChunk, Prices } from "@valuemachine/types";
 import { mul } from "@valuemachine/utils";
 import { Typography } from "@material-ui/core";
 import Paper from "@material-ui/core/Paper";
-import IconButton from "@material-ui/core/IconButton";
 import Grid from "@material-ui/core/Grid";
+import TablePagination from "@material-ui/core/TablePagination";
 // import makeStyles from "@material-ui/core/styles/makeStyles";
-// Icons
-import NextIcon from "@material-ui/icons/SkipNext";
-import PreviousIcon from "@material-ui/icons/SkipPrevious";
 
 import { assetToColor } from "../utils";
 
@@ -56,28 +53,32 @@ const getChunksByDate = (chunks: AssetChunk[], dates: string[]) => {
 export const Portfolio = ({
   prices,
 }: { prices: Prices }) => {
-  // const currentDate = (new Date()).toISOString();
   const { vm } = useContext(AccountContext);
   // const classes = useStyles();
 
   const [data, setData] = useState([] as SeriesData);
-  const [paginateRange, setPaginateRange] = useState([0,30]);
   const [currentChunk, setCurrentChunk] = useState({} as AssetChunk);
+  const [dates, setDates] = useState([] as string[]);
+  const [page, setPage] = React.useState(0);
+  const [rowsPerPage, setRowsPerPage] = React.useState(10);
+
+  const handleChangePage = (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   const formatChunksToGraphData = (dates: string[]) => {
     if (!vm?.json?.chunks?.length) return;
     const chunks = vm.json.chunks;
     const newData = [] as SeriesData;
 
-    // const dates = chunks.reduce((output, chunk) => {
-    //   return Array.from(new Set(
-    //     output.concat([chunk.receiveDate, chunk.disposeDate || currentDate])
-    //   )).filter(d => d).sort();
-    // }, [] as string[]);
-
     const chunkByDate = getChunksByDate(chunks, dates);
-    // Sort each date chunks by assets
-    // yoffset1 = yoffset2 + (dispose/receive)value
     console.log(chunkByDate);
 
     // Exclude the last date
@@ -122,30 +123,29 @@ export const Portfolio = ({
 
       });
     });
-    // console.log("new x/y data", newData);
     setData(newData);
   };
 
   useEffect(() => {
-    console.log("Generating graph data");
     if (!vm.json.chunks.length) return;
-    const dates = Array.from(new Set(vm.json.events.map(e => e.date))).sort();
-    console.log(
-      paginateRange[0],
-      paginateRange[0] >= 0 ? paginateRange[1] : undefined
-    );
-
-    formatChunksToGraphData(dates.slice(
-      paginateRange[0],
-      paginateRange[0] >= 0 ? paginateRange[1] : undefined
-    ));
-    // eslint-disable-next-line
-  }, [vm.json.chunks, prices, paginateRange]);
+    const newDates = Array.from(new Set(vm.json.events.map(e => e.date))).sort();
+    setDates(newDates);
+  }, [vm.json, prices, page, rowsPerPage]);
 
   const handlePopoverOpen = (event: any, chunk: AssetChunk) => {
     console.log(chunk);
     setCurrentChunk(chunk);
   };
+
+  useEffect(() => {
+    if (dates.length <= 0) return;
+    console.log("Generating graph data");
+    formatChunksToGraphData(dates.slice(
+      page * rowsPerPage,
+      page * rowsPerPage + rowsPerPage
+    ));
+    // eslint-disable-next-line
+  }, [dates, rowsPerPage, page]);
 
   if(!data.length) return <> Loading </>;
 
@@ -164,13 +164,6 @@ export const Portfolio = ({
             }
           </Typography>
         </Paper> 
-      </Grid>
-      <Grid item>
-        <IconButton
-          onClick={() => setPaginateRange([paginateRange[0]-30, paginateRange[0]])}
-        >
-          <PreviousIcon />
-        </IconButton>
       </Grid>
       <Grid item>
         <XYPlot
@@ -202,9 +195,14 @@ export const Portfolio = ({
         </XYPlot>
       </Grid>
       <Grid item>
-        <IconButton onClick={
-          () => setPaginateRange([paginateRange[1], paginateRange[1]+30])
-        }> <NextIcon /> </IconButton>
+        <TablePagination
+          component="div"
+          count={dates.length}
+          page={page}
+          onChangePage={handleChangePage}
+          rowsPerPage={rowsPerPage}
+          onChangeRowsPerPage={handleChangeRowsPerPage}
+        />
       </Grid>
     </Grid>
   );
