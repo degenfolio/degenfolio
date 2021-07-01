@@ -12,6 +12,8 @@ import Grid from "@material-ui/core/Grid";
 import NextIcon from "@material-ui/icons/SkipNext";
 import PreviousIcon from "@material-ui/icons/SkipPrevious";
 
+import { assetToColor } from "../utils";
+
 import { AccountContext } from "./AccountManager";
 
 // const useStyles = makeStyles( theme => ({
@@ -44,7 +46,7 @@ const getChunksByDate = (chunks: AssetChunk[], dates: string[]) => {
     const j = chunk.disposeDate ? dates.findIndex(d => d === chunk.disposeDate) : dates.length;
     dates.slice(i,j).forEach((date) => {
       output[date].push(index);
-      output[date].sort((a,b) => chunks[a].asset < chunks[b].asset ? 1 : 0);
+      output[date].sort((a,b) => chunks[a].asset < chunks[b].asset ? 1 : -1);
     });
 
     return output;
@@ -190,10 +192,8 @@ export const Portfolio = ({
             tickFormat={ tick => format(".2s")(tick) }
           />
           {data.map((value, index) => {
-            const asset = value.chunk.asset;
-            const color = asset === "ETH" ? "green" : asset === "WBTC" ? "yellow" : "red";
             return <PolygonSeries
-              color={color}
+              color={assetToColor(value.chunk.asset)}
               key={index}
               data={value.series}
               onSeriesMouseOver={(d) => handlePopoverOpen(d, value.chunk)}
