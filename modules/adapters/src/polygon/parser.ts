@@ -7,11 +7,12 @@ import {
   EthTransaction,
   Logger,
   Transaction,
-  TransactionSources,
   TransferCategories,
   TransferCategory,
 } from "@valuemachine/types";
 import { gt } from "@valuemachine/utils";
+
+import { aaveParser } from "./aave";
 
 const MATIC = "MATIC";
 const { Expense, Income, Internal, Unknown } = TransferCategories;
@@ -22,7 +23,7 @@ export const parsePolygonTx = (
   logger: Logger,
 ): Transaction => {
   const { isSelf } = addressBook;
-  const log = logger.child({ module: `Eth${polygonTx.hash?.substring(0, 8)}` });
+  const log = logger.child({ module: `MATIC${polygonTx.hash?.substring(0, 8)}` });
   // log.debug(polygonTx, `Parsing polygon tx`);
 
   const getSimpleCategory = (to: Address, from: Address): TransferCategory =>
@@ -31,10 +32,10 @@ export const parsePolygonTx = (
     : (isSelf(to) && !isSelf(from)) ? Income
     : Unknown;
 
-  const tx = {
+  let tx = {
     date: (new Date(polygonTx.timestamp)).toISOString(),
     hash: polygonTx.hash,
-    sources: [],
+    sources: ["Polygon"],
     transfers: [],
   } as Transaction;
 
@@ -69,10 +70,8 @@ export const parsePolygonTx = (
     });
   }
 
-  // Give a default polygon-related source if no app-specific parsers were triggered
-  if (!tx.sources.length) {
-    tx.sources.push(TransactionSources.EthTx);
-  }
+  // Activate app-specific parsers
+  tx = aaveParser(tx, polygonTx, addressBook, log);
 
   tx.transfers = tx.transfers
     // Filter out no-op transfers

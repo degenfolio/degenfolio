@@ -1,3 +1,4 @@
+import { getAddress, isAddress } from "@ethersproject/address";
 import { formatEther } from "@ethersproject/units";
 import { hexlify } from "@ethersproject/bytes";
 import {
@@ -6,13 +7,13 @@ import {
   Bytes32,
   ChainData,
   ChainDataJson,
-  EthParser,
   Logger,
   Store,
   Transaction,
   TransactionsJson,
 } from "@valuemachine/types";
 import {
+  chrono,
   getEmptyChainData,
   getEthTransactionError,
   getLogger,
@@ -32,7 +33,7 @@ export const getPolygonData = (params?: {
   const { covalentKey, json: chainDataJson, logger, store } = params || {};
   const chainId = "137";
 
-  const log = (logger || getLogger()).child?.({ module: "ChainData" });
+  const log = (logger || getLogger()).child?.({ module: "PolygonData" });
   const json = chainDataJson || store?.load(PolygonStoreKey) || getEmptyChainData();
   const save = () => store
     ? store.save(PolygonStoreKey, json)
@@ -48,15 +49,14 @@ export const getPolygonData = (params?: {
   // Internal Heleprs
 
   const covalentUrl = "https://api.covalenthq.com/v1";
-
-  // TODO: rm key param?
-  const syncAddress = async (address: Address, _key?: string): Promise<void> => {
-    log.warn(`syncAddress not implemented. address=${address}`);
-    return;
-  };
-
-  const fetchTx = async (txHash: Bytes32): Promise<any> => {
-    const url = `${covalentUrl}/${chainId}/transaction_v2/${txHash}/?key=${covalentKey}`;
+  const queryCovalent = async (path: string, query?: any): Promise<any> => {
+    const url = `${covalentUrl}/${path}/?${
+      Object.entries(query || {}).reduce((querystring, entry) => {
+        querystring += `${entry[0]}=${entry[1]}&`;
+        return querystring;
+      }, "")
+    }key=${covalentKey}`;
+    log.info(`GET ${url}`);
     let res;
     try {
       res = await axios(url);
@@ -65,14 +65,74 @@ export const getPolygonData = (params?: {
       return;
     }
     if (res.status !== 200) {
-      log.warn(`Failed to fetch polygon tx ${txHash}`);
+      log.warn(`Unsuccessful status: ${res.status}`);
       return;
     }
     if (res.data.error) {
       log.warn(`Covalent error: ${res.data.error_message}`);
       return;
     }
-    return res.data.data?.items?.[0];
+    return res.data.data;
+  };
+
+  const formatCovalentTx = rawTx => ({
+    block: rawTx.block_height,
+    data: "0x", // not available?
+    from: getAddress(rawTx.from_address),
+    gasLimit: hexlify(rawTx.gas_offered),
+    gasPrice: hexlify(rawTx.gas_price),
+    gasUsed: hexlify(rawTx.gas_spent),
+    hash: rawTx.tx_hash,
+    index: rawTx.tx_offset,
+    logs: rawTx.log_events.map(evt => ({
+      address: getAddress(evt.sender_address),
+      index: evt.log_offset,
+      topics: evt.raw_log_topics,
+      data: evt.raw_log_data || "0x",
+    })),
+    nonce: 0, // not available?
+    status: rawTx.successful ? 1 : 0,
+    timestamp: rawTx.block_signed_at,
+    to: getAddress(rawTx.to_address),
+    value: formatEther(rawTx.value),
+  });
+
+  const fetchTx = async (txHash: Bytes32): Promise<any> => {
+    const data = await queryCovalent(`${chainId}/transaction_v2/${txHash}`);
+    return data?.items?.[0];
+  };
+
+  const syncAddress = async (address: Address): Promise<void> => {
+    const yesterday = Date.now() - 1000 * 60 * 60 * 24;
+    if (new Date(json.addresses[address]?.lastUpdated || 0).getTime() > yesterday) {
+      log.info(`Info for address ${address} is up to date`);
+      return;
+    }
+    let data = await queryCovalent(`${chainId}/address/${address}/transactions_v2`);
+    const items = data.items;
+    while (data.pagination.has_more) {
+      data = await queryCovalent(`${chainId}/address/${address}/transactions_v2`, {
+        ["page-number"]: data.pagination.page_number + 1,
+      });
+      items.push(...data.items);
+    }
+    const history = items.map(item => item.tx_hash).sort();
+    json.addresses[address] = {
+      lastUpdated: new Date().toISOString(),
+      history,
+    };
+    save();
+    for (const txHash of history) {
+      const polygonTx = formatCovalentTx(
+        items.find(item => item.tx_hash === txHash)
+        || await fetchTx(txHash)
+      );
+      const error = getEthTransactionError(polygonTx);
+      if (error) throw new Error(error);
+      json.transactions.push(polygonTx);
+      save();
+    }
+    return;
   };
 
   ////////////////////////////////////////
@@ -114,28 +174,7 @@ export const getPolygonData = (params?: {
       return;
     }
     log.info(`Fetching polygon data for tx ${txHash}`);
-    const rawPolygonTx = await fetchTx(txHash);
-    const polygonTx = {
-      block: rawPolygonTx.block_height,
-      data: "0x", // not available from covalent?
-      from: rawPolygonTx.from_address,
-      gasLimit: hexlify(rawPolygonTx.gas_offered),
-      gasPrice: hexlify(rawPolygonTx.gas_price),
-      gasUsed: hexlify(rawPolygonTx.gas_spent),
-      hash: rawPolygonTx.tx_hash,
-      index: rawPolygonTx.tx_offset,
-      logs: rawPolygonTx.log_events.map(evt => ({
-        address: evt.sender_address,
-        index: evt.log_offset,
-        topics: evt.raw_log_topics,
-        data: evt.raw_log_data || "0x",
-      })),
-      nonce: 0, // not available?
-      status: rawPolygonTx.successful ? 1 : 0,
-      timestamp: rawPolygonTx.block_signed_at,
-      to: rawPolygonTx.to_address,
-      value: formatEther(rawPolygonTx.value),
-    };
+    const polygonTx = formatCovalentTx(await fetchTx(txHash));
     const error = getEthTransactionError(polygonTx);
     if (error) throw new Error(error);
     // log.debug(polygonTx, `Parsed raw polygon tx to a valid evm tx`);
@@ -146,21 +185,34 @@ export const getPolygonData = (params?: {
 
   const syncAddressBook = async (addressBook: AddressBook): Promise<void> => {
     log.info(`addressBook has ${addressBook.json.length} entries`);
-    log.warn(`syncAddressBook not implemented`);
-    syncAddress(addressBook[0].address);
+    for (const entry of addressBook.json) {
+      const address = entry.address;
+      if (addressBook.isSelf(address) && isAddress(address)) {
+        await syncAddress(address);
+      }
+    }
     return;
   };
 
   const getTransactions = (
     addressBook: AddressBook,
-    extraParsers?: EthParser[],
   ): TransactionsJson => {
-    // TODO: implement
-    log.info(`${addressBook.json.length} address entries & ${extraParsers?.length} parsers`);
-    log.warn(`syncTransaction not implemented`);
-    return [];
+    const selfAddresses = addressBook.json
+      .map(entry => entry.address)
+      .filter(address => addressBook.isSelf(address))
+      .filter(address => isAddress(address));
+    const selfTransactionHashes = Array.from(new Set(
+      selfAddresses.reduce((all, address) => {
+        return all.concat(json.addresses[address]?.history || []);
+      }, [])
+    ));
+    log.info(`Parsing ${selfTransactionHashes.length} polygon transactions`);
+    return selfTransactionHashes.map(hash => parsePolygonTx(
+      json.transactions.find(tx => tx.hash === hash),
+      addressBook,
+      logger,
+    )).sort(chrono);
   };
-
 
   const getTransaction = (
     hash: Bytes32,

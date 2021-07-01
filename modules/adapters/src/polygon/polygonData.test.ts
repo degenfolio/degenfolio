@@ -32,19 +32,13 @@ describe("Polygon", () => {
     expect(polygonData).to.be.ok;
   });
 
-  it.only("should sync a transaction", async () => {
+  it("should sync & parse a transaction", async () => {
     await polygonData.syncTransaction(testHash);
-  });
-
-  it.only("should parse a transaction", async () => {
     polygonData.getTransaction(testHash, addressBook);
   });
 
-  it.skip("should sync an address book", async () => {
+  it.only("should sync & parse an address book", async () => {
     await polygonData.syncAddressBook(addressBook);
-  });
-
-  it.skip("should parse an address book", async () => {
     polygonData.getTransactions(addressBook);
   });
 

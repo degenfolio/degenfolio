@@ -39,8 +39,8 @@ export const testLogger = getLogger(env.logLevel).child({ module: "TestUtils" })
 export const getTestAddressBook = (address: Address): AddressBook => getAddressBook({
   json: [
     { address, name: "test-self", category: AddressCategories.Self },
-    ...appAddresses,
   ],
+  hardcoded: appAddresses,
   logger: testLogger
 });
 
