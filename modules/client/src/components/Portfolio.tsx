@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useContext } from "react";
 import { XYPlot, XAxis, YAxis, PolygonSeries, HorizontalGridLines } from "react-vis";
 import { format } from "d3-format";
-import { AssetChunk, Prices } from "@valuemachine/types";
+import { Asset, AssetChunk, Prices } from "@valuemachine/types";
 import { mul } from "@valuemachine/utils";
 import { Typography } from "@material-ui/core";
 import Paper from "@material-ui/core/Paper";
@@ -52,7 +52,8 @@ const getChunksByDate = (chunks: AssetChunk[], dates: string[]) => {
 
 export const Portfolio = ({
   prices,
-}: { prices: Prices }) => {
+  unit
+}: { prices: Prices, unit: Asset }) => {
   const { vm } = useContext(AccountContext);
   // const classes = useStyles();
 
@@ -73,6 +74,10 @@ export const Portfolio = ({
     setPage(0);
   };
 
+  const getChunkValue = (date: string, asset: string, quantity: string) => {
+    return parseFloat(mul(quantity, prices.getNearest(date, asset) || "0"));
+  };
+
   const formatChunksToGraphData = (dates: string[]) => {
     if (!vm?.json?.chunks?.length) return;
     const chunks = vm.json.chunks;
@@ -90,12 +95,9 @@ export const Portfolio = ({
       let yDisposePrevNeg = 0;
 
       chunkByDate[date].forEach(async (chunkIndex) => {
-        // const asset = chunks[chunkIndex].asset;
-        const receivePrice = prices.getNearest(date, chunks[chunkIndex].asset) || "0";
-        const disposePrice = prices.getNearest(dates[index + 1], chunks[chunkIndex].asset) || "0";
-
-        const receiveValue = parseFloat(mul(chunks[chunkIndex].quantity, receivePrice));
-        const disposeValue = parseFloat(mul(chunks[chunkIndex].quantity, disposePrice));
+        const chunk = chunks[chunkIndex];
+        const receiveValue = getChunkValue(date, chunk.asset, chunk.quantity);
+        const disposeValue = getChunkValue(dates[index + 1], chunk.asset, chunk.quantity);
 
         newData.push({
           series: [
@@ -126,16 +128,15 @@ export const Portfolio = ({
     setData(newData);
   };
 
+  const handlePopoverOpen = (event: any, chunk: AssetChunk) => {
+    setCurrentChunk(chunk);
+  };
+
   useEffect(() => {
     if (!vm.json.chunks.length) return;
     const newDates = Array.from(new Set(vm.json.events.map(e => e.date))).sort();
     setDates(newDates);
   }, [vm.json, prices, page, rowsPerPage]);
-
-  const handlePopoverOpen = (event: any, chunk: AssetChunk) => {
-    console.log(chunk);
-    setCurrentChunk(chunk);
-  };
 
   useEffect(() => {
     if (dates.length <= 0) return;
@@ -158,10 +159,18 @@ export const Portfolio = ({
           </Typography>
           <Typography> Received on: {currentChunk.receiveDate} </Typography>
           <Typography>
+            Received value: {unit}
+            {getChunkValue(currentChunk.receiveDate, currentChunk.asset, currentChunk.quantity)}
+          </Typography>
+          <Typography>
             {currentChunk.disposeDate
-              ? `Disposed on: ${currentChunk.disposeDate}`
-              : "Currently Held"
+              ? `Disposed on: ${currentChunk.disposeDate} for `
+              : "Currently Held value: "
             }
+            {unit}
+            {getChunkValue(currentChunk.receiveDate, currentChunk.asset, currentChunk.quantity)} 
+          </Typography>
+          <Typography>
           </Typography>
         </Paper> 
       </Grid>
