@@ -1,0 +1,1 @@
+export { getPolygonData } from "./polygonData";
