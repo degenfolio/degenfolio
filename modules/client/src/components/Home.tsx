@@ -201,7 +201,7 @@ export const Home = () => {
       <NavBar syncing={syncing} unit={unit} setUnit={setUnit} />
       <TabContext value={tab}>
         <TabPanel value="portfolio" className={classes.panel}>
-          <Portfolio prices={prices} />
+          <Portfolio prices={prices} unit={unit} />
         </TabPanel>
         <TabPanel value="addressBook" className={classes.panel}>
           <AccountFAB />

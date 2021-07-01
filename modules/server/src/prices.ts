@@ -57,19 +57,22 @@ const syncPrice = async (rawDate: string, unit: string, asset: string): Promise<
 
 export const pricesRouter = express.Router();
 
-pricesRouter.get("/:unit/:asset/:date", async (req, res) => {
+pricesRouter.post("/chunks/:unit", async (req, res) => {
   const logAndSend = getLogAndSend(res);
-  const { asset, date, unit } = req.params;
-  log.info(`Got request for ${unit} price of ${asset} on ${date}`);
+  const { unit } = req.params;
+  const { chunks } = req.body;
+  log.info(`Getting ${unit} prices for ${chunks.length} chunks`);
+  const prices = getPrices({ store, logger: log, unit: unit });
   try {
-    return logAndSend(await syncPrice(date, unit, asset));
+    const pricesJson = await prices.syncChunks(chunks);
+    logAndSend(pricesJson);
   } catch (e) {
     log.error(e.message);
     logAndSend(e.message, STATUS_YOUR_BAD);
   }
 });
 
-pricesRouter.post("/:unit/:date", async (req, res) => {
+pricesRouter.post("/assets/:unit/:date", async (req, res) => {
   const logAndSend = getLogAndSend(res);
   const { unit, date } = req.params;
   const { assets } = req.body;
@@ -87,15 +90,12 @@ pricesRouter.post("/:unit/:date", async (req, res) => {
   logAndSend({ [date]: { [unit]: output } });
 });
 
-pricesRouter.post("/chunks/:unit", async (req, res) => {
+pricesRouter.get("/:unit/:asset/:date", async (req, res) => {
   const logAndSend = getLogAndSend(res);
-  const { unit } = req.params;
-  const { chunks } = req.body;
-  log.info(`Getting ${unit} prices for ${chunks.length} chunks`);
-  const prices = getPrices({ store, logger: log, unit: unit });
+  const { asset, date, unit } = req.params;
+  log.info(`Got request for ${unit} price of ${asset} on ${date}`);
   try {
-    const pricesJson = await prices.syncChunks(chunks);
-    logAndSend(pricesJson);
+    return logAndSend(await syncPrice(date, unit, asset));
   } catch (e) {
     log.error(e.message);
     logAndSend(e.message, STATUS_YOUR_BAD);
