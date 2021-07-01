@@ -2,6 +2,7 @@ import { HashZero } from "@ethersproject/constants";
 import { ChainData } from "@valuemachine/types";
 
 import {
+  env,
   expect,
   getTestAddressBook,
   testLogger,
@@ -20,7 +21,7 @@ describe("Polygon", () => {
 
   beforeEach(() => {
     polygonData = getPolygonData({
-      covalentKey: process.env.covalentKey,
+      covalentKey: env.covalentKey,
       logger,
     });
   });
@@ -29,8 +30,10 @@ describe("Polygon", () => {
     expect(polygonData).to.be.ok;
   });
 
-  it.skip("should sync a transaction", async () => {
-    await polygonData.syncTransaction(HashZero);
+  it.only("should sync a transaction", async () => {
+    await polygonData.syncTransaction(
+      "0x292ec1392e758f33e77bd077334b413e5337f86698e99396befc123f8579f9fa"
+    );
   });
 
   it.skip("should parse a transaction", async () => {

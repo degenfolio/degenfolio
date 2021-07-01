@@ -23,6 +23,7 @@ docker run \
   --env="CI=$CI" \
   --env="LOG_LEVEL=${LOG_LEVEL:-}" \
   --env="ETHERSCAN_KEY=${ETHERSCAN_KEY:-}" \
+  --env="COVALENT_KEY=${COVALENT_KEY:-}" \
   --name="${project}_${cmd}_${unit}" \
   --network "$project" \
   --rm \
