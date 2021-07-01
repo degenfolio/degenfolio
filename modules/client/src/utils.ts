@@ -42,7 +42,7 @@ export const fetchPriceForAssetsOnDate = async (
     ) return {} as PricesJson;
 
     try {
-      const res = await axios.post(`/api/prices/${unit}/${date}`, { missingAssets });
+      const res = await axios.post(`/api/prices/assets/${unit}/${date}`, { missingAssets });
       if (res.status === 200 && typeof(res.data) === "object") {
         return res.data;
       }
