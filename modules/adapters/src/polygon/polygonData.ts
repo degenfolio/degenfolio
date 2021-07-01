@@ -34,12 +34,10 @@ export const getPolygonData = (params?: {
   const chainId = "137";
 
   const log = (logger || getLogger()).child?.({ module: "PolygonData" });
-  const json = chainDataJson || store?.load(PolygonStoreKey) || getEmptyChainData();
+  const json = chainDataJson || store?.load(PolygonStoreKey as any) || getEmptyChainData();
   const save = () => store
-    ? store.save(PolygonStoreKey, json)
+    ? store.save(PolygonStoreKey as any, json)
     : log.warn(`No store provided, can't save chain data`);
-
-  if (!covalentKey) throw new Error(`A covalent api key is required to sync polygon data`);
 
   log.info(`Loaded polygon data containing ${
     json.transactions.length
@@ -50,6 +48,7 @@ export const getPolygonData = (params?: {
 
   const covalentUrl = "https://api.covalenthq.com/v1";
   const queryCovalent = async (path: string, query?: any): Promise<any> => {
+    if (!covalentKey) throw new Error(`A covalent api key is required to sync polygon data`);
     const url = `${covalentUrl}/${path}/?${
       Object.entries(query || {}).reduce((querystring, entry) => {
         querystring += `${entry[0]}=${entry[1]}&`;

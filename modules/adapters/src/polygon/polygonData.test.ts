@@ -11,7 +11,7 @@ import {
 import { getPolygonData } from "./polygonData";
 
 const logger = testLogger.child({ module: `TestPolygon`,
-  level: "debug", // Uncomment to enable verbose logging
+  // level: "debug", // Uncomment to enable verbose logging
 });
 
 describe("Polygon", () => {
@@ -37,7 +37,7 @@ describe("Polygon", () => {
     polygonData.getTransaction(testHash, addressBook);
   });
 
-  it.only("should sync & parse an address book", async () => {
+  it("should sync & parse an address book", async () => {
     await polygonData.syncAddressBook(addressBook);
     polygonData.getTransactions(addressBook);
   });

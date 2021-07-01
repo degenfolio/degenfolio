@@ -53,7 +53,7 @@ export const parsePolygonTx = (
 
   // Detect failed transactions
   if (polygonTx.status !== 1) {
-    tx.mpolygonod = "Failure";
+    tx.method = "Failure";
     log.info(`Detected a failed tx`);
     return tx;
   }

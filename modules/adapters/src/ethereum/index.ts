@@ -6,7 +6,7 @@ export const appSources = [
   idleSource,
 ];
 
-export const appAddresses = [
+export const ethAddresses = [
   ...aaveAddresses,
   ...idleAddresses,
 ];

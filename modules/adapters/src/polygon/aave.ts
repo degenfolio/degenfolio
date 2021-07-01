@@ -5,6 +5,7 @@ import {
   AddressBook,
   AddressEntry,
   AddressCategories,
+  AddressCategory,
   EthTransaction,
   Logger,
   Transaction,
@@ -25,7 +26,7 @@ export const aaveSource = "Aave";
 
 const { Expense, Income, Internal, Unknown } = TransferCategories;
 
-const setCategory = (category: AddressCategories) =>
+const setCategory = (category: AddressCategory) =>
   (entry: Partial<AddressEntry>): AddressEntry => ({
     ...setAddressCategory(category)(entry),
     guardian: MATIC,
