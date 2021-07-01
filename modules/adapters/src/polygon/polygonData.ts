@@ -18,10 +18,10 @@ import {
 // import axios from "axios";
 
 export const getPolygonData = (params?: {
-  json: ChainDataJson;
-  covalentKey: string;
-  logger: Logger,
-  store: Store,
+  json?: ChainDataJson;
+  covalentKey?: string;
+  logger?: Logger,
+  store?: Store,
 }): ChainData => {
   const { json: chainDataJson, logger, store } = params || {};
 

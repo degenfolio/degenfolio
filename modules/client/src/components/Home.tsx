@@ -91,7 +91,7 @@ export const Home = () => {
       while (true) {
         try {
           console.log(`Attempting to fetch for addressBook`, addressBookJson);
-          const res = await axios.post("/api/transactions/eth", { addressBook: addressBookJson });
+          const res = await axios.post("/api/ethereum", { addressBook: addressBookJson });
           if (res.status === 200 && typeof(res.data) === "object") {
             const newTransactions = getTransactions({
               json: res.data,

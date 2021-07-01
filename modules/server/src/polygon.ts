@@ -1,22 +1,25 @@
-import { appAddresses, appParsers } from "@degenfolio/adapters";
+import { appAddresses, appParsers, getPolygonData } from "@degenfolio/adapters";
 import { isAddress as isEthAddress } from "@ethersproject/address";
-import { getAddressBook } from "valuemachine";
-import { chrono, getLogger } from "@valuemachine/utils";
+import { chrono, getLogger, getAddressBookError } from "@valuemachine/utils";
 import express from "express";
+import { getAddressBook } from "valuemachine";
 
 import { env } from "./env";
-import { chainData, getLogAndSend, STATUS_YOUR_BAD, STATUS_MY_BAD } from "./utils";
+import { getLogAndSend, store, STATUS_YOUR_BAD, STATUS_MY_BAD } from "./utils";
 
 const log = getLogger(env.logLevel).child({ module: "Transactions" });
 
-export const transactionsRouter = express.Router();
+const polygonData = getPolygonData({ covalentKey: env.covalentKey, logger: log, store });
+
+export const polygonRouter = express.Router();
 
 let syncing = [];
-transactionsRouter.post("/eth", async (req, res) => {
+polygonRouter.post("/", async (req, res) => {
   const logAndSend = getLogAndSend(res);
   const addressBookJson = req.body.addressBook;
-  if (!addressBookJson || !addressBookJson.length) { // TODO use getAddressBookErrors util
-    return logAndSend(`A valid address book must be provided via POST body`, STATUS_YOUR_BAD);
+  const addressBookError = getAddressBookError(addressBookJson);
+  if (addressBookError) {
+    return logAndSend("Invalid AddressBook" + addressBookError, STATUS_YOUR_BAD);
   }
   const addressBook = getAddressBook({
     json: addressBookJson,
@@ -31,7 +34,7 @@ transactionsRouter.post("/eth", async (req, res) => {
     return logAndSend(`Eth data for ${selfAddresses.length} addresses is already syncing.`);
   }
   selfAddresses.forEach(address => syncing.push(address));
-  const sync = new Promise(res => chainData.syncAddressBook(addressBook).then(() => {
+  const sync = new Promise(res => polygonData.syncAddressBook(addressBook).then(() => {
     log.warn(`Successfully synced history for ${selfAddresses.length} addresses`);
     syncing = syncing.filter(address => !selfAddresses.includes(address));
     res(true);
@@ -48,7 +51,7 @@ transactionsRouter.post("/eth", async (req, res) => {
       if (didSync) {
         try {
           const start = Date.now();
-          const transactionsJson = chainData.getTransactions(addressBook, appParsers);
+          const transactionsJson = polygonData.getTransactions(addressBook, appParsers);
           res.json(transactionsJson.sort(chrono));
           log.info(`Returned ${transactionsJson.length} transactions at a rate of ${
             Math.round((100000 * transactionsJson.length)/(Date.now() - start)) / 100
@@ -83,4 +86,5 @@ transactionsRouter.post("/eth", async (req, res) => {
   });
   log.info(`Synced ${selfAddresses.length} addresses successfully? ${await sync}`);
 });
+
 
