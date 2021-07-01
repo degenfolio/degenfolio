@@ -4,6 +4,7 @@ import path from "path";
 import { AddressZero } from "@ethersproject/constants";
 import {
   Address,
+  AddressBook,
   AddressCategories,
   Bytes32,
   EthCall,
@@ -32,6 +33,14 @@ export const env = {
 
 export const testLogger = getLogger(env.logLevel).child({ module: "TestUtils" });
 
+export const getTestAddressBook = (address: Address): AddressBook => getAddressBook({
+  json: [
+    { address, name: "test-self", category: AddressCategories.Self },
+    ...appAddresses,
+  ],
+  logger: testLogger
+});
+
 export const parseEthTx = async ({
   hash,
   selfAddress,
@@ -45,13 +54,7 @@ export const parseEthTx = async ({
   logger?: Logger;
   storePath: string;
 }): Promise<Transaction> => {
-  const addressBook = getAddressBook({
-    json: [
-      { address: selfAddress, name: "test-self", category: AddressCategories.Self },
-      ...appAddresses,
-    ],
-    logger: testLogger,
-  });
+  const addressBook = getTestAddressBook(selfAddress);
   const testStore = getFileStore(path.join(__dirname, storePath || "./testData"), fs);
   const chainData = getChainData({
     json: {
