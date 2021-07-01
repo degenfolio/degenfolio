@@ -36,36 +36,6 @@ export const aaveAddresses = [
   ...marketAddresses,
 ];
 
-
-////////////////////////////////////////
-/// Interfaces
-
-const lendingPoolInterface = new Interface([
-  "event LiquidationCall(address collateralAsset,address debtAsset,address user,uint256 debtToCover,uint256 liquidatedCollateralAmount,address liquidator,bool receiveAToken )",
-  "event ReserveDataUpdated(address asset,uint256 liquidityRate,uint256 stableBorrowRate,uint256 variableBorrowRate,uint256 liquidityIndex,uint256 variableBorrowIndex )",
-  "event ReserveUsedAsCollateralEnabled(address _reserve,address _user )",
-  "event ReserveUsedAsCollateralDisabled(address _reserve,address _user )",
-  "event Deposit(address reserve,address user,address onBehalfOf,uint256 amount,uint16 referral )",
-  "event Withdraw(address vault,address owner,address reserve,uint256 amount )",
-  "event Repay(address vault,address owner,address reserve,uint256 amount )",
-  "event Deposit(address reserve,address user,address onBehalfOf,uint256 amount,uint16 referral )",
-]);
-
-const aTokenInterface = new Interface([
-  "event Transfer(address from,address to,uint256 value )",
-  "event Mint(address _to,uint256 _amount,uint256 _newTotalSupply )",
-  "event Burn(address account,address burnAddress,uint256 tokens,uint256 time )",
-  "event Approval(address owner,address spender,uint256 value )",
-  "event Withdraw(address indexed provider, uint256 value, uint256 ts)",
-]);
-
-const aaveStakeInterface = new Interface([
-  "event Staked(address indexed from, address indexed onBehalfOf, uint256 amount)",
-  "event Redeem(address indexed from, address indexed to, uint256 amount)",
-  "event BalanceTransfer(address from,address to,uint256 value,uint256 index )",
-]);
-
-
 ////////////////////////////////////////
 /// Parser
 
