@@ -75,6 +75,7 @@ export const Portfolio = ({
   };
 
   const getChunkValue = (date: string, asset: string, quantity: string) => {
+    if (!date) return 0;
     return parseFloat(mul(quantity, prices.getNearest(date, asset) || "0"));
   };
 
