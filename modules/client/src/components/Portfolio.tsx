@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from "react";
-import { XYPlot, XAxis, YAxis, PolygonSeries, HorizontalGridLines, DiscreteColorLegend } from "react-vis";
+import { XYPlot, XAxis, YAxis, PolygonSeries, HorizontalGridLines, DiscreteColorLegend, Crosshair, LineSeries } from "react-vis";
 import { format } from "d3-format";
 import { Asset, AssetChunk, Prices } from "@valuemachine/types";
 import { mul } from "@valuemachine/utils";
@@ -12,6 +12,7 @@ import makeStyles from "@material-ui/core/styles/makeStyles";
 import { assetToColor } from "../utils";
 
 import { AccountContext } from "./AccountManager";
+import { SettingsInputComponentTwoTone } from "@material-ui/icons";
 
 const useStyles = makeStyles( theme => ({
   graph: {
@@ -28,7 +29,6 @@ const useStyles = makeStyles( theme => ({
     "& > *": {
       margin: theme.spacing(1),
     },
-    w
   }
 }));
 
@@ -39,6 +39,11 @@ type SeriesData = Array<{
   series: Array<{x: number, y: number}>;
   chunk: AssetChunk;
 }>;
+
+const crosshair = [
+  [{x: 7.0, y: 10}, {x: 5.0, y: 7}, {x: 3.0, y: 15}],
+  [{x: 7.0, y: 10}, {x: 5.0, y: 7}, {x: 3.0, y: 15}]
+];
 
 const getChunksByDate = (chunks: AssetChunk[], dates: string[]) => {
   const empty = dates.reduce((output, date) => {
@@ -69,6 +74,7 @@ export const Portfolio = ({
   const classes = useStyles();
 
   const [data, setData] = useState([] as SeriesData);
+  const [crosshairdata, setCrosshairdata] = useState([] as Array<{x: number, y: number}>);
   const [currentChunk, setCurrentChunk] = useState({} as AssetChunk);
   const [dates, setDates] = useState([] as string[]);
   const [page, setPage] = React.useState(0);
@@ -139,8 +145,9 @@ export const Portfolio = ({
     setData(newData);
   };
 
-  const handlePopoverOpen = (event: any, chunk: AssetChunk) => {
+  const handlePopoverOpen = (event: any, chunk: AssetChunk, series: Array<{x: number, y: number}>) => {
     setCurrentChunk(chunk);
+    setCrosshairdata(series);
   };
 
   useEffect(() => {
@@ -167,8 +174,7 @@ export const Portfolio = ({
       <Grid item xs={12} sm={8}>
         <Grid item xs={12} sm={8}>
           <div className={classes.graph}>
-            <XYPlot
-              margin={{ left: 100 }}
+            <XYPlot margin={{ left: 100 }}
               height={300} width={600}
             >
               <DiscreteColorLegend
@@ -191,11 +197,10 @@ export const Portfolio = ({
                 ticks: { stroke: "#ADDDE1" },
                 text: { stroke: "none", fill: "#6b6b76", fontWeight: 600 }
               }} />
-              <YAxis
-                style={{
-                  line: { stroke: "#ADDDE1" },
-                  ticks: { stroke: "#ADDDE1" },
-                  text: { stroke: "none", fill: "#6b6b76", fontWeight: 600 }
+              <YAxis style={{
+                line: { stroke: "#ADDDE1" },
+                ticks: { stroke: "#ADDDE1" },
+                text: { stroke: "none", fill: "#6b6b76", fontWeight: 600 }
                 }}
                 tickFormat={ tick => format(".2s")(tick) }
               />
@@ -204,9 +209,17 @@ export const Portfolio = ({
                   color={assetToColor(value.chunk.asset)}
                   key={index}
                   data={value.series}
-                  onSeriesMouseOver={(d) => handlePopoverOpen(d, value.chunk)}
+                  onSeriesMouseOver={(d) => handlePopoverOpen(d, value.chunk, value.series)}
                 />;
               })}
+
+              <Crosshair values={[true]} >
+                <div style={{background: 'white'}}>
+                  <h3>Values of crosshair:</h3>
+                  <p>Series 1: </p>
+                  <p>Series 2: </p>
+                </div>
+              </Crosshair>
             </XYPlot>
           </div>
         </Grid>
