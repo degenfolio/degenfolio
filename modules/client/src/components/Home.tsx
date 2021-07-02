@@ -165,7 +165,7 @@ export const Home = () => {
       addressBook,
       logger,
     });
-   
+
     for (const tx of transactions.json) {
       const newEvents = newVM.execute(tx);
       console.log(`New events for ${tx.date}`, newEvents);
