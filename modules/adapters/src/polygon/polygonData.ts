@@ -162,6 +162,16 @@ export const getPolygonData = (params?: {
   });
   */
 
+  const getTransaction = (
+    hash: Bytes32,
+    addressBook: AddressBook,
+  ): Transaction =>
+    parsePolygonTx(
+      json.transactions.find(tx => tx.hash === hash),
+      addressBook,
+      logger,
+    );
+
   const syncTransaction = async (
     txHash: string,
   ): Promise<void> => {
@@ -212,19 +222,6 @@ export const getPolygonData = (params?: {
       logger,
     )).sort(chrono);
   };
-
-  const getTransaction = (
-    hash: Bytes32,
-    addressBook: AddressBook,
-  ): Transaction =>
-    parsePolygonTx(
-      json.transactions.find(tx => tx.hash === hash),
-      addressBook,
-      logger,
-    );
-
-  ////////////////////////////////////////
-  // One more bit of init code before returning
 
   return {
     getTransaction,
