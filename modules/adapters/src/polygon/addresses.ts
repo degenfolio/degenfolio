@@ -14,7 +14,7 @@ const setAddressCategory = (category: AddressCategory) =>
     fmtAddressEntry({
       ...entry,
       category,
-      guardian: MATIC,
+      guard: MATIC,
     } as AddressEntry);
 
 export const polygonAddresses = [

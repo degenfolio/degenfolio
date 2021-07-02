@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from "react";
-import { XYPlot, XAxis, YAxis, PolygonSeries, HorizontalGridLines, DiscreteColorLegend } from "react-vis";
+import { XYPlot, XAxis, YAxis, PolygonSeries, HorizontalGridLines } from "react-vis";
 import { format } from "d3-format";
 import { Asset, AssetChunk, Prices } from "@valuemachine/types";
 import { mul } from "@valuemachine/utils";
@@ -36,10 +36,10 @@ const getChunksByDate = (chunks: AssetChunk[], dates: string[]) => {
   }, {} as { [date: string]: number[] });
 
   return chunks.reduce((output, chunk, index) => {
-    if ( chunk.receiveDate > dates[dates.length - 1]) return output;
+    if ( chunk.history[0]?.date > dates[dates.length - 1]) return output;
     if (chunk.disposeDate && chunk.disposeDate < dates[0]) return output;
 
-    const i = dates.findIndex(d => d === chunk.receiveDate);
+    const i = dates.findIndex(d => d === chunk.history[0]?.date);
     const j = chunk.disposeDate ? dates.findIndex(d => d === chunk.disposeDate) : dates.length;
     dates.slice(i,j).forEach((date) => {
       output[date].push(index);
@@ -198,10 +198,10 @@ export const Portfolio = ({
           <Typography>
             {`${currentChunk.quantity} ${currentChunk.asset}`}
           </Typography>
-          <Typography> Received on: {currentChunk.receiveDate} </Typography>
+          <Typography> Received on: {currentChunk.history[0]?.date} </Typography>
           <Typography>
             Received value: {unit}
-            {getChunkValue(currentChunk.receiveDate, currentChunk.asset, currentChunk.quantity)}
+            {getChunkValue(currentChunk.history[0]?.date, currentChunk.asset, currentChunk.quantity)}
           </Typography>
           <Typography>
             {currentChunk.disposeDate
@@ -209,7 +209,7 @@ export const Portfolio = ({
               : "Currently Held value: "
             }
             {unit}
-            {getChunkValue(currentChunk.receiveDate, currentChunk.asset, currentChunk.quantity)} 
+            {getChunkValue(currentChunk.history[0]?.date, currentChunk.asset, currentChunk.quantity)} 
           </Typography>
           <Typography>
           </Typography>

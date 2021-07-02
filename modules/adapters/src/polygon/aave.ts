@@ -29,7 +29,7 @@ const { Expense, Income, Internal, Unknown } = TransferCategories;
 const setCategory = (category: AddressCategory) =>
   (entry: Partial<AddressEntry>): AddressEntry => ({
     ...setAddressCategory(category)(entry),
-    guardian: MATIC,
+    guard: MATIC,
   });
 
 const govAddresses = [
