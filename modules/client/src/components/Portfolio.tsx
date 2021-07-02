@@ -7,22 +7,33 @@ import { Typography } from "@material-ui/core";
 import Paper from "@material-ui/core/Paper";
 import Grid from "@material-ui/core/Grid";
 import TablePagination from "@material-ui/core/TablePagination";
-// import makeStyles from "@material-ui/core/styles/makeStyles";
+import makeStyles from "@material-ui/core/styles/makeStyles";
 
 import { assetToColor } from "../utils";
 
 import { AccountContext } from "./AccountManager";
 
-// const useStyles = makeStyles( theme => ({
-//   graph: {
-//     [theme.breakpoints.up("md")]: {
-//       width: 600,
-//       height: 300,
-//     },
-//     width: 300,
-//     height: 300,
-//   }
-// }));
+const useStyles = makeStyles( theme => ({
+  graph: {
+    [theme.breakpoints.up("xs")]: {
+      width: 600,
+      height: 350,
+    },
+    width: 300,
+    height: 350,
+  },
+  root: {
+    flexGrow: 1,
+    margin: theme.spacing(1, 1),
+    "& > *": {
+      margin: theme.spacing(1),
+    },
+    w
+  }
+}));
+
+
+type LegendData = { title: string,  color: string, strokeWidth: number }
 
 type SeriesData = Array<{
   series: Array<{x: number, y: number}>;
@@ -55,7 +66,7 @@ export const Portfolio = ({
   unit
 }: { prices: Prices, unit: Asset }) => {
   const { vm } = useContext(AccountContext);
-  // const classes = useStyles();
+  const classes = useStyles();
 
   const [data, setData] = useState([] as SeriesData);
   const [currentChunk, setCurrentChunk] = useState({} as AssetChunk);
@@ -85,7 +96,6 @@ export const Portfolio = ({
     const newData = [] as SeriesData;
 
     const chunkByDate = getChunksByDate(chunks, dates);
-    console.log(chunkByDate);
 
     // Exclude the last date
     dates.slice(0,-1).forEach((date, index) => {
@@ -153,68 +163,89 @@ export const Portfolio = ({
   if(!data.length) return <> Loading </>;
 
   return (
-    <Grid container spacing={2}>
-      <Grid item>
-        <XYPlot
-          margin={{ left: 100 }}
-          height={300} width={600}
-        >
-          <HorizontalGridLines />
-          <XAxis style={{
-            line: { stroke: "#ADDDE1" },
-            ticks: { stroke: "#ADDDE1" },
-            text: { stroke: "none", fill: "#6b6b76", fontWeight: 600 }
-          }} />
-          <YAxis
-            style={{
-              line: { stroke: "#ADDDE1" },
-              ticks: { stroke: "#ADDDE1" },
-              text: { stroke: "none", fill: "#6b6b76", fontWeight: 600 }
-            }}
-            tickFormat={ tick => format(".2s")(tick) }
+    <Grid container spacing={0}>
+      <Grid item xs={12} sm={8}>
+        <Grid item xs={12} sm={8}>
+          <div className={classes.graph}>
+            <XYPlot
+              margin={{ left: 100 }}
+              height={300} width={600}
+            >
+              <DiscreteColorLegend
+                orientation={"vertical"}
+                width={300}
+                items={data.reduce((colorLegend: LegendData[], seriesDataPoint: any ) => {
+                  if ( colorLegend.findIndex(val => val.title === seriesDataPoint.chunk.asset) < 0 ) {
+                    colorLegend.push({
+                      title: seriesDataPoint.chunk.asset,
+                      color: assetToColor(seriesDataPoint.chunk.asset),
+                      strokeWidth: 20
+                    });
+                  }
+                  return colorLegend;
+                }, [] as LegendData[])}
+              />
+              <HorizontalGridLines />
+              <XAxis style={{
+                line: { stroke: "#ADDDE1" },
+                ticks: { stroke: "#ADDDE1" },
+                text: { stroke: "none", fill: "#6b6b76", fontWeight: 600 }
+              }} />
+              <YAxis
+                style={{
+                  line: { stroke: "#ADDDE1" },
+                  ticks: { stroke: "#ADDDE1" },
+                  text: { stroke: "none", fill: "#6b6b76", fontWeight: 600 }
+                }}
+                tickFormat={ tick => format(".2s")(tick) }
+              />
+              {data.map((value, index) => {
+                return <PolygonSeries
+                  color={assetToColor(value.chunk.asset)}
+                  key={index}
+                  data={value.series}
+                  onSeriesMouseOver={(d) => handlePopoverOpen(d, value.chunk)}
+                />;
+              })}
+            </XYPlot>
+          </div>
+        </Grid>
+        <Grid item xs={12} sm={8}>
+          <TablePagination
+            count={dates.length}
+            page={page}
+            onChangePage={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onChangeRowsPerPage={handleChangeRowsPerPage}
           />
-          {data.map((value, index) => {
-            return <PolygonSeries
-              color={assetToColor(value.chunk.asset)}
-              key={index}
-              data={value.series}
-              onSeriesMouseOver={(d) => handlePopoverOpen(d, value.chunk)}
-            />;
-          })}
-        </XYPlot>
+        </Grid>
       </Grid>
-      <Grid item>
-        <TablePagination
-          component="div"
-          count={dates.length}
-          page={page}
-          onChangePage={handleChangePage}
-          rowsPerPage={rowsPerPage}
-          onChangeRowsPerPage={handleChangeRowsPerPage}
-        />
+
+      <Grid item xs={12} sm={4}>
+        <Grid item xs={12} sm={4}>
+          <Paper id="chunk-detail" variant="outlined" className={classes.root}>
+            <Typography>
+              {`${currentChunk.quantity} ${currentChunk.asset}`}
+            </Typography>
+            <Typography> Received on: {currentChunk.receiveDate} </Typography>
+            <Typography>
+              Received value: {unit}
+              {getChunkValue(currentChunk.receiveDate, currentChunk.asset, currentChunk.quantity)}
+            </Typography>
+            <Typography>
+              {currentChunk.disposeDate
+                ? `Disposed on: ${currentChunk.disposeDate} for `
+                : "Currently Held value: "
+              }
+              {unit}
+              {getChunkValue(currentChunk.receiveDate, currentChunk.asset, currentChunk.quantity)} 
+            </Typography>
+            <Typography>
+            </Typography>
+          </Paper> 
+        </Grid>
       </Grid>
-      <Grid item xs={12} md={6} lg={4}>
-        <Paper id="chunk-detail">
-          <Typography>
-            {`${currentChunk.quantity} ${currentChunk.asset}`}
-          </Typography>
-          <Typography> Received on: {currentChunk.receiveDate} </Typography>
-          <Typography>
-            Received value: {unit}
-            {getChunkValue(currentChunk.receiveDate, currentChunk.asset, currentChunk.quantity)}
-          </Typography>
-          <Typography>
-            {currentChunk.disposeDate
-              ? `Disposed on: ${currentChunk.disposeDate} for `
-              : "Currently Held value: "
-            }
-            {unit}
-            {getChunkValue(currentChunk.receiveDate, currentChunk.asset, currentChunk.quantity)} 
-          </Typography>
-          <Typography>
-          </Typography>
-        </Paper> 
-      </Grid>
+
     </Grid>
   );
 };
