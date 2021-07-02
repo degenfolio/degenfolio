@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from "react";
-import { XYPlot, XAxis, YAxis, PolygonSeries, HorizontalGridLines } from "react-vis";
+import { XYPlot, XAxis, YAxis, PolygonSeries, HorizontalGridLines, DiscreteColorLegend } from "react-vis";
 import { format } from "d3-format";
 import { Asset, AssetChunk, Prices } from "@valuemachine/types";
 import { mul } from "@valuemachine/utils";
@@ -136,7 +136,6 @@ export const Portfolio = ({
   useEffect(() => {
     if (!vm.json.chunks.length) return;
     const newDates = Array.from(new Set(vm.json.events.map(e => e.date))).sort();
-    console.log(`page = ${newDates.length/rowsPerPage}`)
     if (newDates.length) setPage(Math.floor(newDates.length/rowsPerPage));
     setDates(newDates);
   }, [vm.json, prices, rowsPerPage ]);
