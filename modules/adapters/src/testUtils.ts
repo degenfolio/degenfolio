@@ -4,6 +4,7 @@ import path from "path";
 import { AddressZero } from "@ethersproject/constants";
 import {
   Address,
+  AddressBook,
   AddressCategories,
   Bytes32,
   EthCall,
@@ -28,31 +29,33 @@ export { expect } from "chai";
 export const env = {
   logLevel: process.env.LOG_LEVEL || "error",
   etherscanKey: process.env.ETHERSCAN_KEY || "",
+  covalentKey: process.env.COVALENT_KEY || "",
 };
 
+export const testStore = getFileStore(path.join(__dirname, "./testData"), fs);
+
 export const testLogger = getLogger(env.logLevel).child({ module: "TestUtils" });
+
+export const getTestAddressBook = (address: Address): AddressBook => getAddressBook({
+  json: [
+    { address, name: "test-self", category: AddressCategories.Self },
+  ],
+  hardcoded: appAddresses,
+  logger: testLogger
+});
 
 export const parseEthTx = async ({
   hash,
   selfAddress,
   calls,
   logger,
-  storePath,
 }: {
   hash: Bytes32;
   selfAddress: Address;
   calls?: EthCall[];
   logger?: Logger;
-  storePath: string;
 }): Promise<Transaction> => {
-  const addressBook = getAddressBook({
-    json: [
-      { address: selfAddress, name: "test-self", category: AddressCategories.Self },
-      ...appAddresses,
-    ],
-    logger: testLogger,
-  });
-  const testStore = getFileStore(path.join(__dirname, storePath || "./testData"), fs);
+  const addressBook = getTestAddressBook(selfAddress);
   const chainData = getChainData({
     json: {
       ...getEmptyChainData(),
