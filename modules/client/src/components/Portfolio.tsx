@@ -153,28 +153,6 @@ export const Portfolio = ({
 
   return (
     <Grid container spacing={2}>
-      <Grid item xs={12} md={6} lg={4}>
-        <Paper id="chunk-detail">
-          <Typography>
-            {`${currentChunk.quantity} ${currentChunk.asset}`}
-          </Typography>
-          <Typography> Received on: {currentChunk.receiveDate} </Typography>
-          <Typography>
-            Received value: {unit}
-            {getChunkValue(currentChunk.receiveDate, currentChunk.asset, currentChunk.quantity)}
-          </Typography>
-          <Typography>
-            {currentChunk.disposeDate
-              ? `Disposed on: ${currentChunk.disposeDate} for `
-              : "Currently Held value: "
-            }
-            {unit}
-            {getChunkValue(currentChunk.receiveDate, currentChunk.asset, currentChunk.quantity)} 
-          </Typography>
-          <Typography>
-          </Typography>
-        </Paper> 
-      </Grid>
       <Grid item>
         <XYPlot
           margin={{ left: 100 }}
@@ -213,6 +191,28 @@ export const Portfolio = ({
           rowsPerPage={rowsPerPage}
           onChangeRowsPerPage={handleChangeRowsPerPage}
         />
+      </Grid>
+      <Grid item xs={12} md={6} lg={4}>
+        <Paper id="chunk-detail">
+          <Typography>
+            {`${currentChunk.quantity} ${currentChunk.asset}`}
+          </Typography>
+          <Typography> Received on: {currentChunk.receiveDate} </Typography>
+          <Typography>
+            Received value: {unit}
+            {getChunkValue(currentChunk.receiveDate, currentChunk.asset, currentChunk.quantity)}
+          </Typography>
+          <Typography>
+            {currentChunk.disposeDate
+              ? `Disposed on: ${currentChunk.disposeDate} for `
+              : "Currently Held value: "
+            }
+            {unit}
+            {getChunkValue(currentChunk.receiveDate, currentChunk.asset, currentChunk.quantity)} 
+          </Typography>
+          <Typography>
+          </Typography>
+        </Paper> 
       </Grid>
     </Grid>
   );
