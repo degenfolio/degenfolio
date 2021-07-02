@@ -96,11 +96,13 @@ export const Home = () => {
           console.log(`Attempting to fetch for addressBook`, addressBookJson);
 
           const resEth = await axios.post("/api/ethereum", { addressBook: addressBookJson });
+          console.log(`Got ${resEth.data.length} Eth transactions`);
           if (resEth.status === 200 && typeof(resEth.data) === "object") {
             newTransactions.merge(resEth.data);
           }
 
           const resPolygon = await axios.post("/api/polygon", { addressBook: addressBookJson });
+          console.log(`Got ${resPolygon.data.length} Polygon transactions`);
           if (resPolygon.status === 200 && typeof(resPolygon.data) === "object") {
             newTransactions.merge(resPolygon.data);
           }
@@ -165,7 +167,8 @@ export const Home = () => {
     });
    
     for (const tx of transactions.json) {
-      newVM.execute(tx);
+      const newEvents = newVM.execute(tx);
+      console.log(`New events for ${tx.date}`, newEvents);
       await new Promise(res => setTimeout(res, 1));
     }
     store.save(ValueMachineStore, newVM.json);
