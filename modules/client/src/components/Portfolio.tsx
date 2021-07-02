@@ -136,8 +136,10 @@ export const Portfolio = ({
   useEffect(() => {
     if (!vm.json.chunks.length) return;
     const newDates = Array.from(new Set(vm.json.events.map(e => e.date))).sort();
+    console.log(`page = ${newDates.length/rowsPerPage}`)
+    if (newDates.length) setPage(Math.floor(newDates.length/rowsPerPage));
     setDates(newDates);
-  }, [vm.json, prices, page, rowsPerPage]);
+  }, [vm.json, prices, rowsPerPage ]);
 
   useEffect(() => {
     if (dates.length <= 0) return;

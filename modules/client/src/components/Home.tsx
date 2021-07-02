@@ -90,18 +90,25 @@ export const Home = () => {
       // eslint-disable-next-line no-constant-condition
       while (true) {
         try {
+          const newTransactions = getTransactions({
+            logger,
+          });
           console.log(`Attempting to fetch for addressBook`, addressBookJson);
-          const res = await axios.post("/api/ethereum", { addressBook: addressBookJson });
-          if (res.status === 200 && typeof(res.data) === "object") {
-            const newTransactions = getTransactions({
-              json: res.data,
-              logger,
-            });
-            //TODO: If csv merge it to transactions
-            setTransactions(newTransactions);
-            return;
+
+          const resEth = await axios.post("/api/ethereum", { addressBook: addressBookJson });
+          if (resEth.status === 200 && typeof(resEth.data) === "object") {
+            newTransactions.merge(resEth.data);
           }
-          console.log(res);
+
+          const resPolygon = await axios.post("/api/polygon", { addressBook: addressBookJson });
+          if (resPolygon.status === 200 && typeof(resPolygon.data) === "object") {
+            newTransactions.merge(resPolygon.data);
+          }
+
+          //TODO: If csv merge it to transactions
+          setTransactions(newTransactions);
+          return;
+
         } catch (e) {
           console.warn(e);
         }
