@@ -19,7 +19,7 @@ import axios from "axios";
 import React, { useState, useEffect } from "react";
 import { getAddressBook, getTransactions, getValueMachine, getPrices } from "valuemachine";
 
-import { Examples, getExampleData } from "../constants";
+import { Examples, getExampleAddressBook, getExampleCsv } from "../constants";
 import { fetchPriceForAssetsOnDate, fetchPricesForChunks } from "../utils";
 
 import { AddressBookManager } from "./AddressBook";
@@ -57,11 +57,12 @@ export const Home = () => {
   const [tab, setTab] = useState("addressBook");
   const [unit, setUnit] = useState(localStorage.getItem(UnitStore) as Asset || Assets.ETH as Asset);
   const [example, setExample] = useState(localStorage.getItem(ExampleStore) || Examples.Polygon);
+  const [csvFiles, setCsvFiles] = useState(getExampleCsv(example));
   // Load stored JSON data from localstorage
   const [addressBookJson, setAddressBookJson] = useState(
     example === Examples.Custom
       ? store.load(AddressBookStore)
-      : getExampleData(example)
+      : getExampleAddressBook(example)
   );
   // Parse JSON data into utilities
   const [addressBook, setAddressBook] = useState(getAddressBook({
@@ -92,13 +93,14 @@ export const Home = () => {
 
   const syncAddressBook = async () => {
     if (syncing) return;
+    setSyncing(`Syncing`);
+    const newTransactions = getTransactions({
+      logger,
+    });
     if (addressBookJson?.length) {
       // eslint-disable-next-line no-constant-condition
       while (true) {
         try {
-          const newTransactions = getTransactions({
-            logger,
-          });
           console.log(`Attempting to fetch for addressBook`, addressBookJson);
 
           setSyncing(`Syncing Ethereum data for ${addressBookJson.length} addresses`);
@@ -119,10 +121,7 @@ export const Home = () => {
             continue;
           }
 
-          //TODO: If csv merge it to transactions
-          setTransactions(newTransactions);
-          setSyncing("");
-          return;
+          break;
 
         } catch (e) {
           console.warn(e);
@@ -130,6 +129,17 @@ export const Home = () => {
         await new Promise((res) => setTimeout(res, 10000));
       }
     }
+
+    if (csvFiles.length) {
+      for (const csvFile of csvFiles) {
+        setSyncing(`Merging ${csvFile.type} data from ${csvFile.name}`);
+        newTransactions.mergeCsv(csvFile.data, csvFile.type as any);
+      }
+    }
+
+    setTransactions(newTransactions);
+    setSyncing("");
+
   };
 
   const syncPrices = async () => {
@@ -192,7 +202,7 @@ export const Home = () => {
   useEffect(() => {
     setAddressBookJson(
       example !== Examples.Custom
-        ? getExampleData(example)
+        ? getExampleAddressBook(example)
         : store.load(StoreKeys.AddressBook)
     );
   }, [example]);
@@ -220,6 +230,7 @@ export const Home = () => {
   }, [unit]);
 
   useEffect(() => {
+    setCsvFiles(getExampleCsv(example));
     localStorage.setItem(ExampleStore, example);
   }, [example]);
 
@@ -243,6 +254,7 @@ export const Home = () => {
           addressBook={addressBook}
           example={example}
           setExample={setExample}
+          csvFiles={csvFiles}
         />
       </TabPanel>
 

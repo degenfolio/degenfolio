@@ -36,7 +36,7 @@ import { getEmptyAddressBook, getLocalStore } from "@valuemachine/utils";
 import { Guards } from "@degenfolio/adapters";
 import React, { useEffect, useState } from "react";
 
-import { Examples } from "../constants";
+import { CsvFile, Examples } from "../constants";
 
 import { HexString } from "./HexString";
 
@@ -354,11 +354,13 @@ const AddressRow = ({
 
 export const AddressBookManager = ({
   addressBook,
-  setAddressBookJson,
+  csvFiles,
   example,
+  setAddressBookJson,
   setExample,
 }: {
   addressBook: AddressBook,
+  csvFiles: CsvFile[],
   setAddressBookJson: (val: AddressBookJson) => void,
   example: string,
   setExample: (val: string) => void,
@@ -458,39 +460,64 @@ export const AddressBookManager = ({
         </Grid>
       ) : null}
 
-      <Paper className={classes.paper}>
+      {addressBook.json.length ? (
+        <Paper className={classes.paper}>
+          <Typography align="center" variant="h4" className={classes.title} component="div">
+            {`${addressBook.json.length} Addresses`}
+          </Typography>
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell><strong> Account name </strong></TableCell>
+                  <TableCell><strong> Category </strong></TableCell>
+                  <TableCell><strong> Guard </strong></TableCell>
+                  <TableCell><strong> Address </strong></TableCell>
+                  <TableCell><strong> Edit </strong></TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {addressBook.json
+                  .map((entry: AddressEntry, i: number) => (
+                    <AddressRow
+                      otherAddresses={[...allAddresses.slice(0, i), ...allAddresses.slice(i + 1)]}
+                      key={i}
+                      index={addressBook.json.findIndex(e => e.address === entry.address)}
+                      editEntry={editEntry}
+                      entry={entry}
+                    />
+                  ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
+      ) : null}
 
-        <Typography align="center" variant="h4" className={classes.title} component="div">
-          {`${addressBook.json.length} Addresses`}
-        </Typography>
-
-        <TableContainer>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell><strong> Account name </strong></TableCell>
-                <TableCell><strong> Category </strong></TableCell>
-                <TableCell><strong> Guard </strong></TableCell>
-                <TableCell><strong> Address </strong></TableCell>
-                <TableCell><strong> Edit </strong></TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {addressBook.json
-                .map((entry: AddressEntry, i: number) => (
-                  <AddressRow
-                    otherAddresses={[...allAddresses.slice(0, i), ...allAddresses.slice(i + 1)]}
-                    key={i}
-                    index={addressBook.json.findIndex(e => e.address === entry.address)}
-                    editEntry={editEntry}
-                    entry={entry}
-                  />
-
+      {csvFiles.length ? (
+        <Paper className={classes.paper}>
+          <Typography align="center" variant="h4" className={classes.title} component="div">
+            {`${csvFiles.length} CSV Files`}
+          </Typography>
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell><strong> File Name </strong></TableCell>
+                  <TableCell><strong> File Type </strong></TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {csvFiles.map((csvFile: { name: string; type: string; data: string }, i) => (
+                  <TableRow key={i}>
+                    <TableCell><strong> {csvFile.name} </strong></TableCell>
+                    <TableCell><strong> {csvFile.type} </strong></TableCell>
+                  </TableRow>
                 ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Paper>
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
+      ) : null}
 
     </div>
   );
