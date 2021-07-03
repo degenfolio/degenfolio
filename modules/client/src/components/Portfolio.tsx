@@ -41,8 +41,6 @@ type SeriesData = Array<{
   chunk: AssetChunk;
 }>;
 
-type CrosshairData = Array<{}>
-
 const crosshair = [
   [{ x: 7.0, y: 10 }, { x: 5.0, y: 7 }, { x: 3.0, y: 15 }],
   [{ x: 7.0, y: 10 }, { x: 5.0, y: 7 }, { x: 3.0, y: 15 }]
@@ -77,6 +75,7 @@ export const Portfolio = ({
   const classes = useStyles();
 
   const [data, setData] = useState([] as SeriesData);
+  const [chunksByDates, setChunksByDates] = useState({} as { [date: string]: number[] })
   const [crosshairdata, setCrosshairdata] = useState([] as Array<{x: number, y: number}>);
   const [currentChunk, setCurrentChunk] = useState({} as AssetChunk);
   const [dates, setDates] = useState([] as string[]);
@@ -94,6 +93,26 @@ export const Portfolio = ({
     setPage(0);
   };
 
+  console.log(`Re-rendering with seriesData`, data);
+  const onNearestX = (value: any, {innerX}: any) => {
+    // console.log("Nearest X value", value, innerX);
+    const newcrosshairdata = data.reduce((output, seriesvalue) => {
+      const target = seriesvalue.series.filter(p => p.x === value.x);
+      if (target.length) {
+        return output.concat(target);
+      } else {
+        return output;
+      }
+    }, [] as any[]);
+    // console.log(dates[page*rowsPerPage + index]);
+    // console.log(chunksByDates[dates[page*rowsPerPage + index]]);
+    // console.log("Index = ", index);
+    // console.log(data);
+    // console.log(newcrosshairdata)
+    setCrosshairdata(newcrosshairdata);
+
+  };
+
   const getChunkValue = (date: string, asset: string, quantity: string) => {
     if (!date) return 0;
     return parseFloat(mul(quantity, prices.getNearest(date, asset) || "0"));
@@ -101,11 +120,11 @@ export const Portfolio = ({
 
   const formatChunksToGraphData = (dates: string[]) => {
     if (!vm?.json?.chunks?.length) return;
-    console.log("Formating chunks for dates: ", dates);
     const chunks = vm.json.chunks;
     const newData = [] as SeriesData;
 
     const chunkByDate = getChunksByDate(chunks, dates);
+    setChunksByDates(chunkByDate);
 
     // Exclude the last date
     dates.slice(0,-1).forEach((date, index) => {
@@ -155,7 +174,6 @@ export const Portfolio = ({
     series: Array<{x: number, y: number}>,
   ) => {
     setCurrentChunk(chunk);
-    setCrosshairdata(crosshair.map(d => d[2]));
   };
 
   useEffect(() => {
@@ -186,11 +204,10 @@ export const Portfolio = ({
             <XYPlot margin={{ left: 100 }}
               height={300} width={600}
             >
-              <Crosshair values={crosshairdata} >
-                <div style={{ background: "red" }}>
-                  <h3>Values of crosshair:</h3>
-                  <p>Series 1: </p>
-                  <p>Series 2: </p>
+              <Crosshair values={crosshairdata} style={{ position: "relative" }}>
+                <div style={{ background: "red", top: "100px" }}>
+                  <p>Series Length: {crosshairdata.length} </p>
+                  <p>Series : {crosshairdata[0]?.x} </p>
                 </div>
               </Crosshair>
 
@@ -229,6 +246,7 @@ export const Portfolio = ({
                   color={assetToColor(value.chunk.asset)}
                   key={index}
                   data={value.series}
+                  onNearestX={onNearestX}
                   onSeriesMouseOver={(d) => handlePopoverOpen(d, value.chunk, value.series)}
                 />;
               })}
