@@ -10,16 +10,22 @@ import AccountIcon from "@material-ui/icons/AccountCircle";
 import BarChartIcon from "@material-ui/icons/BarChart";
 // ValueMachine
 import { getLogger, getLocalStore } from "@valuemachine/utils";
-import { Asset, Assets, StoreKeys } from "@valuemachine/types";
+import {
+  Asset,
+  AddressBook,
+  AddressBookJson,
+  Assets,
+  StoreKeys,
+  ValueMachine,
+} from "@valuemachine/types";
 import axios from "axios";
-import React, { useState, useEffect } from "react";
+import React, { createContext, useState, useEffect } from "react";
 import { getAddressBook, getTransactions, getValueMachine, getPrices } from "valuemachine";
 
 import { fetchPriceForAssetsOnDate, fetchPricesForChunks } from "../utils";
 
-import { AccountContext } from "./AccountManager";
+import { AddressBookManager } from "./AddressBook";
 import { NavBar } from "./NavBar";
-import { AccountFAB } from "./AccountFAB";
 import { Portfolio } from "./Portfolio";
 
 const useStyles = makeStyles( theme => ({
@@ -46,6 +52,13 @@ const {
 } = StoreKeys;
 
 const unitStore = "Unit";
+
+export const AccountContext = createContext({} as {
+  addressBook: AddressBook,
+  vm: ValueMachine,
+  setAddressBookJson: (val: AddressBookJson) => void,
+  syncAddressBook: () => Promise<void>,
+});
 
 export const Home = () => {
   const classes = useStyles();
@@ -207,13 +220,13 @@ export const Home = () => {
 
   return (
     <AccountContext.Provider value={{ addressBook, setAddressBookJson, syncAddressBook, vm }}>
-      <NavBar syncing={syncing} unit={unit} setUnit={setUnit} />
+      <NavBar syncing={syncing} unit={unit} setUnit={setUnit} syncAddressBook={syncAddressBook}/>
       <TabContext value={tab}>
         <TabPanel value="portfolio" className={classes.panel}>
-          <Portfolio prices={prices} unit={unit} />
+          <Portfolio vm={vm} prices={prices} unit={unit} />
         </TabPanel>
         <TabPanel value="addressBook" className={classes.panel}>
-          <AccountFAB />
+          <AddressBookManager setAddressBookJson={setAddressBookJson} addressBook={addressBook} />
         </TabPanel>
 
         <AppBar color="inherit" position="fixed" className={classes.appbar}>

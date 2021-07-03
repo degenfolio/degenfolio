@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React from "react";
 import AppBar from "@material-ui/core/AppBar";
 import Toolbar from "@material-ui/core/Toolbar";
 import { makeStyles } from "@material-ui/core/styles";
@@ -10,8 +10,6 @@ import Select from "@material-ui/core/Select";
 // Icons
 import SyncIcon from "@material-ui/icons/Sync";
 import { Asset, Assets, FiatCurrencies } from "@valuemachine/types";
-
-import { AccountContext } from "./AccountManager";
 
 const useStyles = makeStyles( theme => ({
   navbar: {
@@ -35,9 +33,13 @@ export const NavBar = ({
   syncing,
   unit,
   setUnit,
-}: { syncing: { state: boolean, msg: string }, unit: Asset, setUnit: (val: Asset) => void }) => {
-
-  const { syncAddressBook } = useContext(AccountContext);
+  syncAddressBook,
+}: {
+  syncing: { state: boolean, msg: string },
+  unit: Asset,
+  setUnit: (val: Asset) => void,
+  syncAddressBook: () => Promise<void>,
+}) => {
   const classes = useStyles();
 
   const handleUnitChange = (event: React.ChangeEvent<{ value: unknown }>) => {
