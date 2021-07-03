@@ -109,6 +109,7 @@ export const Home = () => {
           if (resEth.status === 200 && typeof(resEth.data) === "object") {
             newTransactions.merge(resEth.data);
           } else {
+            await new Promise((res) => setTimeout(res, 10000));
             continue;
           }
 
@@ -118,6 +119,7 @@ export const Home = () => {
           if (resPolygon.status === 200 && typeof(resPolygon.data) === "object") {
             newTransactions.merge(resPolygon.data);
           } else {
+            await new Promise((res) => setTimeout(res, 10000));
             continue;
           }
 
@@ -126,7 +128,6 @@ export const Home = () => {
         } catch (e) {
           console.warn(e);
         }
-        await new Promise((res) => setTimeout(res, 10000));
       }
     }
 
