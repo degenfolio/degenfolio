@@ -20,7 +20,7 @@ import {
 
 import { Assets } from "../assets";
 
-const { amAAVE, amDAI, amUSDC, amWBTC, amWETH, amUSDT, amMATIC, MATIC } = Assets;
+const { AAVE, amAAVE, amDAI, amUSDC, amWBTC, amWETH, amUSDT, amMATIC, MATIC } = Assets;
 
 export const aaveSource = "Aave";
 
@@ -33,7 +33,7 @@ const setCategory = (category: AddressCategory) =>
   });
 
 const govAddresses = [
-  { name: "AAVE", address: AddressZero },
+  { name: AAVE, address: "0xD6DF932A45C0f255f85145f286eA0b292B21C90B" },
 ].map(setCategory(AddressCategories.ERC20));
 
 const coreAddresses = [

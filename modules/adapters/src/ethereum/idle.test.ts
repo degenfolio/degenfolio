@@ -39,8 +39,9 @@ describe(idleSource, () => {
     expect(tx.transfers[0].category).to.equal(TransferCategories.Expense);
     expect(tx.transfers[1].category).to.equal(TransferCategories.Income);
     expect(tx.transfers[2].category).to.equal(TransferCategories.Income);
-    expect(tx.transfers[3].category).to.equal(TransferCategories.SwapOut);
-    expect(tx.transfers[4].category).to.equal(TransferCategories.SwapIn);
+    expect(tx.transfers[3].category).to.equal(TransferCategories.Income);
+    expect(tx.transfers[4].category).to.equal(TransferCategories.SwapOut);
+    expect(tx.transfers[5].category).to.equal(TransferCategories.SwapIn);
   });
 
   it("should handle staking IDLE", async () => {
@@ -53,5 +54,4 @@ describe(idleSource, () => {
     expect(tx.method).to.match(/stake/i);
     expect(tx.transfers[1].category).to.equal(TransferCategories.Deposit);
   });
-
 });

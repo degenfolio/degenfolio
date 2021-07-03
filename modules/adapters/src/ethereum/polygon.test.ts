@@ -14,7 +14,7 @@ const logger = testLogger.child({ module: `Test${polygonSource}`,
   // level: "debug", // Uncomment to enable verbose logging
 });
 
-describe(polygonSource, () => {
+describe("Polygon Bridge", () => {
 
   it("should handle deposits to polygon", async () => {
     const tx = await parseEthTx({

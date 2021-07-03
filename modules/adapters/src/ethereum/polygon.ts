@@ -189,7 +189,7 @@ export const polygonParser = (
     }
   }
 
-  log.debug(tx, `parsed polygon tx`);
+  // log.debug(tx, `parsed polygon tx`);
   return tx;
 };
 

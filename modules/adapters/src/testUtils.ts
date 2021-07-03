@@ -20,7 +20,7 @@ import { getAddressBook, getChainData } from "valuemachine";
 import { use } from "chai";
 import promised from "chai-as-promised";
 
-import { appAddresses, appParsers } from ".";
+import { appAddresses, ethParsers } from ".";
 
 use(promised);
 
@@ -73,5 +73,5 @@ export const parseEthTx = async ({
     store: testStore,
   });
   await chainData.syncTransaction(hash, env.etherscanKey);
-  return chainData.getTransaction(hash, addressBook, appParsers);
+  return chainData.getTransaction(hash, addressBook, ethParsers);
 };
