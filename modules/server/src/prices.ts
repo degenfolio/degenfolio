@@ -10,12 +10,15 @@ import {
   STATUS_YOUR_BAD,
 } from "./utils";
 
+const unsupported = ["stkAAVE", "PETH"];
+
 const log = getLogger(env.logLevel).child({
   // level: "debug",
   module: "Prices",
 });
 
 const fetchPrice = async (rawDate: string, unit: string, asset: string): Promise<string> => {
+  if (unsupported.includes(asset)) return "";
   const covalentUrl = "https://api.covalenthq.com/v1";
   const date = rawDate.includes("T") ? rawDate.split("T")[0] : rawDate;
   const url = `${covalentUrl}/pricing/historical/${unit}/${asset
@@ -24,7 +27,7 @@ const fetchPrice = async (rawDate: string, unit: string, asset: string): Promise
   }&key=${env.covalentKey}`;
   log.info(`GET ${url}`);
   try {
-    const response = await axios.get(url);
+    const response = await axios.get(url, { timeout: 5000 });
     if (response.status !== 200) {
       log.warn(`Bad Status: ${response.status}`);
       return "";

@@ -180,7 +180,7 @@ export const Home = () => {
       logger,
     });
     for (const tx of transactions.json.sort(chrono)) {
-      setSyncing(`Processing transaction from ${tx.date.split("T")[0]}`);
+      setSyncing(`Processing transactions on ${tx.date.split("T")[0]}`);
       newVM.execute(tx);
       await new Promise(res => setTimeout(res, 1));
     }
