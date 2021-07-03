@@ -1,4 +1,4 @@
-import { appAddresses, appParsers } from "@degenfolio/adapters";
+import { appAddresses, ethParsers } from "@degenfolio/adapters";
 import { isAddress as isEthAddress } from "@ethersproject/address";
 import { getAddressBookError, chrono, getLogger } from "@valuemachine/utils";
 import express from "express";
@@ -51,7 +51,7 @@ ethereumRouter.post("/", async (req, res) => {
       if (didSync) {
         try {
           const start = Date.now();
-          const transactionsJson = chainData.getTransactions(addressBook, appParsers);
+          const transactionsJson = chainData.getTransactions(addressBook, ethParsers);
           res.json(transactionsJson.sort(chrono));
           log.info(`Returned ${transactionsJson.length} transactions at a rate of ${
             Math.round((100000 * transactionsJson.length)/(Date.now() - start)) / 100

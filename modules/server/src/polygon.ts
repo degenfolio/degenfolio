@@ -1,4 +1,4 @@
-import { appAddresses, appParsers, getPolygonData } from "@degenfolio/adapters";
+import { appAddresses, getPolygonData } from "@degenfolio/adapters";
 import { isAddress as isEthAddress } from "@ethersproject/address";
 import { chrono, getLogger, getAddressBookError } from "@valuemachine/utils";
 import express from "express";
@@ -51,7 +51,7 @@ polygonRouter.post("/", async (req, res) => {
       if (didSync) {
         try {
           const start = Date.now();
-          const transactionsJson = polygonData.getTransactions(addressBook, appParsers);
+          const transactionsJson = polygonData.getTransactions(addressBook);
           res.json(transactionsJson.sort(chrono));
           log.info(`Returned ${transactionsJson.length} transactions at a rate of ${
             Math.round((100000 * transactionsJson.length)/(Date.now() - start)) / 100

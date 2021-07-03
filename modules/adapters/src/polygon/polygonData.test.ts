@@ -14,7 +14,7 @@ const logger = testLogger.child({ module: `TestPolygon`,
   // level: "debug", // Uncomment to enable verbose logging
 });
 
-describe("Polygon", () => {
+describe("Polygon Data", () => {
   let polygonData: ChainData;
   // const testAddress1 = "0x1057Bea69c9ADD11c6e3dE296866AFf98366CFE3";
   const testAddress = "0xada083a3c06ee526F827b43695F2DcFf5C8C892B";
