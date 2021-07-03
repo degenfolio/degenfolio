@@ -30,7 +30,7 @@ describe.only("Harmony Data", () => {
   it("should sync & parse a transaction", async () => {
     const tx = await parseHarmonyTx({
       selfAddress: testAddress,
-      hash: "0x292ec1392e758f33e77bd077334b413e5337f86698e99396befc123f8579f9fa",
+      hash: "0xecd2d68981ed77625828d6f588babe6633fcb5968b10332bbfdc0aa74b13f5c8",
       logger,
     });
     logger.info(tx, `Got harmony transaction`);

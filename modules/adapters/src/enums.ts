@@ -16,6 +16,7 @@ export const TransactionSources = {
   Aave: "Aave",
   Idle: "Idle",
   Polygon: "Polygon",
+  Harmony: "Harmony",
 };
 
 export const Assets = {
