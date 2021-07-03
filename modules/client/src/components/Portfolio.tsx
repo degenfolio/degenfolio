@@ -247,11 +247,11 @@ export const Portfolio = ({
             <Typography>
               {`${currentChunk.quantity} ${currentChunk.asset}`}
             </Typography>
-            <Typography> Received on: {currentChunk.history[0]?.date} </Typography>
+            <Typography> Received on: {currentChunk.history?.[0]?.date} </Typography>
             <Typography>
               Received value: {unit}
               {getChunkValue(
-                currentChunk.history[0]?.date,
+                currentChunk.history?.[0]?.date,
                 currentChunk.asset,
                 currentChunk.quantity,
               )}
@@ -263,7 +263,7 @@ export const Portfolio = ({
               }
               {unit}
               {getChunkValue(
-                currentChunk.history[0]?.date,
+                currentChunk.history?.[0]?.date,
                 currentChunk.asset,
                 currentChunk.quantity,
               )} 
