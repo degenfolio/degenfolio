@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useContext } from "react";
 import { XYPlot, XAxis, YAxis, PolygonSeries, HorizontalGridLines, DiscreteColorLegend, Crosshair, GradientDefs } from "react-vis";
 import { format } from "d3-format";
-import { Asset, AssetChunk, DigitalGuard, DigitalGuards, Prices } from "@valuemachine/types";
+import { Asset, AssetChunk, DigitalGuard, Guard, Prices } from "@valuemachine/types";
+import { Guards } from "@degenfolio/adapters";
 import { mul } from "@valuemachine/utils";
 import { Typography } from "@material-ui/core";
 import Paper from "@material-ui/core/Paper";
@@ -10,7 +11,6 @@ import TablePagination from "@material-ui/core/TablePagination";
 import makeStyles from "@material-ui/core/styles/makeStyles";
 
 import { assetToColor } from "../utils";
-import logo from "../logo.svg";
 
 import { AccountContext } from "./AccountManager";
 
@@ -195,6 +195,35 @@ export const Portfolio = ({
     // eslint-disable-next-line
   }, [dates, rowsPerPage, page]);
 
+  const getGradient = (asset : Asset, guard: Guard) => {
+    const gradientId = `${guard}${asset}`
+    let guardColor = "#d6ffa6";
+    switch (guard) {
+      case Guards.MATIC:
+        guardColor = "#ffb199";
+        break;
+      case Guards.USD:
+        guardColor = "#d6ffa6";
+        break;
+      case Guards.ETH:
+        guardColor = "#9cffff";
+        break;
+      default: guardColor = "#d6ffa6";
+    }
+    const assetColor = assetToColor(asset);
+
+    return (
+      <linearGradient
+        id={gradientId}
+        x1="0%" y1="0%" x2="100%" y2="0%"
+      >
+        <stop offset="0%" stopColor={guardColor} stopOpacity="0" />
+        <stop offset="50%" stopColor={assetColor} stopOpacity="1" />
+        <stop offset="100%" stopColor={guardColor} stopOpacity="0" />
+      </linearGradient>
+    )
+  }
+
   if(!data.length) return <> Loading </>;
 
   return (
@@ -247,40 +276,31 @@ export const Portfolio = ({
               />
 
               <GradientDefs>
-                <radialGradient
-                  id="grad1"
-                  cx="50%"
-                  cy="50%"
-                  r="50%"
-                  fx="50%"
-                  fy="50%"
-                >
-                  <stop offset="0%" stopColor="126482" stopOpacity="0" />
-                  <stop offset="100%" stopColor="#12939A" stopOpacity="1" />
-                </radialGradient>
-                <text id="svg2" x="20" y="35" fill="red">Matic</text>
+                {getGradient("UNI", "ETH")}
               </GradientDefs>
               {data.map((value, index) => {
                 const chunkStart = dates[value.series[0].x];
                 const chunkEnd = dates[value.series[1].x];
 
-                // const currentGuard = value.chunk.history.reduce((output, history) => {
-                //   if (history.guard === "MATIC") {
-                //     console.log(history);
-                //     console.log(`chunkStart ${chunkStart}, chunkEnd ${chunkEnd}`);
-                //   }
-                //   if(history.date > chunkStart && history.date < chunkEnd) return history.guard;
-                //   return output;
-                // }, value.chunk.history[0].guard);
+                const currentGuard = value.chunk.history.reduce((output, history) => {
+                  if (history.guard === "MATIC") {
+                    console.log(history);
+                    console.log(`chunkStart ${chunkStart}, chunkEnd ${chunkEnd}`);
+                  }
+                  if(history.date > chunkStart && history.date < chunkEnd) return history.guard;
+                  return output;
+                }, value.chunk.history[0].guard);
 
                 // if(value.chunk.history.date > chunkStart && value.chunk.history.date < chunkEnd) return value.chunk.history.guard;
-                const chainGradient = value.chunk.asset === "UNI" ? "#fba01d" : null;
+                const chainGradient = value.chunk.asset === currentGuard ? "#fba01d" : null;
                 const assetColor = assetToColor(value.chunk.asset);
                 if (chainGradient)
                   console.log(`linear-gradient(${assetColor}, ${chainGradient}, ${assetColor})`);
 
                 return <PolygonSeries
-                  color={assetColor} 
+                  color={
+                    value.chunk.asset === "UNI" ? "url(#ETHUNI)" : assetColor
+                  } 
                   key={index}
                   data={value.series}
                   onNearestX={onNearestX}
