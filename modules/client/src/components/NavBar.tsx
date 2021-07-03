@@ -66,7 +66,7 @@ export const NavBar = ({
 
         <Typography className={classes.sync}>
           {syncing.state
-            ? syncing.msg 
+            ? syncing.msg
             : `Synced`
           }
         </Typography>
