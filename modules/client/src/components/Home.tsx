@@ -167,8 +167,7 @@ export const Home = () => {
     });
 
     for (const tx of transactions.json) {
-      const newEvents = newVM.execute(tx);
-      console.log(`New events for ${tx.date}`, newEvents);
+      newVM.execute(tx);
       await new Promise(res => setTimeout(res, 1));
     }
     store.save(ValueMachineStore, newVM.json);
