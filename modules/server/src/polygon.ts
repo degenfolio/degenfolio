@@ -1,19 +1,24 @@
-import { appAddresses, getPolygonData } from "@degenfolio/adapters";
+import { appAddresses, getPolygonData, Guards } from "@degenfolio/adapters";
 import { isAddress as isEthAddress } from "@ethersproject/address";
-import { chrono, getLogger, getAddressBookError } from "@valuemachine/utils";
+import { getLogger, getAddressBookError } from "@valuemachine/utils";
 import express from "express";
 import { getAddressBook } from "valuemachine";
 
 import { env } from "./env";
-import { getLogAndSend, store, STATUS_YOUR_BAD, STATUS_MY_BAD } from "./utils";
+import { getPollerHandler } from "./poller";
+import { getLogAndSend, store, STATUS_YOUR_BAD } from "./utils";
 
-const log = getLogger(env.logLevel).child({ module: "Transactions" });
+const log = getLogger(env.logLevel).child({ module: `${Guards.MATIC}Transactions` });
 
 const polygonData = getPolygonData({ covalentKey: env.covalentKey, logger: log, store });
+const handlePoller = getPollerHandler(
+  polygonData.syncAddressBook,
+  polygonData.getTransactions,
+  Guards.MATIC,
+);
 
 export const polygonRouter = express.Router();
 
-let syncing = [];
 polygonRouter.post("/", async (req, res) => {
   const logAndSend = getLogAndSend(res);
   const addressBookJson = req.body.addressBook;
@@ -26,65 +31,9 @@ polygonRouter.post("/", async (req, res) => {
     hardcoded: appAddresses,
     logger: log,
   });
-  const selfAddresses = addressBook.json
-    .map(entry => entry.address)
-    .filter(address => isEthAddress(address))
-    .filter(address => addressBook.isSelf(address));
-  if (selfAddresses.every(address => syncing.includes(address))) {
-    return logAndSend(`Eth data for ${selfAddresses.length} addresses is already syncing.`);
-  }
-  selfAddresses.forEach(address => syncing.push(address));
-  const sync = new Promise(res => polygonData.syncAddressBook(addressBook).then(() => {
-    log.warn(`Successfully synced history for ${selfAddresses.length} addresses`);
-    syncing = syncing.filter(address => !selfAddresses.includes(address));
-    res(true);
-  }).catch((e) => {
-    log.warn(`Failed to sync history for ${selfAddresses.length} addresses: ${e.stack}`);
-    syncing = syncing.filter(address => !selfAddresses.includes(address));
-    res(false);
-  }));
-  Promise.race([
-    sync,
-    new Promise((res, rej) => setTimeout(() => rej("TimeOut"), 10000)),
-  ]).then(
-    (didSync: boolean) => {
-      if (didSync) {
-        try {
-          const start = Date.now();
-          const transactionsJson = polygonData.getTransactions(addressBook);
-          res.json(transactionsJson.sort(chrono));
-          log.info(`Returned ${transactionsJson.length} transactions at a rate of ${
-            Math.round((100000 * transactionsJson.length)/(Date.now() - start)) / 100
-          } tx/sec`);
-        } catch (e) {
-          log.warn(e);
-          logAndSend("Error syncing transactions", STATUS_MY_BAD);
-        }
-        return;
-      } else {
-        return logAndSend(
-          `Ethereum data for ${selfAddresses.length} addresses failed to sync`,
-          STATUS_MY_BAD
-        );
-      }
-    },
-    (error: any) => {
-      if (error === "TimeOut") {
-        return logAndSend(
-          `Ethereum data for ${selfAddresses.length} addresses has started syncing, please wait`
-        );
-      } else {
-        return logAndSend(
-          `Ethereum data for ${selfAddresses.length} addresses failed to sync ${error}`,
-          STATUS_MY_BAD
-        );
-      }
-    },
-  ).catch((e) => {
-    log.warn(`Encountered an error while syncing history for ${selfAddresses}: ${e.message}`);
-    syncing = syncing.filter(address => selfAddresses.includes(address));
-  });
-  log.info(`Synced ${selfAddresses.length} addresses successfully? ${await sync}`);
+  await handlePoller(
+    addressBook,
+    addressBook.json.map(entry => entry.address).filter(addressBook.isSelf).filter(isEthAddress),
+    res,
+  );
 });
-
-

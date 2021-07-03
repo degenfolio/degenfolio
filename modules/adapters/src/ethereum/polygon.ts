@@ -71,7 +71,6 @@ export const polygonParser = (
 ): Transaction => {
   const log = logger.child({ module: source });
   const { getName, isToken, getDecimals } = addressBook;
-  log.info(`Let's parse ${source}`);
 
   if (getName(ethTx.to) === ZapperMaticBridge) {
     const account = ethTx.from;

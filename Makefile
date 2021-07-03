@@ -119,7 +119,7 @@ client-bundle: adapters $(shell find modules/client/src $(find_options))
 
 server-bundle: adapters $(shell find modules/server/src $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/server && npm run build"
+	$(docker_run) "cd modules/server && npm run build && touch modules/server/src/entry.ts"
 	$(log_finish) && mv -f $(totalTime) .flags/$@
 
 ########################################

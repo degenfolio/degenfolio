@@ -9,8 +9,6 @@ import { env, getTestAddressBook, testStore } from "../testUtils";
 
 import { getPolygonData } from "./polygonData";
 
-import { ethParsers } from ".";
-
 export * from "../testUtils";
 
 export const parsePolygonTx = async ({
@@ -29,5 +27,5 @@ export const parsePolygonTx = async ({
     store: testStore,
   });
   await polygonData.syncTransaction(hash);
-  return polygonData.getTransaction(hash, addressBook, ethParsers);
+  return polygonData.getTransaction(hash, addressBook);
 };
