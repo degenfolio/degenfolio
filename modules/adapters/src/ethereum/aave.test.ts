@@ -6,7 +6,7 @@ import {
   parseEthTx,
   expect,
   testLogger,
-} from "../testUtils";
+} from "./testUtils";
 
 import { aaveSource } from "./aave";
 
