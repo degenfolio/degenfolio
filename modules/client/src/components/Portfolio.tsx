@@ -15,19 +15,22 @@ import { AccountContext } from "./AccountManager";
 
 const useStyles = makeStyles( theme => ({
   graph: {
-    [theme.breakpoints.up("xs")]: {
-      width: 600,
-      height: 350,
-    },
-    width: 300,
+    width: "80%",
     height: 350,
   },
   root: {
     flexGrow: 1,
+    width: "100%",
     margin: theme.spacing(1, 1),
     "& > *": {
       margin: theme.spacing(1),
     },
+  },
+  legend: {
+    position: "absolute",
+    textAlign: "left",
+    left: "2%",
+    top: "20%",
   }
 }));
 
@@ -39,12 +42,12 @@ type SeriesData = Array<{
   chunk: AssetChunk;
 }>;
 
-/*
+type CrosshairData = Array<{}>
+
 const crosshair = [
   [{ x: 7.0, y: 10 }, { x: 5.0, y: 7 }, { x: 3.0, y: 15 }],
   [{ x: 7.0, y: 10 }, { x: 5.0, y: 7 }, { x: 3.0, y: 15 }]
 ];
-*/
 
 const getChunksByDate = (chunks: AssetChunk[], dates: string[]) => {
   const empty = dates.reduce((output, date) => {
@@ -154,7 +157,7 @@ export const Portfolio = ({
     series: Array<{x: number, y: number}>,
   ) => {
     setCurrentChunk(chunk);
-    setCrosshairdata(series);
+    setCrosshairdata(crosshair.map(d => d[2]));
   };
 
   useEffect(() => {
@@ -179,25 +182,36 @@ export const Portfolio = ({
   return (
     <Grid container spacing={0}>
       <Grid item xs={12} sm={8}>
-        <Grid item xs={12} sm={8}>
+        <Grid item>
           <div className={classes.graph}>
             <XYPlot margin={{ left: 100 }}
               height={300} width={600}
             >
-              <DiscreteColorLegend
-                orientation={"vertical"}
-                width={300}
-                items={data.reduce((colorLegend: LegendData[], seriesDataPoint: any ) => {
-                  if (colorLegend.findIndex(val => val.title === seriesDataPoint.chunk.asset) < 0) {
-                    colorLegend.push({
-                      title: seriesDataPoint.chunk.asset,
-                      color: assetToColor(seriesDataPoint.chunk.asset),
-                      strokeWidth: 20
-                    });
-                  }
-                  return colorLegend;
-                }, [] as LegendData[])}
-              />
+              <Crosshair values={crosshairdata} >
+                <div style={{ background: "red" }}>
+                  <h3>Values of crosshair:</h3>
+                  <p>Series 1: </p>
+                  <p>Series 2: </p>
+                </div>
+              </Crosshair>
+
+              <div className={classes.legend}>
+                <DiscreteColorLegend
+                  orientation={"vertical"}
+                  width={180}
+                  items={data.reduce((colorLegend: LegendData[], seriesDataPoint: any ) => {
+                    if (colorLegend.findIndex(val => val.title === seriesDataPoint.chunk.asset) < 0)
+                    {
+                      colorLegend.push({
+                        title: seriesDataPoint.chunk.asset,
+                        color: assetToColor(seriesDataPoint.chunk.asset),
+                        strokeWidth: 20
+                      });
+                    }
+                    return colorLegend;
+                  }, [] as LegendData[])}
+                />
+              </div>
               <HorizontalGridLines />
               <XAxis style={{
                 line: { stroke: "#ADDDE1" },
@@ -219,18 +233,10 @@ export const Portfolio = ({
                   onSeriesMouseOver={(d) => handlePopoverOpen(d, value.chunk, value.series)}
                 />;
               })}
-
-              <Crosshair values={[true]} >
-                <div style={{ background: "white" }}>
-                  <h3>Values of crosshair:</h3>
-                  <p>Series 1: </p>
-                  <p>Series 2: </p>
-                </div>
-              </Crosshair>
             </XYPlot>
           </div>
         </Grid>
-        <Grid item xs={12} sm={8}>
+        <Grid item>
           <TablePagination
             count={dates.length}
             page={page}
@@ -242,37 +248,34 @@ export const Portfolio = ({
       </Grid>
 
       <Grid item xs={12} sm={4}>
-        <Grid item xs={12} sm={4}>
-          <Paper id="chunk-detail" variant="outlined" className={classes.root}>
-            <Typography>
-              {`${currentChunk.quantity} ${currentChunk.asset}`}
-            </Typography>
-            <Typography> Received on: {currentChunk.history?.[0]?.date} </Typography>
-            <Typography>
-              Received value: {unit}
-              {getChunkValue(
-                currentChunk.history?.[0]?.date,
-                currentChunk.asset,
-                currentChunk.quantity,
-              )}
-            </Typography>
-            <Typography>
-              {currentChunk.disposeDate
-                ? `Disposed on: ${currentChunk.disposeDate} for `
-                : "Currently Held value: "
-              }
-              {unit}
-              {getChunkValue(
-                currentChunk.history?.[0]?.date,
-                currentChunk.asset,
-                currentChunk.quantity,
-              )} 
-            </Typography>
-            <Typography>
-            </Typography>
-          </Paper> 
-        </Grid>
-
+        <Paper id="chunk-detail" variant="outlined" className={classes.root}>
+          <Typography>
+            {`${currentChunk.quantity} ${currentChunk.asset}`}
+          </Typography>
+          <Typography> Received on: {currentChunk.history?.[0]?.date} </Typography>
+          <Typography>
+            Received value: {unit}
+            {getChunkValue(
+              currentChunk.history?.[0]?.date,
+              currentChunk.asset,
+              currentChunk.quantity,
+            )}
+          </Typography>
+          <Typography>
+            {currentChunk.disposeDate
+              ? `Disposed on: ${currentChunk.disposeDate} for `
+              : "Currently Held value: "
+            }
+            {unit}
+            {getChunkValue(
+              currentChunk.history?.[0]?.date,
+              currentChunk.asset,
+              currentChunk.quantity,
+            )} 
+          </Typography>
+          <Typography>
+          </Typography>
+        </Paper> 
       </Grid>
 
     </Grid>
