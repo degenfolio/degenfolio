@@ -30,15 +30,15 @@ const useStyles = makeStyles( theme => ({
 }));
 
 export const NavBar = ({
-  syncing,
-  unit,
   setUnit,
   syncAddressBook,
+  syncing,
+  unit,
 }: {
-  syncing: { state: boolean, msg: string },
-  unit: Asset,
   setUnit: (val: Asset) => void,
   syncAddressBook: () => Promise<void>,
+  syncing: { state: boolean, msg: string },
+  unit: Asset,
 }) => {
   const classes = useStyles();
 

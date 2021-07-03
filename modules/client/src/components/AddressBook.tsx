@@ -18,7 +18,6 @@ import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
 import TableContainer from "@material-ui/core/TableContainer";
 import TableHead from "@material-ui/core/TableHead";
-import TablePagination from "@material-ui/core/TablePagination";
 import TableRow from "@material-ui/core/TableRow";
 import TextField from "@material-ui/core/TextField";
 import Typography from "@material-ui/core/Typography";
@@ -31,18 +30,17 @@ import {
   AddressBookJson,
   AddressCategories,
   AddressEntry,
+  StoreKeys,
 } from "@valuemachine/types";
+import { getEmptyAddressBook, getLocalStore } from "@valuemachine/utils";
 import { Guards } from "@degenfolio/adapters";
 import React, { useEffect, useState } from "react";
 
+import { Examples } from "../constants";
+
 import { HexString } from "./HexString";
 
-const getEmptyEntry = (): AddressEntry => ({
-  address: "",
-  category: AddressCategories.Self,
-  guard: Guards.ETH,
-  name: "",
-});
+const store = getLocalStore(localStorage);
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
@@ -103,7 +101,7 @@ const EditEntry = ({
   setEntry: (entry: AddressEntry) => void;
   addresses: string[];
 }) => {
-  const [newEntry, setNewEntry] = useState(getEmptyEntry());
+  const [newEntry, setNewEntry] = useState(getEmptyAddressBook()[0]);
   const [entryModified, setEntryModified] = useState(false);
   const [newEntryError, setNewEntryError] = useState("");
   const classes = useStyles();
@@ -284,13 +282,13 @@ const AddressRow = ({
   otherAddresses: string[];
 }) => {
   const [editMode, setEditMode] = useState(false);
-  const [newEntry, setNewEntry] = useState(getEmptyEntry());
+  const [newEntry, setNewEntry] = useState(getEmptyAddressBook()[0]);
   const classes = useStyles();
 
   const toggleEditMode = () => {
     setEditMode(!editMode);
     if (editMode) {
-      setNewEntry(getEmptyEntry());
+      setNewEntry(getEmptyAddressBook()[0]);
     } else {
       setNewEntry(JSON.parse(JSON.stringify(entry)));
     }
@@ -357,49 +355,21 @@ const AddressRow = ({
 export const AddressBookManager = ({
   addressBook,
   setAddressBookJson,
+  example,
+  setExample,
 }: {
   addressBook: AddressBook,
   setAddressBookJson: (val: AddressBookJson) => void,
+  example: string,
+  setExample: (val: string) => void,
 }) => {
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = React.useState(25);
-
-  const [filteredAddresses, setFilteredAddresses] = useState([] as AddressEntry[]);
-  const [filterCategory, setFilterCategory] = useState("");
-
   const [allAddresses, setAllAddresses] = useState([] as string[]);
-  const [newEntry, setNewEntry] = useState(getEmptyEntry);
+  const [newEntry, setNewEntry] = useState(getEmptyAddressBook()[0]);
   const classes = useStyles();
 
   useEffect(() => {
     setAllAddresses(addressBook.json.map(entry => entry.address));
   }, [addressBook]);
-
-  useEffect(() => {
-    setFilteredAddresses(addressBook.json.filter(entry =>
-      !filterCategory || entry.category === filterCategory
-    ).sort((e1, e2) =>
-      // put self addresses first
-      (
-        e1.category !== AddressCategories.Self &&
-        e2.category === AddressCategories.Self
-      ) ? 1
-        : (
-          e1.category === AddressCategories.Self &&
-          e2.category !== AddressCategories.Self
-        ) ? -1
-          // sort by category
-          : (e1.category.toLowerCase() > e2.category.toLowerCase()) ? 1
-          : (e1.category.toLowerCase() < e2.category.toLowerCase()) ? -1
-          // then sort by name
-          : (e1.name.toLowerCase() > e2.name.toLowerCase()) ? 1
-          : (e1.name.toLowerCase() < e2.name.toLowerCase()) ? -1
-          // then sort by address
-          : (e1.address.toLowerCase() > e2.address.toLowerCase()) ? 1
-          : (e1.address.toLowerCase() < e2.address.toLowerCase()) ? -1
-          : 0
-    ));
-  }, [addressBook, filterCategory]);
 
   const editEntry = (index: number, editedEntry?: AddressEntry) => {
     if (index >= 0 && index <= allAddresses.length) {
@@ -415,7 +385,7 @@ export const AddressBookManager = ({
       setAddressBookJson(newAddressBook);
       // Don't reset new entry fields when we modify an existing one
       if (editedEntry && index === allAddresses.length) {
-        setNewEntry(getEmptyEntry);
+        setNewEntry(getEmptyAddressBook()[0]);
       }
     } else {
       console.log(`index ${index} is out of range, expected 0-${allAddresses.length}`);
@@ -426,22 +396,13 @@ export const AddressBookManager = ({
     editEntry(addressBook.json.length, editedEntry);
   };
 
-  const reset = async () => {
-    setAddressBookJson([]);
-  };
-
-  const handleChangePage = (event: any, newPage: number) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event: any) => {
-    setRowsPerPage(+event.target.value);
-    setPage(0);
-  };
-
-  const handleFilterChange = (event: any) => {
-    setFilterCategory(event.target.value || "");
-    setPage(0);
+  const handleDataChange = (e: any) => {
+    console.log(e);
+    const newExample = e.target.value || Examples.Polygon;
+    if (example === Examples.Custom && newExample !== Examples.Custom) {
+      store.save(StoreKeys.AddressBook, addressBook.json);
+    }
+    setExample(newExample);
   };
 
   return (
@@ -459,8 +420,33 @@ export const AddressBookManager = ({
         spacing={1}
         className={classes.root}
       >
+        <FormControl className={classes.select}>
+          <InputLabel id="select-example-data">Select Example Data</InputLabel>
+          <Select
+            labelId={`select-example-data`}
+            id={`select-example-data`}
+            name="example-data"
+            value={example || ""}
+            onChange={handleDataChange}
+          >
+            {Object.keys(Examples).map(key => (
+              <MenuItem key={key} value={key}>{key}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Grid>
 
-        <Grid item md={8}>
+      <Divider />
+
+      {example === Examples.Custom ? (
+        <Grid
+          alignContent="center"
+          alignItems="center"
+          justify="center"
+          container
+          spacing={1}
+          className={classes.root}
+        >
           <Card className={classes.root}>
             <CardHeader title={"Add new Address"} />
             <EditEntry
@@ -470,61 +456,15 @@ export const AddressBookManager = ({
             />
           </Card>
         </Grid>
-
-        <Grid item md={4}>
-          <Button
-            color="primary"
-            onClick={reset}
-            size="medium"
-            disabled={!addressBook.json?.length}
-            startIcon={<RemoveIcon/>}
-            variant="contained"
-          >
-            Remove All
-          </Button>
-        </Grid>
-
-      </Grid>
-
-      <Divider/>
-      <Typography variant="h4" className={classes.subtitle}>
-        Address Book Filters
-      </Typography>
-
-      <FormControl className={classes.select}>
-        <InputLabel id="select-filter-category">Filter Category</InputLabel>
-        <Select
-          labelId="select-filter-category"
-          id="select-filter-category"
-          value={filterCategory || ""}
-          onChange={handleFilterChange}
-        >
-          <MenuItem value={""}>-</MenuItem>
-          {Array.from(new Set(addressBook.json.map(e => e.category))).map(cat => (
-            <MenuItem key={cat} value={cat}>{cat}</MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+      ) : null}
 
       <Paper className={classes.paper}>
 
         <Typography align="center" variant="h4" className={classes.title} component="div">
-          {filteredAddresses.length === addressBook.json.length
-            ? `${filteredAddresses.length} Addresses`
-            : `${filteredAddresses.length} of ${addressBook.json.length} Addresses`
-          }
+          {`${addressBook.json.length} Addresses`}
         </Typography>
 
         <TableContainer>
-          <TablePagination
-            rowsPerPageOptions={[25, 50, 100, 250]}
-            component="div"
-            count={filteredAddresses.length}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onChangePage={handleChangePage}
-            onChangeRowsPerPage={handleChangeRowsPerPage}
-          />
           <Table size="small">
             <TableHead>
               <TableRow>
@@ -536,8 +476,7 @@ export const AddressBookManager = ({
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredAddresses
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+              {addressBook.json
                 .map((entry: AddressEntry, i: number) => (
                   <AddressRow
                     otherAddresses={[...allAddresses.slice(0, i), ...allAddresses.slice(i + 1)]}
@@ -550,15 +489,6 @@ export const AddressBookManager = ({
                 ))}
             </TableBody>
           </Table>
-          <TablePagination
-            rowsPerPageOptions={[25, 50, 100, 250]}
-            component="div"
-            count={filteredAddresses.length}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onChangePage={handleChangePage}
-            onChangeRowsPerPage={handleChangeRowsPerPage}
-          />
         </TableContainer>
       </Paper>
 

@@ -9,19 +9,17 @@ import TabPanel from "@material-ui/lab/TabPanel";
 import AccountIcon from "@material-ui/icons/AccountCircle";
 import BarChartIcon from "@material-ui/icons/BarChart";
 // ValueMachine
-import { getLogger, getLocalStore } from "@valuemachine/utils";
 import {
   Asset,
-  AddressBook,
-  AddressBookJson,
   Assets,
   StoreKeys,
-  ValueMachine,
 } from "@valuemachine/types";
+import { getLogger, getLocalStore } from "@valuemachine/utils";
 import axios from "axios";
-import React, { createContext, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { getAddressBook, getTransactions, getValueMachine, getPrices } from "valuemachine";
 
+import { Examples, getExampleData } from "../constants";
 import { fetchPriceForAssetsOnDate, fetchPricesForChunks } from "../utils";
 
 import { AddressBookManager } from "./AddressBook";
@@ -53,13 +51,6 @@ const {
 
 const unitStore = "Unit";
 
-export const AccountContext = createContext({} as {
-  addressBook: AddressBook,
-  vm: ValueMachine,
-  setAddressBookJson: (val: AddressBookJson) => void,
-  syncAddressBook: () => Promise<void>,
-});
-
 export const Home = () => {
   const classes = useStyles();
   const [syncing, setSyncing] = useState({
@@ -68,8 +59,13 @@ export const Home = () => {
   });
   const [tab, setTab] = useState("addressBook");
   const [unit, setUnit] = useState(localStorage.getItem(unitStore) as Asset || Assets.ETH as Asset);
+  const [example, setExample] = useState(Examples.Polygon);
   // Load stored JSON data from localstorage
-  const [addressBookJson, setAddressBookJson] = useState(store.load(AddressBookStore));
+  const [addressBookJson, setAddressBookJson] = useState(
+    example === Examples.Custom
+      ? store.load(AddressBookStore)
+      : getExampleData(example)
+  );
   // Parse JSON data into utilities
   const [addressBook, setAddressBook] = useState(getAddressBook({
     json: addressBookJson,
@@ -178,7 +174,6 @@ export const Home = () => {
       addressBook,
       logger,
     });
-
     for (const tx of transactions.json) {
       newVM.execute(tx);
       await new Promise(res => setTimeout(res, 1));
@@ -186,6 +181,14 @@ export const Home = () => {
     store.save(ValueMachineStore, newVM.json);
     setVM(newVM);
   };
+
+  useEffect(() => {
+    setAddressBookJson(
+      example !== Examples.Custom
+        ? getExampleData(example)
+        : store.load(StoreKeys.AddressBook)
+    );
+  }, [example]);
 
   useEffect(() => {
     syncPrices();
@@ -200,7 +203,6 @@ export const Home = () => {
       hardcoded: appAddresses,
       logger
     });
-    store.save(AddressBookStore, newAddressBook.json);
     setAddressBook(newAddressBook);
     syncAddressBook();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -218,29 +220,32 @@ export const Home = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transactions]);
 
-  return (
-    <AccountContext.Provider value={{ addressBook, setAddressBookJson, syncAddressBook, vm }}>
-      <NavBar syncing={syncing} unit={unit} setUnit={setUnit} syncAddressBook={syncAddressBook}/>
-      <TabContext value={tab}>
-        <TabPanel value="portfolio" className={classes.panel}>
-          <Portfolio vm={vm} prices={prices} unit={unit} />
-        </TabPanel>
-        <TabPanel value="addressBook" className={classes.panel}>
-          <AddressBookManager setAddressBookJson={setAddressBookJson} addressBook={addressBook} />
-        </TabPanel>
+  return (<>
+    <NavBar syncing={syncing} unit={unit} setUnit={setUnit} syncAddressBook={syncAddressBook}/>
+    <TabContext value={tab}>
+      <TabPanel value="portfolio" className={classes.panel}>
+        <Portfolio vm={vm} prices={prices} unit={unit} />
+      </TabPanel>
+      <TabPanel value="addressBook" className={classes.panel}>
+        <AddressBookManager
+          setAddressBookJson={setAddressBookJson}
+          addressBook={addressBook}
+          example={example}
+          setExample={setExample}
+        />
+      </TabPanel>
 
-        <AppBar color="inherit" position="fixed" className={classes.appbar}>
-          <Tabs
-            value={tab}
-            onChange={updateSelection}
-            indicatorColor="primary"
-            variant="fullWidth"
-          >
-            <Tab value="portfolio" icon={<BarChartIcon />} aria-label="addressBook" />
-            <Tab value="addressBook" icon={<AccountIcon />} aria-label="account" />
-          </Tabs>
-        </AppBar>
-      </TabContext>
-    </AccountContext.Provider>
-  );
+      <AppBar color="inherit" position="fixed" className={classes.appbar}>
+        <Tabs
+          value={tab}
+          onChange={updateSelection}
+          indicatorColor="primary"
+          variant="fullWidth"
+        >
+          <Tab value="portfolio" icon={<BarChartIcon />} aria-label="addressBook" />
+          <Tab value="addressBook" icon={<AccountIcon />} aria-label="account" />
+        </Tabs>
+      </AppBar>
+    </TabContext>
+  </>);
 };
