@@ -208,6 +208,9 @@ export const Portfolio = ({
       case Guards.ETH:
         guardColor = "#9cffff";
         break;
+      case Guards.ONE:
+        guardColor = "#ffea98";
+        break;
       default: guardColor = "#d6ffa6";
     }
     const assetColor = assetToColor(asset);
@@ -215,7 +218,7 @@ export const Portfolio = ({
     return (
       <linearGradient
         id={gradientId}
-        x1="0%" y1="0%" x2="100%" y2="0%"
+        x1="0%" y1="0%" x2="0%" y2="100%"
       >
         <stop offset="0%" stopColor={guardColor} stopOpacity="0" />
         <stop offset="50%" stopColor={assetColor} stopOpacity="1" />
@@ -276,17 +279,27 @@ export const Portfolio = ({
               />
 
               <GradientDefs>
-                {getGradient("UNI", "ETH")}
+                {["MATIC", "ONE", "USD"].map((guard) => {
+                  const assets = data.reduce((assets, value) => {
+                    if (assets.findIndex(d => d === value.chunk.asset) < 0) {
+                      assets.push(value.chunk.asset)
+                    }
+                    return assets;
+                  }, [] as string[])
+
+                  return assets.map((asset) => getGradient(asset, guard));
+
+                })}
               </GradientDefs>
               {data.map((value, index) => {
                 const chunkStart = dates[value.series[0].x];
                 const chunkEnd = dates[value.series[1].x];
 
                 const currentGuard = value.chunk.history.reduce((output, history) => {
-                  if (history.guard === "MATIC") {
-                    console.log(history);
-                    console.log(`chunkStart ${chunkStart}, chunkEnd ${chunkEnd}`);
-                  }
+                  // if (history.guard === "MATIC") {
+                  //   console.log(history);
+                  //   console.log(`chunkStart ${chunkStart}, chunkEnd ${chunkEnd}`);
+                  // }
                   if(history.date > chunkStart && history.date < chunkEnd) return history.guard;
                   return output;
                 }, value.chunk.history[0].guard);
@@ -294,13 +307,9 @@ export const Portfolio = ({
                 // if(value.chunk.history.date > chunkStart && value.chunk.history.date < chunkEnd) return value.chunk.history.guard;
                 const chainGradient = value.chunk.asset === currentGuard ? "#fba01d" : null;
                 const assetColor = assetToColor(value.chunk.asset);
-                if (chainGradient)
-                  console.log(`linear-gradient(${assetColor}, ${chainGradient}, ${assetColor})`);
 
                 return <PolygonSeries
-                  color={
-                    value.chunk.asset === "UNI" ? "url(#ETHUNI)" : assetColor
-                  } 
+                  color={currentGuard === "ETH" ? assetColor : `url(#${currentGuard}${value.chunk.asset})`} 
                   key={index}
                   data={value.series}
                   onNearestX={onNearestX}
