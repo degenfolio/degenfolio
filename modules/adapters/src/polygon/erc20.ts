@@ -1,4 +1,5 @@
 import { Interface } from "@ethersproject/abi";
+import { getAddress } from "@ethersproject/address";
 import { formatUnits } from "@ethersproject/units";
 import { AddressZero } from "@ethersproject/constants";
 import {
@@ -20,7 +21,7 @@ import { setAddressCategory } from "./utils";
 
 export const erc20Source = "ERC20";
 
-const { DAI, USDC, USDT, WBTC, WETH, WMATIC } = Assets;
+const { DAI, USDC, USDT, WBTC, WETH, MATIC, WMATIC } = Assets;
 const { Expense, Income, Internal, Unknown } = TransferCategories;
 
 export const erc20Addresses = [
@@ -42,6 +43,8 @@ const erc20Interface = new Interface([
 
 ////////////////////////////////////////
 /// Parser
+
+const getAccount = address => `${MATIC}-${getAddress(address)}`;
 
 export const erc20Parser = (
   tx: Transaction,
@@ -77,7 +80,14 @@ export const erc20Parser = (
           : isSelf(from) && !isSelf(to) ? Expense
           : isSelf(to) && !isSelf(from) ? Income
           : Unknown;
-        tx.transfers.push({ asset, category, from, index: txLog.index, quantity: amount, to });
+        tx.transfers.push({
+          asset,
+          category,
+          from: getAccount(from),
+          index: txLog.index,
+          quantity: amount,
+          to: getAccount(to),
+        });
         if (ethTx.to === address) {
           tx.method = `${asset} ${event.name}`;
         }

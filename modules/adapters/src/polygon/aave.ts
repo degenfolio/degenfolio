@@ -33,4 +33,4 @@ export const aaveAddresses = [
   ...marketAddresses,
 ];
 
-// We can use the ethereum aave parser on polygon too, no need to define a new one here
+// I think we can use the ethereum aave parser on polygon too.. If we can get the accounts right

@@ -21,6 +21,8 @@ export const TransactionSources = {
 export const Assets = {
   ...DefaultAssets,
 
+  ONE: "ONE",
+
   AAVE: "AAVE",
   stkAAVE: "stkAAVE",
 

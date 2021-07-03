@@ -25,13 +25,14 @@ const { MATIC, ETH, WETH } = Assets;
 /// Addresses
 
 const ZapperMaticBridge = "ZapperMaticBridge";
+const PlasmaBridge = "PlasmaBridge";
 
 export const govAddresses = [
   { name: MATIC, address: "0x7D1AfA7B718fb893dB30A3aBc0Cfc608AaCfeBB0" },
 ].map(setAddressCategory(AddressCategories.ERC20));
 
 export const bridgeAddresses = [
-  { name: "PolygonPlasmaBridge", address: "0x401F6c983eA34274ec46f84D70b31C151321188b" },
+  { name: PlasmaBridge, address: "0x401F6c983eA34274ec46f84D70b31C151321188b" },
   { name: ZapperMaticBridge, address: "0xe34b087bf3c99e664316a15b01e5295eb3512760" },
 ].map(setAddressCategory(AddressCategories.Defi));
 
@@ -175,6 +176,22 @@ export const polygonParser = (
     });
 
     // parse bridge?
+    ethTx.logs
+      .filter(txLog => getName(txLog.address) === PlasmaBridge) 
+      .forEach(txLog => {
+        const event = parseEvent(plasmaBridgeInterface, txLog);
+        log.info(`Got plasma bridge event: ${event.name}`);
+        if (event.name === "NewDepositBlock") {
+          tx.transfers.push({
+            asset: getName(event.args.token),
+            category: TransferCategories.Deposit,
+            from: event.args.owner,
+            index: txLog.index,
+            quantity: formatUnits(event.args.amountOrNFTId, getDecimals(event.args.token)),
+            to: `${MATIC}-${event.args.owner}`,
+          });
+        }
+      });
 
   }
 

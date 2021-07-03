@@ -29,6 +29,13 @@ export const parseEvmTx = (
   const log = logger.child({ module: `EVM${evmTx.hash?.substring(0, 8)}` });
   // log.debug(evmTx, `Parsing evm tx`);
 
+  const getAccount = (address: string): string => {
+    if (nativeAsset === Assets.ETH) return getAddress(address);
+    if (nativeAsset === Assets.MATIC) return `${nativeAsset}-${getAddress(address)}`;
+    if (nativeAsset === Assets.ONE) return address; // use "oneAbC.." format instead of "0xabc.."
+    return isAddress(address) ? getAddress(address) : address;
+  };
+
   const getSimpleCategory = (to: Address, from: Address): TransferCategory =>
     (isSelf(to) && isSelf(from)) ? Internal
     : (isSelf(from) && !isSelf(to)) ? Expense
@@ -47,7 +54,7 @@ export const parseEvmTx = (
     tx.transfers.push({
       asset: nativeAsset,
       category: Expense,
-      from: getAddress(evmTx.from),
+      from: getAccount(evmTx.from),
       index: -1,
       quantity: formatEther(BigNumber.from(evmTx.gasUsed).mul(evmTx.gasPrice)),
       to: nativeAsset,
@@ -66,10 +73,10 @@ export const parseEvmTx = (
     tx.transfers.push({
       asset: nativeAsset,
       category: getSimpleCategory(evmTx.to, evmTx.from),
-      from: getAddress(evmTx.from),
+      from: getAccount(evmTx.from),
       index: 0,
       quantity: evmTx.value,
-      to: getAddress(evmTx.to),
+      to: getAccount(evmTx.to),
     });
   }
 
@@ -89,8 +96,8 @@ export const parseEvmTx = (
     // Make sure all evm addresses are checksummed
     .map(transfer => ({
       ...transfer,
-      from: isAddress(transfer.from) ? getAddress(transfer.from) : transfer.from,
-      to: isAddress(transfer.to) ? getAddress(transfer.to) : transfer.to,
+      from: isAddress(transfer.from) ? getAccount(transfer.from) : transfer.from,
+      to: isAddress(transfer.to) ? getAccount(transfer.to) : transfer.to,
     }))
     // sort by index
     .sort((t1, t2) => t1.index - t2.index);

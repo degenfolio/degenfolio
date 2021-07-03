@@ -24,11 +24,13 @@ describe("Polygon Bridge", () => {
       logger,
     });
     expect(tx.sources).to.include(source);
-    expect(tx.transfers[0].category).to.include(TransferCategories.Expense);
-    expect(tx.transfers[1].category).to.include(TransferCategories.SwapOut);
-    expect(tx.transfers[2].category).to.include(TransferCategories.SwapIn);
-    expect(tx.transfers[3].category).to.include(TransferCategories.SwapOut);
-    expect(tx.transfers[4].category).to.include(TransferCategories.SwapIn);
+    expect(tx.transfers.length).to.equal(6);
+    expect(tx.transfers[0].category).to.equal(TransferCategories.Expense);
+    expect(tx.transfers[1].category).to.equal(TransferCategories.SwapOut);
+    expect(tx.transfers[2].category).to.equal(TransferCategories.SwapIn);
+    expect(tx.transfers[3].category).to.equal(TransferCategories.SwapOut);
+    expect(tx.transfers[4].category).to.equal(TransferCategories.SwapIn);
+    expect(tx.transfers[5].category).to.equal(TransferCategories.Deposit);
   });
 
 });
