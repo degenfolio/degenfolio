@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from "react";
-import { XYPlot, XAxis, YAxis, PolygonSeries, HorizontalGridLines, DiscreteColorLegend, Crosshair } from "react-vis";
+import { XYPlot, XAxis, YAxis, PolygonSeries, HorizontalGridLines, DiscreteColorLegend, Crosshair, GradientDefs } from "react-vis";
 import { format } from "d3-format";
 import { Asset, AssetChunk, Prices } from "@valuemachine/types";
 import { mul } from "@valuemachine/utils";
@@ -10,6 +10,7 @@ import TablePagination from "@material-ui/core/TablePagination";
 import makeStyles from "@material-ui/core/styles/makeStyles";
 
 import { assetToColor } from "../utils";
+import logo from "../logo.svg";
 
 import { AccountContext } from "./AccountManager";
 
@@ -199,7 +200,7 @@ export const Portfolio = ({
   return (
     <Grid container spacing={0}>
       <Grid item xs={12} sm={8}>
-        <Grid item>
+        <Grid item >
           <div className={classes.graph}>
             <XYPlot margin={{ left: 100 }}
               height={300} width={600}
@@ -228,12 +229,15 @@ export const Portfolio = ({
                   }, [] as LegendData[])}
                 />
               </div>
+
               <HorizontalGridLines />
+
               <XAxis style={{
                 line: { stroke: "#ADDDE1" },
                 ticks: { stroke: "#ADDDE1" },
                 text: { stroke: "none", fill: "#6b6b76", fontWeight: 600 }
               }} />
+
               <YAxis style={{
                 line: { stroke: "#ADDDE1" },
                 ticks: { stroke: "#ADDDE1" },
@@ -241,13 +245,33 @@ export const Portfolio = ({
               }}
               tickFormat={ tick => format(".2s")(tick) }
               />
+
+              <GradientDefs>
+                <radialGradient
+                  id="grad1"
+                  cx="50%"
+                  cy="50%"
+                  r="50%"
+                  fx="50%"
+                  fy="50%"
+                >
+                  <stop offset="0%" stopColor="#829AE3" stopOpacity="0" />
+                  <stop offset="100%" stopColor="#12939A" stopOpacity="1" />
+                </radialGradient>
+                <text id="svg2" x="20" y="35" fill="red">Matic</text>
+              </GradientDefs>
               {data.map((value, index) => {
+                console.log("Chunk is uni ", value.chunk.asset === "UNI")
                 return <PolygonSeries
-                  color={assetToColor(value.chunk.asset)}
+                  color={ value.chunk.asset === "UNI" ? "url(#grad1)" : assetToColor(value.chunk.asset)}
                   key={index}
                   data={value.series}
                   onNearestX={onNearestX}
                   onSeriesMouseOver={(d) => handlePopoverOpen(d, value.chunk, value.series)}
+                  style={{
+                    strokeWidth: 0.5,
+                    strokeOpacity: 1,
+                  }}
                 />;
               })}
             </XYPlot>
