@@ -34,7 +34,6 @@ const useStyles = makeStyles( theme => ({
   }
 }));
 
-
 type LegendData = { title: string,  color: string, strokeWidth: number }
 
 type SeriesData = Array<{
@@ -56,12 +55,12 @@ const getChunksByDate = (chunks: AssetChunk[], dates: string[]) => {
   }, {} as { [date: string]: number[] });
 
   return chunks.reduce((output, chunk, index) => {
-    if ( chunk.history[0]?.date > dates[dates.length - 1]) return output;
+    if (chunk.history[0]?.date > dates[dates.length - 1]) return output;
     if (chunk.disposeDate && chunk.disposeDate < dates[0]) return output;
 
     const i = dates.findIndex(d => d === chunk.history[0]?.date);
     const j = chunk.disposeDate ? dates.findIndex(d => d === chunk.disposeDate) : dates.length;
-    dates.slice(i,j).forEach((date) => {
+    dates.slice(i > 0 ? i : 0, j > 0 ? j : dates.length).forEach((date) => {
       output[date].push(index);
       output[date].sort((a,b) => chunks[a].asset < chunks[b].asset ? 1 : -1);
     });
@@ -84,8 +83,6 @@ export const Portfolio = ({
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
 
-  console.log(crosshairdata);
-
   const handleChangePage = (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
     setPage(newPage);
   };
@@ -104,6 +101,7 @@ export const Portfolio = ({
 
   const formatChunksToGraphData = (dates: string[]) => {
     if (!vm?.json?.chunks?.length) return;
+    console.log("Formating chunks for dates: ", dates);
     const chunks = vm.json.chunks;
     const newData = [] as SeriesData;
 
@@ -163,12 +161,13 @@ export const Portfolio = ({
   useEffect(() => {
     if (!vm.json.chunks.length) return;
     const newDates = Array.from(new Set(vm.json.events.map(e => e.date))).sort();
-    if (newDates.length) setPage(Math.floor(newDates.length/rowsPerPage));
+    console.log(newDates);
+    if (newDates.length && rowsPerPage > 0) setPage(Math.floor(newDates.length/rowsPerPage));
     setDates(newDates);
-  }, [vm.json, prices, rowsPerPage ]);
+  }, [vm.json, prices, rowsPerPage]);
 
   useEffect(() => {
-    if (dates.length <= 0) return;
+    if (!dates.length) return;
     console.log("Generating graph data");
     formatChunksToGraphData(dates.slice(
       page * rowsPerPage,
