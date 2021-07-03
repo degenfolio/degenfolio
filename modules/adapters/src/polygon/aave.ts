@@ -1,23 +1,12 @@
 import {
-  AddressBook,
   AddressCategories,
-  EthTransaction,
-  Logger,
-  Transaction,
 } from "@valuemachine/types";
-import {
-  rmDups,
-} from "@valuemachine/utils";
 
-import { Assets, TransactionSources } from "../enums";
+import { Assets } from "../enums";
 
 import { setAddressCategory } from "./utils";
 
-const source = TransactionSources.Aave;
 const { AAVE, amAAVE, amDAI, amUSDC, amWBTC, amWETH, amUSDT, amMATIC } = Assets;
-
-////////////////////////////////////////
-/// Interfaces
 
 const govAddresses = [
   { name: AAVE, address: "0xD6DF932A45C0f255f85145f286eA0b292B21C90B" },
@@ -44,34 +33,4 @@ export const aaveAddresses = [
   ...marketAddresses,
 ];
 
-////////////////////////////////////////
-/// Parser
-
-export const aaveParser = (
-  tx: Transaction,
-  ethTx: EthTransaction,
-  addressBook: AddressBook,
-  logger: Logger,
-): Transaction => {
-  const log = logger.child({ module: source });
-  log.info(`Parser activated`);
-
-  if (aaveAddresses.some(entry => ethTx.from === entry.address)) {
-    tx.sources = rmDups([source, ...tx.sources]);
-  }
-
-  for (const txLog of ethTx.logs) {
-    const address = txLog.address;
-
-    // Parse ERC20 compliant tokens
-    if (aaveAddresses.some(e => e.address ===address)) {
-      tx.sources = rmDups([source, ...tx.sources]);
-      log.info(`Found AAVE interaction`);
-    }
-
-  }
-
-  // Incorporating aave adapter
-  return tx;
-};
-
+// We can use the ethereum aave parser on polygon too, no need to define a new one here

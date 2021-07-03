@@ -1,14 +1,17 @@
 import { ChainData } from "@valuemachine/types";
+import { getTransactionsError } from "@valuemachine/utils";
 
+import { Guards } from "../enums";
+
+import { getPolygonData } from "./polygonData";
 import {
   env,
   expect,
   getTestAddressBook,
   testStore,
   testLogger,
-} from "../testUtils";
-
-import { getPolygonData } from "./polygonData";
+  parsePolygonTx,
+} from "./testUtils";
 
 const logger = testLogger.child({ module: `TestPolygon`,
   // level: "debug", // Uncomment to enable verbose logging
@@ -16,9 +19,7 @@ const logger = testLogger.child({ module: `TestPolygon`,
 
 describe("Polygon Data", () => {
   let polygonData: ChainData;
-  // const testAddress1 = "0x1057Bea69c9ADD11c6e3dE296866AFf98366CFE3";
   const testAddress = "0xada083a3c06ee526F827b43695F2DcFf5C8C892B";
-  const testHash = "0x292ec1392e758f33e77bd077334b413e5337f86698e99396befc123f8579f9fa";
   const addressBook = getTestAddressBook(testAddress);
   beforeEach(() => {
     polygonData = getPolygonData({
@@ -33,13 +34,21 @@ describe("Polygon Data", () => {
   });
 
   it("should sync & parse a transaction", async () => {
-    await polygonData.syncTransaction(testHash);
-    polygonData.getTransaction(testHash, addressBook);
+    const tx = await parsePolygonTx({
+      selfAddress: testAddress,
+      hash: "0x292ec1392e758f33e77bd077334b413e5337f86698e99396befc123f8579f9fa",
+      logger,
+    });
+    expect(tx).to.be.ok;
+    expect(tx.sources).to.include(Guards.MATIC);
+    expect(getTransactionsError([tx])).to.be.null;
   });
 
   it("should sync & parse an address book", async () => {
     await polygonData.syncAddressBook(addressBook);
-    polygonData.getTransactions(addressBook);
+    const transactions = polygonData.getTransactions(addressBook);
+    expect(transactions[0].sources).to.include(Guards.MATIC);
+    expect(getTransactionsError(transactions)).to.be.null;
   });
 
 });

@@ -38,7 +38,7 @@ export const parseEvmTx = (
   let tx = {
     date: (new Date(evmTx.timestamp)).toISOString(),
     hash: evmTx.hash,
-    sources: ["Evm"],
+    sources: [nativeAsset],
     transfers: [],
   } as Transaction;
 

@@ -6,9 +6,10 @@ import {
 } from "@valuemachine/types";
 
 import { Assets } from "../enums";
+import { aaveParser } from "../ethereum/aave";
 import { parseEvmTx } from "../evmParser";
 
-import { aaveParser } from "./aave";
+import { erc20Parser } from "./erc20";
 
 export const parsePolygonTx = (
   polygonTx: EthTransaction,
@@ -20,5 +21,5 @@ export const parsePolygonTx = (
     addressBook,
     logger,
     Assets.MATIC,
-    [aaveParser],
+    [erc20Parser, aaveParser],
   );

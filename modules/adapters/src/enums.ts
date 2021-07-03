@@ -12,6 +12,7 @@ export const Guards = {
 
 export const TransactionSources = {
   ...DefaultSources,
+  ...Guards,
   Aave: "Aave",
   Idle: "Idle",
   Polygon: "Polygon",

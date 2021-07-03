@@ -3,11 +3,12 @@ import {
 } from "@valuemachine/types";
 
 import { TransactionSources } from "../enums";
+
 import {
   parseEthTx,
   expect,
   testLogger,
-} from "../testUtils";
+} from "./testUtils";
 
 const source = TransactionSources.Polygon;
 const logger = testLogger.child({ module: `Test${source}`,
