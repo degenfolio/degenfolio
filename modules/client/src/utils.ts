@@ -1,7 +1,24 @@
-import { AddressBookJson, AssetChunks, Prices, PricesJson } from "@valuemachine/types";
+import { keccak256 } from "@ethersproject/keccak256";
+import { hexlify } from "@ethersproject/bytes";
+import { toUtf8Bytes } from "@ethersproject/strings";
+import {
+  AddressBookJson,
+  Asset,
+  AssetChunks,
+  Prices,
+  PricesJson,
+} from "@valuemachine/types";
 import axios from "axios";
 
 const skipAssets= ["GRT", "PETH", "SAI", "SPANK", "GEN", "DAI" ];
+
+export const assetToColor = (asset: Asset): string => {
+  const offset = 0;
+  return !asset ? "black"
+    : asset === "ETH" ? "blue"
+    : asset === "WBTC" ? "yellow"
+    : "#" + hexlify(keccak256(toUtf8Bytes(asset))).substring(2 + offset, 8 + offset);
+};
 
 export const fetchPricesForChunks = async (
   unit: string, chunks: AssetChunks
@@ -42,7 +59,7 @@ export const fetchPriceForAssetsOnDate = async (
     ) return {} as PricesJson;
 
     try {
-      const res = await axios.post(`/api/prices/${unit}/${date}`, { missingAssets });
+      const res = await axios.post(`/api/prices/assets/${unit}/${date}`, { assets: missingAssets });
       if (res.status === 200 && typeof(res.data) === "object") {
         return res.data;
       }

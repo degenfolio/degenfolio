@@ -9,17 +9,21 @@ import TabPanel from "@material-ui/lab/TabPanel";
 import AccountIcon from "@material-ui/icons/AccountCircle";
 import BarChartIcon from "@material-ui/icons/BarChart";
 // ValueMachine
-import { getLogger, getLocalStore } from "@valuemachine/utils";
-import { Asset, Assets, StoreKeys } from "@valuemachine/types";
+import {
+  Asset,
+  Assets,
+  StoreKeys,
+} from "@valuemachine/types";
+import { chrono, getLogger, getLocalStore } from "@valuemachine/utils";
 import axios from "axios";
 import React, { useState, useEffect } from "react";
 import { getAddressBook, getTransactions, getValueMachine, getPrices } from "valuemachine";
 
+import { Examples, getExampleAddressBook, getExampleCsv } from "../constants";
 import { fetchPriceForAssetsOnDate, fetchPricesForChunks } from "../utils";
 
-import { AccountContext } from "./AccountManager";
+import { AddressBookManager } from "./AddressBook";
 import { NavBar } from "./NavBar";
-import { AccountFAB } from "./AccountFAB";
 import { Portfolio } from "./Portfolio";
 
 const useStyles = makeStyles( theme => ({
@@ -44,19 +48,22 @@ const {
   ValueMachine: ValueMachineStore,
   Prices: PricesStore,
 } = StoreKeys;
-
-const unitStore = "Unit";
+const UnitStore = "Unit";
+const ExampleStore = "Example";
 
 export const Home = () => {
   const classes = useStyles();
-  const [syncing, setSyncing] = useState({
-    state: false,
-    msg: ""
-  });
+  const [syncing, setSyncing] = useState("");
   const [tab, setTab] = useState("addressBook");
-  const [unit, setUnit] = useState(localStorage.getItem(unitStore) as Asset || Assets.ETH as Asset);
+  const [unit, setUnit] = useState(localStorage.getItem(UnitStore) as Asset || Assets.ETH as Asset);
+  const [example, setExample] = useState(localStorage.getItem(ExampleStore) || Examples.Polygon);
+  const [csvFiles, setCsvFiles] = useState(getExampleCsv(example));
   // Load stored JSON data from localstorage
-  const [addressBookJson, setAddressBookJson] = useState(store.load(AddressBookStore));
+  const [addressBookJson, setAddressBookJson] = useState(
+    example === Examples.Custom
+      ? store.load(AddressBookStore)
+      : getExampleAddressBook(example)
+  );
   // Parse JSON data into utilities
   const [addressBook, setAddressBook] = useState(getAddressBook({
     json: addressBookJson,
@@ -85,35 +92,61 @@ export const Home = () => {
   };
 
   const syncAddressBook = async () => {
+    if (syncing) return;
+    setSyncing(`Syncing`);
+    const newTransactions = getTransactions({
+      logger,
+    });
     if (addressBookJson?.length) {
-      setSyncing({ state: true, msg: `Syncing ${addressBookJson.length} addresses` });
       // eslint-disable-next-line no-constant-condition
       while (true) {
         try {
           console.log(`Attempting to fetch for addressBook`, addressBookJson);
-          const res = await axios.post("/api/transactions/eth", { addressBook: addressBookJson });
-          if (res.status === 200 && typeof(res.data) === "object") {
-            const newTransactions = getTransactions({
-              json: res.data,
-              logger,
-            });
-            //TODO: If csv merge it to transactions
-            setTransactions(newTransactions);
-            return;
+
+          setSyncing(`Syncing Ethereum data for ${addressBookJson.length} addresses`);
+          const resEth = await axios.post("/api/ethereum", { addressBook: addressBookJson });
+          console.log(`Got ${resEth.data.length} Eth transactions`);
+          if (resEth.status === 200 && typeof(resEth.data) === "object") {
+            newTransactions.merge(resEth.data);
+          } else {
+            await new Promise((res) => setTimeout(res, 10000));
+            continue;
           }
-          console.log(res);
+
+          setSyncing(`Syncing Polygon data for ${addressBookJson.length} addresses`);
+          const resPolygon = await axios.post("/api/polygon", { addressBook: addressBookJson });
+          console.log(`Got ${resPolygon.data.length} Polygon transactions`);
+          if (resPolygon.status === 200 && typeof(resPolygon.data) === "object") {
+            newTransactions.merge(resPolygon.data);
+          } else {
+            await new Promise((res) => setTimeout(res, 10000));
+            continue;
+          }
+
+          break;
+
         } catch (e) {
           console.warn(e);
         }
-        await new Promise((res) => setTimeout(res, 10000));
       }
     }
+
+    if (csvFiles.length) {
+      for (const csvFile of csvFiles) {
+        setSyncing(`Merging ${csvFile.type} data from ${csvFile.name}`);
+        newTransactions.mergeCsv(csvFile.data, csvFile.type as any);
+      }
+    }
+
+    setTransactions(newTransactions);
+    setSyncing("");
+
   };
 
   const syncPrices = async () => {
-    if (!vm || !unit || !prices) return;
+    if (syncing || !vm || !unit || !prices) return;
     try {
-      setSyncing({ state: true, msg: "Syncing Prices" });
+      setSyncing(`Syncing Prices for ${vm.json.chunks.length} asset chunks`);
       // Fetch and merge prices for all chunks
       const chunkPrices = await fetchPricesForChunks(unit, vm.json.chunks);
       prices.merge(chunkPrices);
@@ -128,6 +161,7 @@ export const Home = () => {
 
       // Fetch and merge prices for assets on each event date
       for (const txEvent of vm.json.events) {
+        setSyncing(`Syncing Prices on ${txEvent.date.split("T")[0]}`);
         prices.merge((await fetchPriceForAssetsOnDate(
           unit,
           Object.keys(txEvent.newBalances),
@@ -144,26 +178,35 @@ export const Home = () => {
         unit,
       }));
 
-      setSyncing({ state: false, msg: "" });
-      return;
     } catch (e) {
       console.warn(e);
     }
+    setSyncing("");
   };
 
   const processTransactions = async () => {
+    if (syncing) return;
     const newVM = getValueMachine({
       addressBook,
       logger,
     });
-   
-    for (const tx of transactions.json) {
+    for (const tx of transactions.json.sort(chrono)) {
+      setSyncing(`Processing transactions on ${tx.date.split("T")[0]}`);
       newVM.execute(tx);
       await new Promise(res => setTimeout(res, 1));
     }
     store.save(ValueMachineStore, newVM.json);
     setVM(newVM);
+    setSyncing("");
   };
+
+  useEffect(() => {
+    setAddressBookJson(
+      example !== Examples.Custom
+        ? getExampleAddressBook(example)
+        : store.load(StoreKeys.AddressBook)
+    );
+  }, [example]);
 
   useEffect(() => {
     syncPrices();
@@ -178,47 +221,55 @@ export const Home = () => {
       hardcoded: appAddresses,
       logger
     });
-    store.save(AddressBookStore, newAddressBook.json);
     setAddressBook(newAddressBook);
     syncAddressBook();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addressBookJson]);
 
   useEffect(() => {
-    localStorage.setItem(unitStore, unit);
+    localStorage.setItem(UnitStore, unit);
   }, [unit]);
 
   useEffect(() => {
+    setCsvFiles(getExampleCsv(example));
+    localStorage.setItem(ExampleStore, example);
+  }, [example]);
+
+  useEffect(() => {
     if (!transactions?.json?.length) return;
-    setSyncing({ state: false, msg: "" });
+    setSyncing("");
     store.save(TransactionsStore, transactions.json);
     processTransactions();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transactions]);
 
-  return (
-    <AccountContext.Provider value={{ addressBook, setAddressBookJson, syncAddressBook, vm }}>
-      <NavBar syncing={syncing} unit={unit} setUnit={setUnit} />
-      <TabContext value={tab}>
-        <TabPanel value="portfolio" className={classes.panel}>
-          <Portfolio prices={prices} />
-        </TabPanel>
-        <TabPanel value="addressBook" className={classes.panel}>
-          <AccountFAB />
-        </TabPanel>
+  return (<>
+    <NavBar syncing={syncing} unit={unit} setUnit={setUnit} syncAddressBook={syncAddressBook}/>
+    <TabContext value={tab}>
+      <TabPanel value="portfolio" className={classes.panel}>
+        <Portfolio vm={vm} prices={prices} unit={unit} />
+      </TabPanel>
+      <TabPanel value="addressBook" className={classes.panel}>
+        <AddressBookManager
+          setAddressBookJson={setAddressBookJson}
+          addressBook={addressBook}
+          example={example}
+          setExample={setExample}
+          csvFiles={csvFiles}
+        />
+      </TabPanel>
 
-        <AppBar color="inherit" position="fixed" className={classes.appbar}>
-          <Tabs
-            value={tab}
-            onChange={updateSelection}
-            indicatorColor="primary"
-            variant="fullWidth"
-          >
-            <Tab value="portfolio" icon={<BarChartIcon />} aria-label="addressBook" />
-            <Tab value="addressBook" icon={<AccountIcon />} aria-label="account" />
-          </Tabs>
-        </AppBar>
-      </TabContext>
-    </AccountContext.Provider>
-  );
+      <AppBar color="inherit" position="fixed" className={classes.appbar}>
+        <Tabs
+          value={tab}
+          onChange={updateSelection}
+          indicatorColor="primary"
+          variant="fullWidth"
+        >
+          <Tab value="portfolio" icon={<BarChartIcon />} aria-label="addressBook" />
+          <Tab value="addressBook" icon={<AccountIcon />} aria-label="account" />
+        </Tabs>
+      </AppBar>
+    </TabContext>
+  </>);
 };

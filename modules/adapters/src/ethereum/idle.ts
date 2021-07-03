@@ -8,7 +8,6 @@ import {
   EthTransaction,
   Logger,
   Transaction,
-  TransactionSource,
   TransferCategories,
 } from "@valuemachine/types";
 import {
@@ -18,14 +17,18 @@ import {
 } from "@valuemachine/utils";
 import { publicAddresses } from "valuemachine";
 
-const { Deposit, Withdraw, SwapIn, SwapOut } = TransferCategories;
+import { Assets, TransactionSources } from "../enums";
 
-export const idleSource = "Idle";
+const source = TransactionSources.Idle;
+const { Deposit, Withdraw, SwapIn, SwapOut } = TransferCategories;
+const {
+  IDLE, idleDAISafe, idleDAIYield, idleRAIYield, idleSUSDYield, idleTUSDYield,
+  idleUSDCSafe, idleUSDCYield, idleUSDTSafe, idleUSDTYield, idleWBTCYield, idleWETHYield,
+} = Assets;
 
 ////////////////////////////////////////
 /// Addresses
 
-const IDLE = "IDLE";
 const stkIDLE = "stkIDLE";
 
 const govAddresses = [
@@ -34,17 +37,17 @@ const govAddresses = [
 ].map(setAddressCategory(AddressCategories.ERC20));
 
 const marketAddresses = [
-  { name: "idleDAIYield", address: "0x3fe7940616e5bc47b0775a0dccf6237893353bb4" },
-  { name: "idleRAIYield", address: "0x5C960a3DCC01BE8a0f49c02A8ceBCAcf5D07fABe" },
-  { name: "idleSUSDYield", address: "0xF52CDcD458bf455aeD77751743180eC4A595Fd3F" },
-  { name: "idleTUSDYield", address: "0xc278041fDD8249FE4c1Aad1193876857EEa3D68c" },
-  { name: "idleUSDCYield", address: "0x5274891bEC421B39D23760c04A6755eCB444797C" },
-  { name: "idleUSDTYield", address: "0xF34842d05A1c888Ca02769A633DF37177415C2f8" },
-  { name: "idleWBTCYield", address: "0x8C81121B15197fA0eEaEE1DC75533419DcfD3151" },
-  { name: "idleWETHYield", address: "0xC8E6CA6E96a326dC448307A5fDE90a0b21fd7f80" },
-  { name: "idleDAISafe", address: "0xa14ea0e11121e6e951e87c66afe460a00bcd6a16" },
-  { name: "idleUSDCSafe", address: "0x3391bc034f2935eF0E1e41619445F998b2680D35" },
-  { name: "idleUSDTSafe", address: "0x28fAc5334C9f7262b3A3Fe707e250E01053e07b5" },
+  { name: idleDAIYield, address: "0x3fe7940616e5bc47b0775a0dccf6237893353bb4" },
+  { name: idleRAIYield, address: "0x5C960a3DCC01BE8a0f49c02A8ceBCAcf5D07fABe" },
+  { name: idleSUSDYield, address: "0xF52CDcD458bf455aeD77751743180eC4A595Fd3F" },
+  { name: idleTUSDYield, address: "0xc278041fDD8249FE4c1Aad1193876857EEa3D68c" },
+  { name: idleUSDCYield, address: "0x5274891bEC421B39D23760c04A6755eCB444797C" },
+  { name: idleUSDTYield, address: "0xF34842d05A1c888Ca02769A633DF37177415C2f8" },
+  { name: idleWBTCYield, address: "0x8C81121B15197fA0eEaEE1DC75533419DcfD3151" },
+  { name: idleWETHYield, address: "0xC8E6CA6E96a326dC448307A5fDE90a0b21fd7f80" },
+  { name: idleDAISafe, address: "0xa14ea0e11121e6e951e87c66afe460a00bcd6a16" },
+  { name: idleUSDCSafe, address: "0x3391bc034f2935eF0E1e41619445F998b2680D35" },
+  { name: idleUSDTSafe, address: "0x28fAc5334C9f7262b3A3Fe707e250E01053e07b5" },
 ].map(setAddressCategory(AddressCategories.ERC20));
 
 export const idleAddresses = [
@@ -72,7 +75,7 @@ export const idleParser = (
   addressBook: AddressBook,
   logger: Logger,
 ): Transaction => {
-  const log = logger.child({ module: idleSource });
+  const log = logger.child({ module: source });
   const { isSelf } = addressBook;
 
   const idleTokenToUnderlyingAddress = (idleAddress: Address): Address => {
@@ -91,7 +94,7 @@ export const idleParser = (
     ////////////////////
     // Stake/Unstake
     if (govAddresses.some(e => e.address === address)) {
-      tx.sources = rmDups([idleSource, ...tx.sources]) as TransactionSource[];
+      tx.sources = rmDups([source, ...tx.sources]);
       const name = addressBook.getName(address);
       if (name === stkIDLE) {
         const event = parseEvent(stkIDLEInterface, ethTxLog);
@@ -137,7 +140,7 @@ export const idleParser = (
     ////////////////////
     // Deposit/Withdraw
     } else if (marketAddresses.some(e => e.address === address)) {
-      tx.sources = rmDups([idleSource, ...tx.sources]) as TransactionSource[];
+      tx.sources = rmDups([source, ...tx.sources]);
       log.info(`Found interaction with Idle ${addressBook.getName(address)}`);
 
       const underlyingAddress = idleTokenToUnderlyingAddress(address);

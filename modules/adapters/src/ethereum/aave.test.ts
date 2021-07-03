@@ -2,27 +2,28 @@ import {
   TransferCategories,
 } from "@valuemachine/types";
 
+import { TransactionSources } from "../enums";
+
 import {
   parseEthTx,
   expect,
   testLogger,
-} from "../testUtils";
+} from "./testUtils";
 
-import { aaveSource } from "./aave";
-
+const source = TransactionSources.Aave;
 const { Expense, SwapIn, SwapOut } = TransferCategories;
-const logger = testLogger.child({ module: `Test${aaveSource}`,
+const logger = testLogger.child({ module: `Test${source}`,
   level: "debug", // Uncomment to enable verbose logging
 });
 
-describe(aaveSource, () => {
+describe(source, () => {
   it.skip("should handle deposits to v2", async () => {
     const tx = await parseEthTx({
       selfAddress: "0x7d12d0d36f8291e8f7adec4cf59df6cc01d0ab97",
       hash: "0x23219928262c3933be579182cf8b466585b84d5e249413d3c9613837d51393e0",
       logger,
     });
-    expect(tx.sources).to.include(aaveSource);
+    expect(tx.sources).to.include(source);
     expect(tx.transfers.length).to.equal(3);
     const fee = tx.transfers[0];
     expect(fee.category).to.equal(Expense);
