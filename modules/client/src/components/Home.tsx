@@ -14,7 +14,7 @@ import {
   Assets,
   StoreKeys,
 } from "@valuemachine/types";
-import { getLogger, getLocalStore } from "@valuemachine/utils";
+import { chrono, getLogger, getLocalStore } from "@valuemachine/utils";
 import axios from "axios";
 import React, { useState, useEffect } from "react";
 import { getAddressBook, getTransactions, getValueMachine, getPrices } from "valuemachine";
@@ -48,18 +48,15 @@ const {
   ValueMachine: ValueMachineStore,
   Prices: PricesStore,
 } = StoreKeys;
-
-const unitStore = "Unit";
+const UnitStore = "Unit";
+const ExampleStore = "Example";
 
 export const Home = () => {
   const classes = useStyles();
-  const [syncing, setSyncing] = useState({
-    state: false,
-    msg: ""
-  });
+  const [syncing, setSyncing] = useState("");
   const [tab, setTab] = useState("addressBook");
-  const [unit, setUnit] = useState(localStorage.getItem(unitStore) as Asset || Assets.ETH as Asset);
-  const [example, setExample] = useState(Examples.Polygon);
+  const [unit, setUnit] = useState(localStorage.getItem(UnitStore) as Asset || Assets.ETH as Asset);
+  const [example, setExample] = useState(localStorage.getItem(ExampleStore) || Examples.Polygon);
   // Load stored JSON data from localstorage
   const [addressBookJson, setAddressBookJson] = useState(
     example === Examples.Custom
@@ -94,8 +91,8 @@ export const Home = () => {
   };
 
   const syncAddressBook = async () => {
+    if (syncing) return;
     if (addressBookJson?.length) {
-      setSyncing({ state: true, msg: `Syncing ${addressBookJson.length} addresses` });
       // eslint-disable-next-line no-constant-condition
       while (true) {
         try {
@@ -104,20 +101,27 @@ export const Home = () => {
           });
           console.log(`Attempting to fetch for addressBook`, addressBookJson);
 
+          setSyncing(`Syncing Ethereum data for ${addressBookJson.length} addresses`);
           const resEth = await axios.post("/api/ethereum", { addressBook: addressBookJson });
           console.log(`Got ${resEth.data.length} Eth transactions`);
           if (resEth.status === 200 && typeof(resEth.data) === "object") {
             newTransactions.merge(resEth.data);
+          } else {
+            continue;
           }
 
+          setSyncing(`Syncing Polygon data for ${addressBookJson.length} addresses`);
           const resPolygon = await axios.post("/api/polygon", { addressBook: addressBookJson });
           console.log(`Got ${resPolygon.data.length} Polygon transactions`);
           if (resPolygon.status === 200 && typeof(resPolygon.data) === "object") {
             newTransactions.merge(resPolygon.data);
+          } else {
+            continue;
           }
 
           //TODO: If csv merge it to transactions
           setTransactions(newTransactions);
+          setSyncing("");
           return;
 
         } catch (e) {
@@ -129,9 +133,9 @@ export const Home = () => {
   };
 
   const syncPrices = async () => {
-    if (!vm || !unit || !prices) return;
+    if (syncing || !vm || !unit || !prices) return;
     try {
-      setSyncing({ state: true, msg: "Syncing Prices" });
+      setSyncing(`Syncing Prices for ${vm.json.chunks.length} asset chunks`);
       // Fetch and merge prices for all chunks
       const chunkPrices = await fetchPricesForChunks(unit, vm.json.chunks);
       prices.merge(chunkPrices);
@@ -146,6 +150,7 @@ export const Home = () => {
 
       // Fetch and merge prices for assets on each event date
       for (const txEvent of vm.json.events) {
+        setSyncing(`Syncing Prices on ${txEvent.date.split("T")[0]}`);
         prices.merge((await fetchPriceForAssetsOnDate(
           unit,
           Object.keys(txEvent.newBalances),
@@ -162,24 +167,26 @@ export const Home = () => {
         unit,
       }));
 
-      setSyncing({ state: false, msg: "" });
-      return;
     } catch (e) {
       console.warn(e);
     }
+    setSyncing("");
   };
 
   const processTransactions = async () => {
+    if (syncing) return;
     const newVM = getValueMachine({
       addressBook,
       logger,
     });
-    for (const tx of transactions.json) {
+    for (const tx of transactions.json.sort(chrono)) {
+      setSyncing(`Processing transaction from ${tx.date.split("T")[0]}`);
       newVM.execute(tx);
       await new Promise(res => setTimeout(res, 1));
     }
     store.save(ValueMachineStore, newVM.json);
     setVM(newVM);
+    setSyncing("");
   };
 
   useEffect(() => {
@@ -209,12 +216,16 @@ export const Home = () => {
   }, [addressBookJson]);
 
   useEffect(() => {
-    localStorage.setItem(unitStore, unit);
+    localStorage.setItem(UnitStore, unit);
   }, [unit]);
 
   useEffect(() => {
+    localStorage.setItem(ExampleStore, example);
+  }, [example]);
+
+  useEffect(() => {
     if (!transactions?.json?.length) return;
-    setSyncing({ state: false, msg: "" });
+    setSyncing("");
     store.save(TransactionsStore, transactions.json);
     processTransactions();
   // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -37,7 +37,7 @@ export const NavBar = ({
 }: {
   setUnit: (val: Asset) => void,
   syncAddressBook: () => Promise<void>,
-  syncing: { state: boolean, msg: string },
+  syncing: string,
   unit: Asset,
 }) => {
   const classes = useStyles();
@@ -67,16 +67,13 @@ export const NavBar = ({
         </FormControl>
 
         <Typography className={classes.sync}>
-          {syncing.state
-            ? syncing.msg
-            : `Synced`
-          }
+          {syncing || "Synced"}
         </Typography>
         <IconButton
           edge="start"
           color="inherit"
           aria-label="sync"
-          disabled={syncing.state}
+          disabled={!!syncing}
           onClick={syncAddressBook}
         >
           <SyncIcon />

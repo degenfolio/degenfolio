@@ -240,7 +240,7 @@ const EditEntry = ({
           helperText={newEntryError || "Add your ethereum address to fetch info"}
           id="address"
           fullWidth
-          label="Eth Address"
+          label="Address"
           margin="normal"
           name="address"
           onChange={handleEntryChange}
@@ -471,7 +471,7 @@ export const AddressBookManager = ({
                 <TableCell><strong> Account name </strong></TableCell>
                 <TableCell><strong> Category </strong></TableCell>
                 <TableCell><strong> Guard </strong></TableCell>
-                <TableCell><strong> Eth Address </strong></TableCell>
+                <TableCell><strong> Address </strong></TableCell>
                 <TableCell><strong> Edit </strong></TableCell>
               </TableRow>
             </TableHead>
