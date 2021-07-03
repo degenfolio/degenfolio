@@ -5,7 +5,7 @@ import {
   Transaction,
 } from "@valuemachine/types";
 
-import { Assets } from "../assets";
+import { Assets } from "../enums";
 import { parseEvmTx } from "../evmParser";
 
 import { aaveParser } from "./aave";

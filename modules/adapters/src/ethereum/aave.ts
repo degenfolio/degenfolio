@@ -4,18 +4,19 @@ import {
   EthTransaction,
   Logger,
   Transaction,
-  TransactionSource,
 } from "@valuemachine/types";
 import {
   rmDups,
   setAddressCategory,
 } from "@valuemachine/utils";
 
-import { Assets } from "../assets";
+import { Assets, TransactionSources } from "../enums";
 
-export const aaveSource = "Aave";
-
+const source = TransactionSources.Aave;
 const { AAVE, stkAAVE, aWETH, aDAI, aAAVE, aBAT } = Assets;
+
+////////////////////////////////////////
+/// Addresses
 
 const govAddresses = [
   { name: AAVE, address: "0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9" },
@@ -50,11 +51,11 @@ export const aaveParser = (
   _addressBook: AddressBook,
   _logger: Logger,
 ): Transaction => {
-  //const log = logger.child({ module: aaveSource });
+  //const log = logger.child({ module: source });
   //log.info(`Parser activated`);
 
   if (aaveAddresses.some(entry => ethTx.from === entry.address)) {
-    tx.sources = rmDups([aaveSource, ...tx.sources]) as TransactionSource[];
+    tx.sources = rmDups([source, ...tx.sources]);
   }
 
   // Incorporating aave adapter

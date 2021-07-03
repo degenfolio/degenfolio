@@ -14,7 +14,7 @@ import {
 } from "@valuemachine/types";
 import { gt } from "@valuemachine/utils";
 
-import { Assets } from "./assets";
+import { Assets } from "./enums";
 
 const { Expense, Income, Internal, Unknown } = TransferCategories;
 

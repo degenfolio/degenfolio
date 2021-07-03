@@ -1,44 +1,31 @@
-import { Interface } from "@ethersproject/abi";
-import { formatUnits } from "@ethersproject/units";
-import { AddressZero } from "@ethersproject/constants";
 import {
   AddressBook,
-  AddressEntry,
   AddressCategories,
-  AddressCategory,
   EthTransaction,
   Logger,
   Transaction,
-  TransactionSource,
-  TransferCategories,
 } from "@valuemachine/types";
 import {
-  parseEvent,
   rmDups,
-  setAddressCategory,
 } from "@valuemachine/utils";
 
-import { Assets } from "../assets";
+import { Assets, TransactionSources } from "../enums";
 
-const { AAVE, amAAVE, amDAI, amUSDC, amWBTC, amWETH, amUSDT, amMATIC, MATIC } = Assets;
+import { setAddressCategory } from "./utils";
 
-export const aaveSource = "Aave";
+const source = TransactionSources.Aave;
+const { AAVE, amAAVE, amDAI, amUSDC, amWBTC, amWETH, amUSDT, amMATIC } = Assets;
 
-const { Expense, Income, Internal, Unknown } = TransferCategories;
-
-const setCategory = (category: AddressCategory) =>
-  (entry: Partial<AddressEntry>): AddressEntry => ({
-    ...setAddressCategory(category)(entry),
-    guard: MATIC,
-  });
+////////////////////////////////////////
+/// Interfaces
 
 const govAddresses = [
   { name: AAVE, address: "0xD6DF932A45C0f255f85145f286eA0b292B21C90B" },
-].map(setCategory(AddressCategories.ERC20));
+].map(setAddressCategory(AddressCategories.ERC20));
 
 const coreAddresses = [
   { name: "LendingPool", address: "0x8dff5e27ea6b7ac08ebfdf9eb090f32ee9a30fcf" },
-].map(setCategory(AddressCategories.Defi));
+].map(setAddressCategory(AddressCategories.Defi));
 
 // https://docs.aave.com/developers/deployed-contracts/deployed-contracts
 const marketAddresses = [
@@ -49,21 +36,13 @@ const marketAddresses = [
   { name: amWETH, address: "0x28424507fefb6f7f8E9D3860F56504E4e5f5f390" },
   { name: amWBTC, address: "0x5c2ed810328349100A66B82b78a1791B101C9D61" },
   { name: amMATIC, address: "0x8dF3aad3a84da6b69A4DA8aeC3eA40d9091B2Ac4" },
-].map(setCategory(AddressCategories.ERC20));
+].map(setAddressCategory(AddressCategories.ERC20));
 
 export const aaveAddresses = [
   ...govAddresses,
   ...coreAddresses,
   ...marketAddresses,
 ];
-
-////////////////////////////////////////
-/// Interfaces
-
-const erc20Interface = new Interface([
-  "event Approval(address indexed from, address indexed to, uint amount)",
-  "event Transfer(address indexed from, address indexed to, uint amount)",
-]);
 
 ////////////////////////////////////////
 /// Parser
@@ -74,50 +53,20 @@ export const aaveParser = (
   addressBook: AddressBook,
   logger: Logger,
 ): Transaction => {
-  const log = logger.child({ module: aaveSource });
+  const log = logger.child({ module: source });
   log.info(`Parser activated`);
-  const { getDecimals, getName, isSelf, isToken } = addressBook;
 
   if (aaveAddresses.some(entry => ethTx.from === entry.address)) {
-    tx.sources = rmDups([aaveSource, ...tx.sources]) as TransactionSource[];
+    tx.sources = rmDups([source, ...tx.sources]);
   }
 
   for (const txLog of ethTx.logs) {
     const address = txLog.address;
 
     // Parse ERC20 compliant tokens
-    if (isToken(address)) {
-      const source = "ERC20";
-      const event = parseEvent(erc20Interface, txLog);
-      if (!event.name) continue;
+    if (aaveAddresses.some(e => e.address ===address)) {
       tx.sources = rmDups([source, ...tx.sources]);
-      const asset = getName(address);
-      // Skip transfers that don't concern self accounts
-      if (!isSelf(event.args.from) && !isSelf(event.args.to)) {
-        log.debug(`Skipping ${asset} ${event.name} that doesn't involve us`);
-        continue;
-      }
-      const amount = formatUnits(event.args.amount, getDecimals(address));
-      if (event.name === "Transfer") {
-        log.debug(`Parsing ${source} ${event.name} of ${amount} ${asset}`);
-        const from = event.args.from === AddressZero ? address : event.args.from;
-        const to = event.args.to === AddressZero ? address : event.args.to;
-        const category = isSelf(from) && isSelf(to) ? Internal
-          : isSelf(from) && !isSelf(to) ? Expense
-          : isSelf(to) && !isSelf(from) ? Income
-          : Unknown;
-        tx.transfers.push({ asset, category, from, index: txLog.index, quantity: amount, to });
-        if (ethTx.to === address) {
-          tx.method = `${asset} ${event.name}`;
-        }
-      } else if (event.name === "Approval") {
-        log.debug(`Parsing ${source} ${event.name} event for ${asset}`);
-        if (ethTx.to === address) {
-          tx.method = `${asset} ${event.name}`;
-        }
-      } else {
-        log.warn(event, `Unknown ${asset} event`);
-      }
+      log.info(`Found AAVE interaction`);
     }
 
   }

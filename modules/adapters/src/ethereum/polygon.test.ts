@@ -2,15 +2,15 @@ import {
   TransferCategories,
 } from "@valuemachine/types";
 
+import { TransactionSources } from "../enums";
 import {
   parseEthTx,
   expect,
   testLogger,
 } from "../testUtils";
 
-import { polygonSource } from "./polygon";
-
-const logger = testLogger.child({ module: `Test${polygonSource}`,
+const source = TransactionSources.Polygon;
+const logger = testLogger.child({ module: `Test${source}`,
   // level: "debug", // Uncomment to enable verbose logging
 });
 
@@ -22,7 +22,7 @@ describe("Polygon Bridge", () => {
       hash: "0xafe41962f39cf25034aecd3f3278e8f7ed0b4dc60e612c10c68c8599a29dad45",
       logger,
     });
-    expect(tx.sources).to.include(polygonSource);
+    expect(tx.sources).to.include(source);
     expect(tx.transfers[0].category).to.include(TransferCategories.Expense);
     expect(tx.transfers[1].category).to.include(TransferCategories.SwapOut);
     expect(tx.transfers[2].category).to.include(TransferCategories.SwapIn);

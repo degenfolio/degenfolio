@@ -16,11 +16,13 @@ import {
   setAddressCategory,
 } from "@valuemachine/utils";
 
-import { Assets } from "../assets";
+import { Assets, TransactionSources } from "../enums";
 
+const source = TransactionSources.Polygon;
 const { MATIC, ETH, WETH } = Assets;
 
-export const polygonSource = "Polygon";
+////////////////////////////////////////
+/// Addresses
 
 const ZapperMaticBridge = "ZapperMaticBridge";
 
@@ -67,13 +69,13 @@ export const polygonParser = (
   addressBook: AddressBook,
   logger: Logger,
 ): Transaction => {
-  const log = logger.child({ module: polygonSource });
+  const log = logger.child({ module: source });
   const { getName, isToken, getDecimals } = addressBook;
-  log.info(`Let's parse ${polygonSource}`);
+  log.info(`Let's parse ${source}`);
 
   if (getName(ethTx.to) === ZapperMaticBridge) {
     const account = ethTx.from;
-    tx.sources = rmDups([polygonSource, ...tx.sources]);
+    tx.sources = rmDups([source, ...tx.sources]);
     tx.method = `Zap to Matic`;
     log.info(`Parsing ${tx.method}`);
 
@@ -180,7 +182,7 @@ export const polygonParser = (
   for (const txLog of ethTx.logs) {
     const address = txLog.address;
     if (polygonAddresses.map(e => e.address).includes(address)) {
-      tx.sources = rmDups([polygonSource, ...tx.sources]);
+      tx.sources = rmDups([source, ...tx.sources]);
       const name = getName(address);
       const event = parseEvent(plasmaBridgeInterface, txLog);
       if (event?.name === "NewDepositBlock") {

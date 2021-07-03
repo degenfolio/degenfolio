@@ -8,7 +8,6 @@ import {
   EthTransaction,
   Logger,
   Transaction,
-  TransactionSource,
   TransferCategories,
 } from "@valuemachine/types";
 import {
@@ -18,15 +17,14 @@ import {
 } from "@valuemachine/utils";
 import { publicAddresses } from "valuemachine";
 
-import { Assets } from "../assets";
+import { Assets, TransactionSources } from "../enums";
 
+const source = TransactionSources.Idle;
 const { Deposit, Withdraw, SwapIn, SwapOut } = TransferCategories;
 const {
   IDLE, idleDAISafe, idleDAIYield, idleRAIYield, idleSUSDYield, idleTUSDYield,
   idleUSDCSafe, idleUSDCYield, idleUSDTSafe, idleUSDTYield, idleWBTCYield, idleWETHYield,
 } = Assets;
-
-export const idleSource = "Idle";
 
 ////////////////////////////////////////
 /// Addresses
@@ -77,7 +75,7 @@ export const idleParser = (
   addressBook: AddressBook,
   logger: Logger,
 ): Transaction => {
-  const log = logger.child({ module: idleSource });
+  const log = logger.child({ module: source });
   const { isSelf } = addressBook;
 
   const idleTokenToUnderlyingAddress = (idleAddress: Address): Address => {
@@ -96,7 +94,7 @@ export const idleParser = (
     ////////////////////
     // Stake/Unstake
     if (govAddresses.some(e => e.address === address)) {
-      tx.sources = rmDups([idleSource, ...tx.sources]) as TransactionSource[];
+      tx.sources = rmDups([source, ...tx.sources]);
       const name = addressBook.getName(address);
       if (name === stkIDLE) {
         const event = parseEvent(stkIDLEInterface, ethTxLog);
@@ -142,7 +140,7 @@ export const idleParser = (
     ////////////////////
     // Deposit/Withdraw
     } else if (marketAddresses.some(e => e.address === address)) {
-      tx.sources = rmDups([idleSource, ...tx.sources]) as TransactionSource[];
+      tx.sources = rmDups([source, ...tx.sources]);
       log.info(`Found interaction with Idle ${addressBook.getName(address)}`);
 
       const underlyingAddress = idleTokenToUnderlyingAddress(address);

@@ -1,4 +1,21 @@
-import { Assets as DefaultAssets } from "@valuemachine/types";
+import {
+  Assets as DefaultAssets,
+  Guards as DefaultGuards,
+  TransactionSources as DefaultSources,
+} from "@valuemachine/types";
+
+export const Guards = {
+  ...DefaultGuards,
+  MATIC: "MATIC",
+  ONE: "ONE",
+};
+
+export const TransactionSources = {
+  ...DefaultSources,
+  Aave: "Aave",
+  Idle: "Idle",
+  Polygon: "Polygon",
+};
 
 export const Assets = {
   ...DefaultAssets,
@@ -40,3 +57,4 @@ export const Assets = {
   WMATIC: "WMATIC",
 
 };
+

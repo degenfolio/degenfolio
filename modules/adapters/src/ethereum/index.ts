@@ -1,12 +1,6 @@
-import { aaveSource, aaveAddresses, aaveParser } from "./aave";
-import { idleSource, idleAddresses, idleParser } from "./idle";
-import { polygonSource, polygonAddresses, polygonParser } from "./polygon";
-
-export const ethSources = [
-  aaveSource,
-  idleSource,
-  polygonSource,
-];
+import { aaveAddresses, aaveParser } from "./aave";
+import { idleAddresses, idleParser } from "./idle";
+import { polygonAddresses, polygonParser } from "./polygon";
 
 export const ethAddresses = [
   ...aaveAddresses,
