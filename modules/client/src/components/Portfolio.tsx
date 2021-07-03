@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState } from "react";
 import { XYPlot, XAxis, YAxis, PolygonSeries, HorizontalGridLines, DiscreteColorLegend, Crosshair } from "react-vis";
 import { format } from "d3-format";
-import { Asset, AssetChunk, Prices } from "@valuemachine/types";
+import { Asset, AssetChunk, Prices, ValueMachine } from "@valuemachine/types";
 import { mul } from "@valuemachine/utils";
 import { Typography } from "@material-ui/core";
 import Paper from "@material-ui/core/Paper";
@@ -10,8 +10,6 @@ import TablePagination from "@material-ui/core/TablePagination";
 import makeStyles from "@material-ui/core/styles/makeStyles";
 
 import { assetToColor } from "../utils";
-
-import { AccountContext } from "./AccountManager";
 
 const useStyles = makeStyles( theme => ({
   graph: {
@@ -69,13 +67,17 @@ const getChunksByDate = (chunks: AssetChunk[], dates: string[]) => {
 
 export const Portfolio = ({
   prices,
-  unit
-}: { prices: Prices, unit: Asset }) => {
-  const { vm } = useContext(AccountContext);
+  unit,
+  vm,
+}: {
+  prices: Prices,
+  unit: Asset,
+  vm: ValueMachine,
+}) => {
   const classes = useStyles();
 
   const [data, setData] = useState([] as SeriesData);
-  const [chunksByDates, setChunksByDates] = useState({} as { [date: string]: number[] })
+  const [chunksByDates, setChunksByDates] = useState({} as { [date: string]: number[] });
   const [crosshairdata, setCrosshairdata] = useState([] as Array<{x: number, y: number}>);
   const [currentChunk, setCurrentChunk] = useState({} as AssetChunk);
   const [dates, setDates] = useState([] as string[]);
