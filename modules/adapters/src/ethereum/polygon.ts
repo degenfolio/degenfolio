@@ -3,16 +3,17 @@ import { AddressZero } from "@ethersproject/constants";
 import { formatUnits } from "@ethersproject/units";
 import {
   AddressBook,
-  TransferCategories,
   AddressCategories,
   EthTransaction,
   Logger,
   Transaction,
+  Transfer,
+  TransferCategories,
 } from "@valuemachine/types";
 import {
-  setAddressCategory,
   parseEvent,
   rmDups,
+  setAddressCategory,
 } from "@valuemachine/utils";
 
 import { Assets } from "../assets";
@@ -76,42 +77,46 @@ export const polygonParser = (
     tx.method = `Zap to Matic`;
     log.info(`Parsing ${tx.method}`);
 
-    // Get all erc20 transfers even non-self
-    const erc20Transfers = ethTx.logs.filter(txLog => isToken(txLog.address)).map(txLog => {
-      const address = txLog.address;
-      const event = parseEvent(wethInterface, txLog);
-      if (event.name === "Transfer") {
-        return {
-          asset: getName(address),
-          category: TransferCategories.Unknown,
-          from: event.args.from === AddressZero ? address : event.args.from,
-          index: txLog.index,
-          quantity: formatUnits(event.args.amount, getDecimals(address)),
-          to: event.args.to === AddressZero ? address : event.args.to,
-        };
-      } else if (event.name === "Deposit") {
-        const swapOut = tx.transfers.find(transfer =>
-          transfer.quantity === formatUnits(event.args.amount, 18)
-          && transfer.asset === ETH
-        );
-        if (swapOut) {
-          swapOut.category = TransferCategories.SwapOut;
-          swapOut.to = WETH;
+    // Get all erc20 transfers (even non-self ones)
+    const erc20Transfers = ethTx.logs
+      .filter(txLog => isToken(txLog.address))
+      .map((txLog): Transfer => {
+        const address = txLog.address;
+        const event = parseEvent(wethInterface, txLog);
+        if (event.name === "Transfer") {
+          return {
+            asset: getName(address),
+            category: TransferCategories.Unknown,
+            from: event.args.from === AddressZero ? address : event.args.from,
+            index: txLog.index,
+            quantity: formatUnits(event.args.amount, getDecimals(address)),
+            to: event.args.to === AddressZero ? address : event.args.to,
+          };
+        } else if (event.name === "Deposit") {
+          const swapOut = tx.transfers.find(transfer =>
+            transfer.quantity === formatUnits(event.args.amount, 18)
+            && transfer.asset === ETH
+          );
+          if (swapOut) {
+            swapOut.category = TransferCategories.SwapOut;
+            swapOut.index = txLog.index - 0.1;
+            swapOut.to = WETH;
+          }
+          log.info(`Returning weth swapin`);
+          return {
+            asset: WETH,
+            category: TransferCategories.SwapIn,
+            from: WETH,
+            index: txLog.index,
+            quantity: formatUnits(event.args.amount, getDecimals(address)),
+            to: account,
+          };
+        } else {
+          return null;
         }
-        log.info(`Returning weth swapin`);
-        return {
-          asset: WETH,
-          category: TransferCategories.SwapIn,
-          from: WETH,
-          index: txLog.index,
-          quantity: formatUnits(event.args.amount, getDecimals(address)),
-          to: account,
-        };
-      } else {
-        return null;
-      }
-    }).filter(t => !!t);
+      }).filter(t => !!t);
 
+    // Log transfers
     erc20Transfers.forEach(transfer => {
       log.info(`Found ${transfer.asset} transfer for ${
         transfer.quantity
