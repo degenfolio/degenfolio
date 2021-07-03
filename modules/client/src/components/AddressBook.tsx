@@ -32,7 +32,7 @@ import {
   AddressEntry,
   StoreKeys,
 } from "@valuemachine/types";
-import { getEmptyAddressBook, getLocalStore } from "@valuemachine/utils";
+import { getLocalStore } from "@valuemachine/utils";
 import { Guards } from "@degenfolio/adapters";
 import React, { useEffect, useState } from "react";
 
@@ -42,38 +42,21 @@ import { HexString } from "./HexString";
 
 const store = getLocalStore(localStorage);
 
+const getEmptyEntry = (): AddressEntry => ({
+  category: AddressCategories.Self,
+  name: "",
+  address: "",
+  guard: Guards.ETH,
+});
+
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
     margin: theme.spacing(1),
     maxWidth: "98%",
   },
-  divider: {
-    marginBottom: theme.spacing(2),
-    marginTop: theme.spacing(2),
-  },
   select: {
     margin: theme.spacing(3),
     minWidth: 160,
-  },
-  input: {
-    margin: theme.spacing(1),
-    minWidth: 120,
-    maxWidth: 300,
-  },
-  exporter: {
-    marginBottom: theme.spacing(4),
-    marginLeft: theme.spacing(4),
-    marginRight: theme.spacing(4),
-    marginTop: theme.spacing(0),
-  },
-  importer: {
-    marginBottom: theme.spacing(1),
-    marginLeft: theme.spacing(4),
-    marginRight: theme.spacing(4),
-    marginTop: theme.spacing(0),
-  },
-  snackbar: {
-    width: "100%"
   },
   button: {
     marginBottom: theme.spacing(1.5),
@@ -101,7 +84,7 @@ const EditEntry = ({
   setEntry: (entry: AddressEntry) => void;
   addresses: string[];
 }) => {
-  const [newEntry, setNewEntry] = useState(getEmptyAddressBook()[0]);
+  const [newEntry, setNewEntry] = useState(getEmptyEntry());
   const [entryModified, setEntryModified] = useState(false);
   const [newEntryError, setNewEntryError] = useState("");
   const classes = useStyles();
@@ -150,6 +133,7 @@ const EditEntry = ({
 
   useEffect(() => {
     if (!entry || !newEntry) {
+      console.log(`No entry or no new entry`);
       setEntryModified(false);
     } else if (
       newEntry.address !== entry.address ||
@@ -168,6 +152,7 @@ const EditEntry = ({
     const errors = getErrors(newEntry);
     if (!errors) {
       setEntry(newEntry);
+      setNewEntry(getEmptyEntry());
     } else {
       setNewEntryError(errors);
     }
@@ -282,13 +267,13 @@ const AddressRow = ({
   otherAddresses: string[];
 }) => {
   const [editMode, setEditMode] = useState(false);
-  const [newEntry, setNewEntry] = useState(getEmptyAddressBook()[0]);
+  const [newEntry, setNewEntry] = useState(getEmptyEntry());
   const classes = useStyles();
 
   const toggleEditMode = () => {
     setEditMode(!editMode);
     if (editMode) {
-      setNewEntry(getEmptyAddressBook()[0]);
+      setNewEntry(getEmptyEntry());
     } else {
       setNewEntry(JSON.parse(JSON.stringify(entry)));
     }
@@ -366,7 +351,7 @@ export const AddressBookManager = ({
   setExample: (val: string) => void,
 }) => {
   const [allAddresses, setAllAddresses] = useState([] as string[]);
-  const [newEntry, setNewEntry] = useState(getEmptyAddressBook()[0]);
+  const [newEntry, setNewEntry] = useState(getEmptyEntry());
   const classes = useStyles();
 
   useEffect(() => {
@@ -387,7 +372,10 @@ export const AddressBookManager = ({
       setAddressBookJson(newAddressBook);
       // Don't reset new entry fields when we modify an existing one
       if (editedEntry && index === allAddresses.length) {
-        setNewEntry(getEmptyAddressBook()[0]);
+        setNewEntry(getEmptyEntry());
+      }
+      if (example === Examples.Custom) {
+        store.save(StoreKeys.AddressBook, newAddressBook);
       }
     } else {
       console.log(`index ${index} is out of range, expected 0-${allAddresses.length}`);
