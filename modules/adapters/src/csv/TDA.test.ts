@@ -1,4 +1,5 @@
 import { CsvSources, Transactions } from "@valuemachine/types";
+import { getTransactionsErrors } from "@valuemachine/utils";
 
 import { getTransactions } from "../index";
 import {
@@ -12,17 +13,17 @@ const log = testLogger.child({
   module: "TestTransactions",
 });
 
-const timestamp = "2018-01-02T01:00:00Z";
-const value = "1.3141592653589793";
+const exampleTDACsv =
+`
+DATE,TRANSACTION ID,DESCRIPTION,QUANTITY,SYMBOL,PRICE,COMMISSION,AMOUNT,REG FEE,SHORT-TERM RDM FEE,FUND REDEMPTION FEE, DEFERRED SALES CHARGE
+11/11/2020,,Bought 10 AMGN @ 245.145,10,AMGN,245.145,0,-2451.45,,,,
+11/11/2020,,Bought 1000 ITUB @ 5.35,1000,ITUB,5.35,0,-5350,,,,
+11/11/2020,,Bought 100 AAPL @ 118.365,100,AAPL,118.365,0,-11836.5,,,,
+11/11/2020,,Sold 3 AAPL @ 118.215,3,AAPL,118.215,0,354.64,0.01,,,
+11/11/2020,,Sold 97 AAPL @ 118.2101,97,AAPL,118.2101,0,11466.12,0.26,,,
+`;
 
-const exampleCoinbaseCsv =
-`Timestamp,           Transaction Type,Asset,Quantity Transacted,      USD Spot Price at Transaction,USD Subtotal,USD Total (inclusive of fees),USD Fees,Notes
-2018-01-01T01:00:00Z, Buy,             BTC,  0.1,                      1500.00,                      150.00,      165.00,                       15.00,   Bought 0.0300 BTC for $165.00 USD
-${timestamp.replace("00Z", "30Z")}, Receive, ETH, ${value.substring(0, 10)},650.00,                  "",          "",                           "",      Received 1.0000 ETH from an external account
-2018-01-03T01:00:00Z, Sell,            ETH,  1.0,                      600.00,                       600.00,      590.00,                       10.00,   Sold 1.0000 ETH for $590.00 USD
-`.replace(/, +/g, ",");
-
-describe("Coinbase", () => {
+describe("TDA", () => {
   let addressBook;
   let txns: Transactions;
 
@@ -32,11 +33,9 @@ describe("Coinbase", () => {
     expect(txns.getJson().length).to.equal(0);
   });
 
-  it("should merge coinbase data multiple times without creaing duplicates", async () => {
-    txns.mergeCsv(exampleCoinbaseCsv, CsvSources.Coinbase);
-    expect(txns.getJson().length).to.equal(3);
-    txns.mergeCsv(exampleCoinbaseCsv, CsvSources.Coinbase);
-    expect(txns.getJson().length).to.equal(3);
+  it("should merge TDA data", async () => {
+    txns.mergeCsv(exampleTDACsv, CsvSources.TDA);
+    expect(getTransactionsErrors(txns.json)).to.be.null;
   });
 
 });
