@@ -54,7 +54,7 @@ type SeriesData = Array<{
 }>;
 
 const getChunksByDate = (chunks: AssetChunk[], dates: string[]) => {
-  console.log(`Getting chunks from dates ${dates}`);
+  // console.log(`Getting chunks from dates ${dates}`);
   const empty = dates.reduce((output, date) => {
     output[date] = [];
     return output;
@@ -150,14 +150,13 @@ export const Portfolio = ({
 
   const formatChunksToGraphData = (datesSubset: string[]) => {
     if (!vm?.json?.chunks?.length) return;
-    console.log(`Formatting chunks as graph data`);
     const chunks = vm.json.chunks;
 
-    console.log(`got: `, datesSubset);
+    // console.log(`got: `, datesSubset);
 
     const newData = [] as SeriesData;
     const chunkByDate = getChunksByDate(chunks, datesSubset);
-    console.log(`Got chunks by date`, chunkByDate);
+    // console.log(`Got chunks by date`, chunkByDate);
     setChunksByDates(chunkByDate);
 
     // Exclude the last timestamp
@@ -195,7 +194,7 @@ export const Portfolio = ({
         receiveValue > 0 ? yReceivePrevPos += receiveValue : yReceivePrevNeg += receiveValue;
       });
     });
-    console.log(`Set new data`, newData);
+    // console.log(`Set new data`, newData);
     setData(newData);
   };
 
@@ -221,10 +220,6 @@ export const Portfolio = ({
   useEffect(() => {
     if (!dates.length) return;
     console.log("Generating graph data");
-    console.log(dates.length);
-    console.log(
-      page * rowsPerPage, page * rowsPerPage + rowsPerPage,
-    );
     const totalPages = Math.ceil(dates.length/rowsPerPage);
     formatChunksToGraphData(dates.slice(
       (page - totalPages) * rowsPerPage,
