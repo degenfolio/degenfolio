@@ -10,15 +10,12 @@ import {
   STATUS_YOUR_BAD,
 } from "./utils";
 
-const unsupported = ["stkAAVE", "PETH"];
-
 const log = getLogger(env.logLevel).child({
   // level: "debug",
   module: "Prices",
 });
 
 const fetchPrice = async (rawDate: string, unit: string, asset: string): Promise<string> => {
-  if (unsupported.includes(asset)) return "";
   const covalentUrl = "https://api.covalenthq.com/v1";
   const date = rawDate.includes("T") ? rawDate.split("T")[0] : rawDate;
   const url = `${covalentUrl}/pricing/historical/${unit}/${asset
@@ -50,8 +47,19 @@ const syncPrice = async (rawDate: string, unit: string, asset: string): Promise<
   const date = rawDate.includes("T") ? rawDate.split("T")[0] : rawDate;
   let price = prices.getPrice(date, asset);
   if (price) { return price; }
+
   // fetch price from Covalent
-  price = await fetchPrice(date, unit, asset);
+  if (asset.startsWith("am")) {
+    price = await fetchPrice(date, unit, asset.slice(2));
+  } else if (asset.startsWith("a")) {
+    price = await fetchPrice(date, unit, asset.slice(1));
+  } else if (asset.startsWith("stk")) {
+    price = await fetchPrice(date, unit, asset.slice(3));
+  } else if (asset === "PETH") {
+    price = await fetchPrice(date, unit, "ETH");
+  } else
+    price = await fetchPrice(date, unit, asset);
+
   if (price) { prices.setPrice(price, date, asset, unit); return price; }
   price = await prices.syncPrice(date, asset);
   if (price) { prices.setPrice(price, date, asset, unit); return price; }
