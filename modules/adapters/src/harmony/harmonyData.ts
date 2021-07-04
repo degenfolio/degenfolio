@@ -31,9 +31,9 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
     index: rawTx.transactionIndex,
     logs: TxReceipt.logs.map(evt => ({
       address: evt.address,
-      index: evt.log_offset,
-      topics: evt.raw_log_topics,
-      data: evt.raw_log_data || "0x"
+      index: evt.transactionIndex,
+      topics: evt.topics,
+      data: evt.data || "0x"
     })),
     nonce: 0, // not available?
     status: 1,
@@ -137,7 +137,7 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
       params: [txHash]
     };
     const response = await axios.post("https://api.harmony.one", databc);
-    console.log(response.data.result.logs[2]);
+    console.log(response.data.result.logs[1]);
     if (response.data) logger.info("GOTIT");
     else logger.info("FAILED");
     // TODO: save result to json
