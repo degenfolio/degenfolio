@@ -91,7 +91,6 @@ export const Portfolio = ({
     setPage(0);
   };
 
-  console.log(`Re-rendering with seriesData`, data);
   const onNearestX = (value: any/*, { innerX }: any*/) => {
     // console.log("Nearest X value", value, innerX);
     const newcrosshairdata = data.reduce((output, seriesvalue) => {
@@ -202,9 +201,6 @@ export const Portfolio = ({
     case Guards.USD:
       guardColor = "#d6ffa6";
       break;
-    case Guards.ETH:
-      guardColor = "#9cffff";
-      break;
     case Guards.ONE:
       guardColor = "#ffea98";
       break;
@@ -293,7 +289,7 @@ export const Portfolio = ({
                 const chunkEnd = dates[value.series[1].x];
 
                 const currentGuard = value.chunk.history.reduce((output, history) => {
-                  // if (history.guard === "MATIC") {
+                  // if (history.guard !== "MATIC") {
                   //   console.log(history);
                   //   console.log(`chunkStart ${chunkStart}, chunkEnd ${chunkEnd}`);
                   // }
