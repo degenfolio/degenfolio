@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { XYPlot, XAxis, YAxis, PolygonSeries, HorizontalGridLines, DiscreteColorLegend, Crosshair, GradientDefs, VerticalGridLines } from "react-vis";
 import { format } from "d3-format";
-import { Asset, AssetChunk, Guard, Prices, ValueMachine } from "@valuemachine/types";
+import { Asset, AssetChunk, Event, EventTypes, Guard, Prices, ValueMachine } from "@valuemachine/types";
 import { Guards } from "@degenfolio/adapters";
 import { mul } from "@valuemachine/utils";
+import { describeEvent } from "@valuemachine/core";
 import { Typography } from "@material-ui/core";
 import Paper from "@material-ui/core/Paper";
 import Grid from "@material-ui/core/Grid";
@@ -77,6 +78,7 @@ export const Portfolio = ({
   const [chunksByDates, setChunksByDates] = useState({} as { [date: string]: number[] });
   const [crosshairdata, setCrosshairdata] = useState([] as Array<{x: number, y: number}>);
   const [currentChunk, setCurrentChunk] = useState({} as AssetChunk);
+  const [currentEvents, setCurrentEvents] = useState([] as Event[]);
   const [dates, setDates] = useState([] as string[]);
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
@@ -92,22 +94,48 @@ export const Portfolio = ({
     setPage(0);
   };
 
-  const onNearestX = (value: any/*, { innerX }: any*/) => {
-    // console.log("Nearest X value", value, innerX);
-    const newcrosshairdata = data.reduce((output, seriesvalue) => {
-      const target = seriesvalue.series.filter(p => p.x === value.x);
-      if (target.length) {
-        return output.concat(target);
-      } else {
-        return output;
-      }
-    }, [] as any[]);
-    // console.log(dates[page*rowsPerPage + index]);
-    // console.log(chunksByDates[dates[page*rowsPerPage + index]]);
-    // console.log("Index = ", index);
-    // console.log(data);
-    // console.log(newcrosshairdata)
-    setCrosshairdata(newcrosshairdata);
+  const onNearestX = (value: { x: number, y: number }) => {
+    // console.log("Nearest X value", value);
+
+    // Get event date from graph index
+    const eventDate = Object.keys(chunksByDates)[value.x];
+
+    // Get event(s) on the date
+    const eventsOnNerestX = vm.json.events.filter(event => event.date === eventDate) as Event[];
+
+    // const disposedEvents = currentEvents.reduce((disposedChunks, event: Event) => {
+    //   if (event.type === EventTypes.Expense)
+    //     return disposedChunks.concat(event.outputs)
+    //   return disposedChunks;
+    // }, [] as number[]);
+
+    // Set events if x changed
+    if (JSON.stringify(currentEvents) !== JSON.stringify(eventsOnNerestX)) {
+      setCurrentEvents(eventsOnNerestX);
+      const disposedChunks = currentEvents.reduce((disposedChunks, event: Event) => {
+        if (event.type === EventTypes.Expense)
+          return disposedChunks.concat(event.outputs)
+        return disposedChunks;
+      }, [] as number[]).map(chunkIndex => vm.json.chunks[chunkIndex])
+    }
+
+    // const newcrosshairdata = data.reduce((output, seriesvalue) => {
+    //   const target = seriesvalue.series.filter(p => p.x === value.x);
+    //   if (target.length) {
+    //     return output.concat(target);
+    //   } else {
+    //     return output;
+    //   }
+    // }, [] as any[]);
+
+    // // console.log(dates[page*rowsPerPage + index]);
+    // // console.log(chunksByDates[dates[page*rowsPerPage + index]]);
+    // // console.log("Index = ", index);
+    // // console.log(data);
+    // // console.log(newcrosshairdata)
+    // setCrosshairdata(Array.from(new Set(newcrosshairdata)));
+
+
 
   };
 
@@ -177,7 +205,6 @@ export const Portfolio = ({
   useEffect(() => {
     if (!vm.json.chunks.length) return;
     const newDates = Array.from(new Set(vm.json.events.map(e => e.date))).sort();
-    console.log(newDates);
     if (newDates.length && rowsPerPage > 0) setPage(Math.floor(newDates.length/rowsPerPage));
     setDates(newDates);
   }, [vm.json, prices, rowsPerPage]);
@@ -226,132 +253,173 @@ export const Portfolio = ({
   return (
     <Grid container spacing={0}>
       <Grid item xs={12} sm={8}>
-        <Grid item >
-          <XYPlot margin={{ left: 100 }}
-            height={300} width={600}
-          >
-            <Crosshair values={crosshairdata} style={{ position: "relative" }}>
-              <div style={{ background: "red", top: "100px" }}>
-                <p>Series Length: {crosshairdata.length} </p>
-                <p>Series : {crosshairdata[0]?.x} </p>
+        <Grid container>
+          <Grid item >
+            <XYPlot margin={{ left: 100 }}
+              height={300} width={600}
+            >
+              <Crosshair values={crosshairdata} style={{ position: "relative" }}>
+                <div style={{ background: "red", top: "100px" }}>
+                  <p>Series Length: {crosshairdata.length} </p>
+                  <p>Series : {crosshairdata[0]?.x} </p>
+                </div>
+              </Crosshair>
+
+              <div className={classes.legend}>
+                <DiscreteColorLegend
+                  orientation={"vertical"}
+                  width={180}
+                  items={data.reduce((colorLegend: LegendData[], seriesDataPoint: any ) => {
+                    if (colorLegend.findIndex(val => val.title === seriesDataPoint.chunk.asset) < 0)
+                    {
+                      colorLegend.push({
+                        title: seriesDataPoint.chunk.asset,
+                        color: assetToColor(seriesDataPoint.chunk.asset),
+                        strokeWidth: 20
+                      });
+                    }
+                    return colorLegend;
+                  }, [] as LegendData[])}
+                />
               </div>
-            </Crosshair>
 
-            <div className={classes.legend}>
-              <DiscreteColorLegend
-                orientation={"vertical"}
-                width={180}
-                items={data.reduce((colorLegend: LegendData[], seriesDataPoint: any ) => {
-                  if (colorLegend.findIndex(val => val.title === seriesDataPoint.chunk.asset) < 0)
-                  {
-                    colorLegend.push({
-                      title: seriesDataPoint.chunk.asset,
-                      color: assetToColor(seriesDataPoint.chunk.asset),
-                      strokeWidth: 20
-                    });
-                  }
-                  return colorLegend;
-                }, [] as LegendData[])}
+              <HorizontalGridLines />
+              <VerticalGridLines />
+
+              <XAxis style={{
+                  line: { stroke: "#ADDDE1" },
+                  ticks: { stroke: "#ADDDE1" },
+                  text: { stroke: "none", fill: "#6b6b76", fontWeight: 600 }
+                }}
+                tickValues={[0, Object.keys(chunksByDates).length - 1]}
+                tickFormat={ tick => Object.keys(chunksByDates)[tick] }
               />
-            </div>
 
-            <HorizontalGridLines />
-            <VerticalGridLines />
-
-            <XAxis style={{
+              <YAxis style={{
                 line: { stroke: "#ADDDE1" },
                 ticks: { stroke: "#ADDDE1" },
                 text: { stroke: "none", fill: "#6b6b76", fontWeight: 600 }
               }}
-              tickValues={[0, Object.keys(chunksByDates).length - 1]}
-              tickFormat={ tick => Object.keys(chunksByDates)[tick] }
-            />
+              tickFormat={ tick => format(".2s")(tick) }
+              />
 
-            <YAxis style={{
-              line: { stroke: "#ADDDE1" },
-              ticks: { stroke: "#ADDDE1" },
-              text: { stroke: "none", fill: "#6b6b76", fontWeight: 600 }
-            }}
-            tickFormat={ tick => format(".2s")(tick) }
-            />
+              <GradientDefs>
+                {["MATIC", "ONE", "USD"].map((guard) => {
+                  const assets = data.reduce((assets, value) => {
+                    if (assets.findIndex(d => d === value.chunk.asset) < 0) {
+                      assets.push(value.chunk.asset);
+                    }
+                    return assets;
+                  }, [] as string[]);
 
-            <GradientDefs>
-              {["MATIC", "ONE", "USD"].map((guard) => {
-                const assets = data.reduce((assets, value) => {
-                  if (assets.findIndex(d => d === value.chunk.asset) < 0) {
-                    assets.push(value.chunk.asset);
-                  }
-                  return assets;
-                }, [] as string[]);
+                  return assets.map((asset) => getGradient(asset, guard));
 
-                return assets.map((asset) => getGradient(asset, guard));
+                })}
+              </GradientDefs>
 
+              {data.map((value, index) => {
+                const chunkStart = dates[value.series[0].x];
+                const chunkEnd = dates[value.series[1].x];
+
+                const currentGuard = value.chunk.history.reduce((output, history) => {
+                  if(history.date > chunkStart && history.date < chunkEnd) return history.guard;
+                  return output;
+                }, value.chunk.history[0].guard);
+
+                const assetColor = assetToColor(value.chunk.asset);
+
+                return <PolygonSeries
+                  color={currentGuard === "ETH" ? assetColor : `url(#${currentGuard}${value.chunk.asset})`} 
+                  key={index}
+                  data={value.series}
+                  onNearestX={onNearestX}
+                  onSeriesMouseOver={(d) => handlePopoverOpen(d, value.chunk, value.series)}
+                  style={{ strokeWidth: 0.5, strokeOpacity: 1 }}
+                />;
               })}
-            </GradientDefs>
-            {data.map((value, index) => {
-              const chunkStart = dates[value.series[0].x];
-              const chunkEnd = dates[value.series[1].x];
-
-              const currentGuard = value.chunk.history.reduce((output, history) => {
-                if(history.date > chunkStart && history.date < chunkEnd) return history.guard;
-                return output;
-              }, value.chunk.history[0].guard);
-
-              const assetColor = assetToColor(value.chunk.asset);
-
-              return <PolygonSeries
-                color={currentGuard === "ETH" ? assetColor : `url(#${currentGuard}${value.chunk.asset})`} 
-                key={index}
-                data={value.series}
-                onNearestX={onNearestX}
-                onSeriesMouseOver={(d) => handlePopoverOpen(d, value.chunk, value.series)}
-                style={{ strokeWidth: 0.5, strokeOpacity: 1 }}
-              />;
-            })}
-          </XYPlot>
-        </Grid>
-        <Grid item>
-          <TablePagination
-            count={dates.length}
-            page={page}
-            onChangePage={handleChangePage}
-            rowsPerPage={rowsPerPage}
-            onChangeRowsPerPage={handleChangeRowsPerPage}
-          />
+            </XYPlot>
+          </Grid>
+          <Grid item>
+            <TablePagination
+              count={dates.length}
+              page={page}
+              onChangePage={handleChangePage}
+              rowsPerPage={rowsPerPage}
+              onChangeRowsPerPage={handleChangeRowsPerPage}
+            />
+          </Grid>
         </Grid>
       </Grid>
 
       <Grid item xs={12} sm={4}>
-        <Paper id="chunk-detail" variant="outlined" className={classes.root}>
-          <Typography>
-            {`${currentChunk.quantity} ${currentChunk.asset}`}
-          </Typography>
-          <Typography> Received on: {currentChunk.history?.[0]?.date} </Typography>
-          <Typography>
-            Received value: {unit}
-            {getChunkValue(
-              currentChunk.history?.[0]?.date,
-              currentChunk.asset,
-              currentChunk.quantity,
-            )}
-          </Typography>
-          <Typography>
-            {currentChunk.disposeDate
-              ? `Disposed on: ${currentChunk.disposeDate} for `
-              : "Currently Held value: "
-            }
-            {unit}
-            {getChunkValue(
-              currentChunk.history?.[0]?.date,
-              currentChunk.asset,
-              currentChunk.quantity,
-            )} 
-          </Typography>
-          <Typography>
-          </Typography>
-        </Paper> 
-      </Grid>
+        <Grid container>
+          <Grid item>
+            <Paper id="chunk-detail" variant="outlined" className={classes.root}>
+              <Typography>
+                {`${currentChunk.quantity} ${currentChunk.asset}`}
+              </Typography>
+              <Typography> Received on: {currentChunk.history?.[0]?.date} </Typography>
+              <Typography>
+                Received value: {unit}
+                {getChunkValue(
+                  currentChunk.history?.[0]?.date,
+                  currentChunk.asset,
+                  currentChunk.quantity,
+                )}
+              </Typography>
+              <Typography>
+                {currentChunk.disposeDate
+                  ? `Disposed on: ${currentChunk.disposeDate} for `
+                  : "Currently Held value: "
+                }
+                {unit}
+                {getChunkValue(
+                  currentChunk.history?.[0]?.date,
+                  currentChunk.asset,
+                  currentChunk.quantity,
+                )} 
+              </Typography>
+              <Typography>
+              </Typography>
+            </Paper> 
+          </Grid>
+          <Grid item>
+            <Paper id="event-detail" variant="outlined" className={classes.root}>
+              {currentEvents.length > 0
+                ? <>
+                    <Typography> {describeEvent(currentEvents[0])} </Typography>
+                    <Typography> Disposed Chunks: </Typography>
+                    {
+                      currentEvents.reduce((disposedChunks, event: Event) => {
+                        if (event.type === EventTypes.Expense)
+                          return disposedChunks.concat(event.outputs)
+                        return disposedChunks;
+                      }, [] as number[]).map(chunkIndex => {
+                        return (
+                          <Typography key={`dispose-${chunkIndex}`}>
+                            {vm.json.chunks[chunkIndex].asset}: {vm.json.chunks[chunkIndex].quantity}
+                          </Typography>
+                        )
+                      })
 
+                    } 
+                  </>
+                : null
+              }
+            </Paper>
+          </Grid>
+          <Grid item>
+            <Paper id="final-balance-detail" variant="outlined" className={classes.root}>
+              {Object.entries(vm.json.events[dates.length - 1].newBalances).map(([asset,quantity], index) => {
+                return (
+                  <Typography key={index}>  {asset} : {quantity} </Typography>
+                )
+              })}
+            </Paper>
+          </Grid>
+          
+        </Grid>
+      </Grid>
     </Grid>
   );
 };
