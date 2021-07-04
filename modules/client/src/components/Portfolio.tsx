@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { XYPlot, XAxis, YAxis, PolygonSeries, HorizontalGridLines, DiscreteColorLegend, Crosshair, GradientDefs } from "react-vis";
+import { XYPlot, XAxis, YAxis, PolygonSeries, HorizontalGridLines, DiscreteColorLegend, Crosshair, GradientDefs, VerticalGridLines } from "react-vis";
 import { format } from "d3-format";
 import { Asset, AssetChunk, Guard, Prices, ValueMachine } from "@valuemachine/types";
 import { Guards } from "@degenfolio/adapters";
@@ -11,6 +11,7 @@ import TablePagination from "@material-ui/core/TablePagination";
 import makeStyles from "@material-ui/core/styles/makeStyles";
 
 import { assetToColor } from "../utils";
+import { tickFormat } from "d3-scale";
 
 const useStyles = makeStyles( theme => ({
   graph: {
@@ -73,7 +74,7 @@ export const Portfolio = ({
   const classes = useStyles();
 
   const [data, setData] = useState([] as SeriesData);
-  const [_chunksByDates, setChunksByDates] = useState({} as { [date: string]: number[] });
+  const [chunksByDates, setChunksByDates] = useState({} as { [date: string]: number[] });
   const [crosshairdata, setCrosshairdata] = useState([] as Array<{x: number, y: number}>);
   const [currentChunk, setCurrentChunk] = useState({} as AssetChunk);
   const [dates, setDates] = useState([] as string[]);
@@ -115,16 +116,16 @@ export const Portfolio = ({
     return parseFloat(mul(quantity, prices.getNearest(date, asset) || "0"));
   };
 
-  const formatChunksToGraphData = (dates: string[]) => {
+  const formatChunksToGraphData = (datesSubset: string[]) => {
     if (!vm?.json?.chunks?.length) return;
     const chunks = vm.json.chunks;
     const newData = [] as SeriesData;
 
-    const chunkByDate = getChunksByDate(chunks, dates);
+    const chunkByDate = getChunksByDate(chunks, datesSubset);
     setChunksByDates(chunkByDate);
 
     // Exclude the last date
-    dates.slice(0,-1).forEach((date, index) => {
+    datesSubset.slice(0,-1).forEach((date, index) => {
 
       let yReceivePrevPos = 0;
       let yReceivePrevNeg = 0;
@@ -134,7 +135,7 @@ export const Portfolio = ({
       chunkByDate[date].forEach(async (chunkIndex) => {
         const chunk = chunks[chunkIndex];
         const receiveValue = getChunkValue(date, chunk.asset, chunk.quantity);
-        const disposeValue = getChunkValue(dates[index + 1], chunk.asset, chunk.quantity);
+        const disposeValue = getChunkValue(datesSubset[index + 1], chunk.asset, chunk.quantity);
 
         newData.push({
           series: [
@@ -226,93 +227,88 @@ export const Portfolio = ({
     <Grid container spacing={0}>
       <Grid item xs={12} sm={8}>
         <Grid item >
-          <div className={classes.graph}>
-            <XYPlot margin={{ left: 100 }}
-              height={300} width={600}
-            >
-              <Crosshair values={crosshairdata} style={{ position: "relative" }}>
-                <div style={{ background: "red", top: "100px" }}>
-                  <p>Series Length: {crosshairdata.length} </p>
-                  <p>Series : {crosshairdata[0]?.x} </p>
-                </div>
-              </Crosshair>
-
-              <div className={classes.legend}>
-                <DiscreteColorLegend
-                  orientation={"vertical"}
-                  width={180}
-                  items={data.reduce((colorLegend: LegendData[], seriesDataPoint: any ) => {
-                    if (colorLegend.findIndex(val => val.title === seriesDataPoint.chunk.asset) < 0)
-                    {
-                      colorLegend.push({
-                        title: seriesDataPoint.chunk.asset,
-                        color: assetToColor(seriesDataPoint.chunk.asset),
-                        strokeWidth: 20
-                      });
-                    }
-                    return colorLegend;
-                  }, [] as LegendData[])}
-                />
+          <XYPlot margin={{ left: 100 }}
+            height={300} width={600}
+          >
+            <Crosshair values={crosshairdata} style={{ position: "relative" }}>
+              <div style={{ background: "red", top: "100px" }}>
+                <p>Series Length: {crosshairdata.length} </p>
+                <p>Series : {crosshairdata[0]?.x} </p>
               </div>
+            </Crosshair>
 
-              <HorizontalGridLines />
+            <div className={classes.legend}>
+              <DiscreteColorLegend
+                orientation={"vertical"}
+                width={180}
+                items={data.reduce((colorLegend: LegendData[], seriesDataPoint: any ) => {
+                  if (colorLegend.findIndex(val => val.title === seriesDataPoint.chunk.asset) < 0)
+                  {
+                    colorLegend.push({
+                      title: seriesDataPoint.chunk.asset,
+                      color: assetToColor(seriesDataPoint.chunk.asset),
+                      strokeWidth: 20
+                    });
+                  }
+                  return colorLegend;
+                }, [] as LegendData[])}
+              />
+            </div>
 
-              <XAxis style={{
-                line: { stroke: "#ADDDE1" },
-                ticks: { stroke: "#ADDDE1" },
-                text: { stroke: "none", fill: "#6b6b76", fontWeight: 600 }
-              }} />
+            <HorizontalGridLines />
+            <VerticalGridLines />
 
-              <YAxis style={{
+            <XAxis style={{
                 line: { stroke: "#ADDDE1" },
                 ticks: { stroke: "#ADDDE1" },
                 text: { stroke: "none", fill: "#6b6b76", fontWeight: 600 }
               }}
-              tickFormat={ tick => format(".2s")(tick) }
-              />
+              tickValues={[0, Object.keys(chunksByDates).length - 1]}
+              tickFormat={ tick => Object.keys(chunksByDates)[tick] }
+            />
 
-              <GradientDefs>
-                {["MATIC", "ONE", "USD"].map((guard) => {
-                  const assets = data.reduce((assets, value) => {
-                    if (assets.findIndex(d => d === value.chunk.asset) < 0) {
-                      assets.push(value.chunk.asset);
-                    }
-                    return assets;
-                  }, [] as string[]);
+            <YAxis style={{
+              line: { stroke: "#ADDDE1" },
+              ticks: { stroke: "#ADDDE1" },
+              text: { stroke: "none", fill: "#6b6b76", fontWeight: 600 }
+            }}
+            tickFormat={ tick => format(".2s")(tick) }
+            />
 
-                  return assets.map((asset) => getGradient(asset, guard));
+            <GradientDefs>
+              {["MATIC", "ONE", "USD"].map((guard) => {
+                const assets = data.reduce((assets, value) => {
+                  if (assets.findIndex(d => d === value.chunk.asset) < 0) {
+                    assets.push(value.chunk.asset);
+                  }
+                  return assets;
+                }, [] as string[]);
 
-                })}
-              </GradientDefs>
-              {data.map((value, index) => {
-                const chunkStart = dates[value.series[0].x];
-                const chunkEnd = dates[value.series[1].x];
+                return assets.map((asset) => getGradient(asset, guard));
 
-                const currentGuard = value.chunk.history.reduce((output, history) => {
-                  // if (history.guard !== "MATIC") {
-                  //   console.log(history);
-                  //   console.log(`chunkStart ${chunkStart}, chunkEnd ${chunkEnd}`);
-                  // }
-                  if(history.date > chunkStart && history.date < chunkEnd) return history.guard;
-                  return output;
-                }, value.chunk.history[0].guard);
-
-                // if(value.chunk.history.date > chunkStart && value.chunk.history.date < chunkEnd)
-                // return value.chunk.history.guard;
-                // const chainGradient = value.chunk.asset === currentGuard ? "#fba01d" : null;
-                const assetColor = assetToColor(value.chunk.asset);
-
-                return <PolygonSeries
-                  color={currentGuard === "ETH" ? assetColor : `url(#${currentGuard}${value.chunk.asset})`} 
-                  key={index}
-                  data={value.series}
-                  onNearestX={onNearestX}
-                  onSeriesMouseOver={(d) => handlePopoverOpen(d, value.chunk, value.series)}
-                  style={{ strokeWidth: 0.5, strokeOpacity: 1 }}
-                />;
               })}
-            </XYPlot>
-          </div>
+            </GradientDefs>
+            {data.map((value, index) => {
+              const chunkStart = dates[value.series[0].x];
+              const chunkEnd = dates[value.series[1].x];
+
+              const currentGuard = value.chunk.history.reduce((output, history) => {
+                if(history.date > chunkStart && history.date < chunkEnd) return history.guard;
+                return output;
+              }, value.chunk.history[0].guard);
+
+              const assetColor = assetToColor(value.chunk.asset);
+
+              return <PolygonSeries
+                color={currentGuard === "ETH" ? assetColor : `url(#${currentGuard}${value.chunk.asset})`} 
+                key={index}
+                data={value.series}
+                onNearestX={onNearestX}
+                onSeriesMouseOver={(d) => handlePopoverOpen(d, value.chunk, value.series)}
+                style={{ strokeWidth: 0.5, strokeOpacity: 1 }}
+              />;
+            })}
+          </XYPlot>
         </Grid>
         <Grid item>
           <TablePagination
