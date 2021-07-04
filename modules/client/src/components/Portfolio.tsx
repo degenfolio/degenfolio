@@ -1,5 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { XYPlot, XAxis, YAxis, PolygonSeries, HorizontalGridLines, DiscreteColorLegend, Crosshair, GradientDefs, VerticalGridLines } from "react-vis";
+import {
+  Crosshair,
+  DiscreteColorLegend,
+  GradientDefs,
+  HorizontalGridLines,
+  MarkSeries,
+  PolygonSeries,
+  VerticalGridLines,
+  XAxis,
+  XYPlot,
+  YAxis,
+} from "react-vis";
 import { format } from "d3-format";
 import { Asset, AssetChunk, Event, EventTypes, Guard, Prices, ValueMachine } from "@valuemachine/types";
 import { Guards } from "@degenfolio/adapters";
@@ -200,7 +211,7 @@ export const Portfolio = ({
 
   useEffect(() => {
     if (!vm.json.chunks.length) return;
-    const newDates = Array.from(new Set(vm.json.events.map(e => e.date)))/*.sort((a,b) => b>=a? 1 : -1)*/;
+    const newDates = Array.from(new Set(vm.json.events.map(e => e.date)));
     if (newDates.length && rowsPerPage > 0) {
       setPage(Math.floor(newDates.length/rowsPerPage));
     }
@@ -212,13 +223,11 @@ export const Portfolio = ({
     console.log("Generating graph data");
     console.log(dates.length);
     console.log(
-      // page * rowsPerPage + rowsPerPage, -1 * page * rowsPerPage,
       page * rowsPerPage, page * rowsPerPage + rowsPerPage,
     );
     formatChunksToGraphData(dates.slice(
       page * rowsPerPage, page * rowsPerPage + rowsPerPage,
-      // page * rowsPerPage + rowsPerPage, -1 * page * rowsPerPage,
-    )/*.sort()*/);
+    ));
     // eslint-disable-next-line
   }, [dates, rowsPerPage, page]);
 
@@ -266,6 +275,16 @@ export const Portfolio = ({
                 </div>
               </Crosshair>
 
+              <MarkSeries
+                sizeRange={[5, 15]}
+                data={[
+                  {x: 1, y: 0, size: 30},
+                  {x: 3, y: 0, size: 10},
+                  {x: 4, y: 0, size: 1},
+                  {x: 5, y: 0, size: 12},
+                  {x: 2, y: 0, size: 4}
+                ]}
+              />
               <div className={classes.legend}>
                 <DiscreteColorLegend
                   orientation={"vertical"}
