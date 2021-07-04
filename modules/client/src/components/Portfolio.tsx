@@ -110,8 +110,8 @@ export const Portfolio = ({
     setPage(0);
   };
 
-  const onNearestX = (value: { x: number, y: number }) => {
-    // console.log("Nearest X value", value);
+  const onNearestX = (value: any) => {
+    console.log("Nearest X value", value);
     // Get event date from graph index
     const eventDate = Object.keys(chunksByDates)[value.x];
     // Get event(s) on the date
@@ -122,14 +122,14 @@ export const Portfolio = ({
     //   return disposedChunks;
     // }, [] as number[]);
     // Set events if x changed
-    if (JSON.stringify(currentEvents) !== JSON.stringify(eventsOnNerestX)) {
+    // if (JSON.stringify(currentEvents) !== JSON.stringify(eventsOnNerestX)) {
       setCurrentEvents(eventsOnNerestX);
-      const disposedChunks = currentEvents.reduce((disposedChunks, event: Event) => {
-        if (event.type === EventTypes.Expense)
-          return disposedChunks.concat(event.outputs);
-        return disposedChunks;
-      }, [] as number[]).map(chunkIndex => vm.json.chunks[chunkIndex]);
-    }
+    //   const disposedChunks = currentEvents.reduce((disposedChunks, event: Event) => {
+    //     if (event.type === EventTypes.Expense)
+    //       return disposedChunks.concat(event.outputs);
+    //     return disposedChunks;
+    //   }, [] as number[]).map(chunkIndex => vm.json.chunks[chunkIndex]);
+    // }
     // const newcrosshairdata = data.reduce((output, seriesvalue) => {
     //   const target = seriesvalue.series.filter(p => p.x === value.x);
     //   if (target.length) {
@@ -297,6 +297,7 @@ export const Portfolio = ({
 
               <MarkSeries
                 sizeRange={[5, 15]}
+                onNearestX={onNearestX}
                 data={markSeriesData}
               />
               <div className={classes.legend}>
@@ -362,7 +363,6 @@ export const Portfolio = ({
                   color={currentGuard === "ETH" ? assetToColor(value.chunk.asset) : `url(#${currentGuard}${value.chunk.asset})`} 
                   key={index}
                   data={value.series}
-                  onNearestX={onNearestX}
                   onSeriesMouseOver={(d) => handlePopoverOpen(d, value.chunk, value.series)}
                   style={{ strokeWidth: 0.5, strokeOpacity: 1 }}
                 />;
