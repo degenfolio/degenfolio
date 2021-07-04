@@ -104,7 +104,6 @@ export const Portfolio = ({
   const [data, setData] = useState([] as SeriesData);
   const [markSeriesData, setMarkSeriesData] = useState([] as MarkSeriesData);
   const [chunksByDates, setChunksByDates] = useState({} as { [date: string]: number[] });
-  const [crosshairdata, setCrosshairdata] = useState([] as Array<{x: number, y: number}>);
   const [currentChunk, setCurrentChunk] = useState({} as AssetChunk);
   const [currentEvents, setCurrentEvents] = useState([] as Event[]);
   const [dates, setDates] = useState([] as string[]);
@@ -131,34 +130,7 @@ export const Portfolio = ({
     const eventDate = Object.keys(chunksByDates)[value.x];
     // Get event(s) on the date
     const eventsOnNerestX = vm.json.events.filter(event => event.date === eventDate) as Event[];
-    // const disposedEvents = currentEvents.reduce((disposedChunks, event: Event) => {
-    //   if (event.type === EventTypes.Expense)
-    //     return disposedChunks.concat(event.outputs)
-    //   return disposedChunks;
-    // }, [] as number[]);
-    // Set events if x changed
-    // if (JSON.stringify(currentEvents) !== JSON.stringify(eventsOnNerestX)) {
-      setCurrentEvents(eventsOnNerestX);
-    //   const disposedChunks = currentEvents.reduce((disposedChunks, event: Event) => {
-    //     if (event.type === EventTypes.Expense)
-    //       return disposedChunks.concat(event.outputs);
-    //     return disposedChunks;
-    //   }, [] as number[]).map(chunkIndex => vm.json.chunks[chunkIndex]);
-    // }
-    // const newcrosshairdata = data.reduce((output, seriesvalue) => {
-    //   const target = seriesvalue.series.filter(p => p.x === value.x);
-    //   if (target.length) {
-    //     return output.concat(target);
-    //   } else {
-    //     return output;
-    //   }
-    // }, [] as any[]);
-    // // console.log(dates[page*rowsPerPage + index]);
-    // // console.log(chunksByDates[dates[page*rowsPerPage + index]]);
-    // // console.log("Index = ", index);
-    // // console.log(data);
-    // // console.log(newcrosshairdata)
-    // setCrosshairdata(Array.from(new Set(newcrosshairdata)));
+    setCurrentEvents(eventsOnNerestX);
   };
 
   const getChunkValue = (date: string, asset: string, quantity: string) => {
@@ -303,13 +275,6 @@ export const Portfolio = ({
             <XYPlot margin={{ left: 100 }}
               height={400} width={650}
             >
-              <Crosshair values={crosshairdata} style={{ position: "relative" }}>
-                <div style={{ background: "red", top: "100px" }}>
-                  <p>Series Length: {crosshairdata.length} </p>
-                  <p>Series : {crosshairdata[0]?.x} </p>
-                </div>
-              </Crosshair>
-
               <MarkSeries
                 sizeRange={[5, 15]}
                 onNearestX={onNearestX}
