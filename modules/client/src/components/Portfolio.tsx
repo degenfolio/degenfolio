@@ -316,6 +316,7 @@ export const Portfolio = ({
         </Grid>
         <Grid item>
           <TablePagination
+            labelRowsPerPage={"Actions per page:"}
             count={dates.length}
             page={page}
             onChangePage={handleChangePage}

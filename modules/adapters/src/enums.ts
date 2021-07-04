@@ -22,6 +22,7 @@ export const TransactionSources = {
   Aave: "Aave",
   Idle: "Idle",
   Polygon: "Polygon",
+  Quickswap: "Quickswap",
 };
 
 export const Assets = {
