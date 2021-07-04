@@ -1,6 +1,5 @@
 import { getAddress, isAddress } from "@ethersproject/address";
 import { formatEther } from "@ethersproject/units";
-import { hexlify } from "@ethersproject/bytes";
 import {
   Address,
   AddressBook,
@@ -30,8 +29,8 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
     gasUsed: rawTx.gas,
     hash: rawTx.hash,
     index: rawTx.transactionIndex,
-    logs: TxReceipt.log.map(evt => ({
-      address: getAddress(evt.sender_address),
+    logs: TxReceipt.logs.map(evt => ({
+      address: evt.address,
       index: evt.log_offset,
       topics: evt.raw_log_topics,
       data: evt.raw_log_data || "0x"
@@ -117,7 +116,7 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
       params: [txHash]
     };
     const response = await axios.post("https://api.harmony.one", databc);
-    console.log(response.data);
+    console.log(response.data.result.logs[2]);
     if (response.data) logger.info("GOTIT");
     else logger.info("FAILED");
     // TODO: save result to json
