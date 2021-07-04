@@ -14,7 +14,7 @@ import {
 import { format } from "d3-format";
 import { Asset, AssetChunk, Event, EventTypes, Guard, Prices, ValueMachine } from "@valuemachine/types";
 import { Guards } from "@degenfolio/adapters";
-import { mul } from "@valuemachine/utils";
+import { mul, sigfigs } from "@valuemachine/utils";
 import { describeEvent } from "@valuemachine/core";
 import { Typography } from "@material-ui/core";
 import Paper from "@material-ui/core/Paper";
@@ -111,9 +111,9 @@ export const Portfolio = ({
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
 
-  console.log(`Rendering graph for vm with ${vm.json?.chunks?.length} chunks and events on ${
-    Array.from(new Set(...vm.json?.events?.map(evt => evt.date) || [])).length
-  } dates`);
+  // console.log(`Rendering graph for vm with ${vm.json?.chunks?.length} chunks and events on ${
+  //   Array.from(new Set(...vm.json?.events?.map(evt => evt.date) || [])).length
+  // } dates`);
 
   const handleChangePage = (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
     setPage(newPage);
@@ -127,7 +127,6 @@ export const Portfolio = ({
   };
 
   const onNearestX = (value: any) => {
-    console.log("Nearest X value", value);
     // Get event date from graph index
     const eventDate = Object.keys(chunksByDates)[value.x];
     // Get event(s) on the date
@@ -164,7 +163,7 @@ export const Portfolio = ({
 
   const getChunkValue = (date: string, asset: string, quantity: string) => {
     if (!date) return 0;
-    return parseFloat(mul(quantity, prices.getNearest(date, asset) || "0"));
+    return parseFloat(sigfigs(mul(quantity, prices.getNearest(date, asset) || "0")));
   };
 
   const setGraphData = (datesSubset: string[]) => {
@@ -405,12 +404,12 @@ export const Portfolio = ({
               </Typography>
               <Typography> Received on: {currentChunk.history?.[0]?.date} </Typography>
               <Typography>
-                Received value: {unit}
+                Received value:
                 {getChunkValue(
                   currentChunk.history?.[0]?.date,
                   currentChunk.asset,
                   currentChunk.quantity,
-                )}
+                )} {unit}
               </Typography>
               <Typography>
                 {currentChunk.disposeDate
@@ -440,10 +439,25 @@ export const Portfolio = ({
                         return disposedChunks.concat(event.outputs);
                       return disposedChunks;
                     }, [] as number[]).map(chunkIndex => {
+                      const chunk = vm.json.chunks[chunkIndex];
+                      const receiveValue = getChunkValue(chunk.history[0].date, chunk.asset, chunk.quantity);
+                      const disposeValue = getChunkValue(chunk.disposeDate || "0", chunk.asset, chunk.quantity)
+                      const capChange = receiveValue - disposeValue;
                       return (
-                        <Typography key={`dispose-${chunkIndex}`}>
-                          {vm.json.chunks[chunkIndex].asset}: {vm.json.chunks[chunkIndex].quantity}
-                        </Typography>
+                        <>
+                          <Typography variant="overline">
+                            {sigfigs(chunk.quantity)} {chunk.asset}
+                          </Typography>
+                            {capChange === 0
+                            ? null
+                            : <Typography variant="caption" key={`dispose-${chunkIndex}`}>
+                                {capChange > 0
+                                  ? `Cap Gain: ${sigfigs(capChange.toString())}`
+                                  : `Cap Loss: ${sigfigs((capChange * -1).toString())}`}
+                                {unit}
+                              </Typography>
+                            }
+                        </>
                       );
                     })
                   }
