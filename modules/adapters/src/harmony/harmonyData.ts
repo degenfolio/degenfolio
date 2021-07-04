@@ -21,23 +21,23 @@ import axios from "axios";
 import { parseHarmonyTx } from "./parser";
 
 export const getHarmonyData = (params?: ChainDataParams): ChainData => {
-  const formatCovalentTx = rawTx => ({
+  const formatCovalentTx = (rawTx, TxReceipt) => ({
     block: rawTx.blockNumber,
     data: "0x", // not available?
     from: rawTx.from,
-    gasLimit: hexlify(rawTx.gas_offered),
-    gasPrice: hexlify(rawTx.gas_price),
-    gasUsed: hexlify(rawTx.gas_spent),
+    gasLimit: rawTx.gas + 20,
+    gasPrice: rawTx.gasPrice,
+    gasUsed: rawTx.gas,
     hash: rawTx.hash,
     index: rawTx.transactionIndex,
-    logs: rawTx.log_events.map(evt => ({
+    logs: TxReceipt.log.map(evt => ({
       address: getAddress(evt.sender_address),
       index: evt.log_offset,
       topics: evt.raw_log_topics,
       data: evt.raw_log_data || "0x"
     })),
     nonce: 0, // not available?
-    status: rawTx.successful ? 1 : 0,
+    status: 1,
     timestamp: rawTx.timestamp,
     to: rawTx.to,
     value: formatEther(rawTx.value)
@@ -109,7 +109,21 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
     // save();
     return response.data.result;
   };
-
+  const fetchReceipt = async (txHash: String): Promise<Transaction> => {
+    const databc = {
+      jsonrpc: "2.0",
+      id: 1,
+      method: "hmyv2_getTransactionReceipt",
+      params: [txHash]
+    };
+    const response = await axios.post("https://api.harmony.one", databc);
+    console.log(response.data);
+    if (response.data) logger.info("GOTIT");
+    else logger.info("FAILED");
+    // TODO: save result to json
+    // save();
+    return response.data.result;
+  };
   ////////////////////////////////////////
   // Exported Methods
 
@@ -125,8 +139,9 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
       return;
     }
     log.info(`Fetching polygon data for tx ${txHash}`);
-    const harmonyTx = await fetchTx(txHash);
-
+    const harmony = await fetchTx(txHash);
+    const TxReceipt = await fetchReceipt(txHash);
+    const harmonyTx = formatCovalentTx(harmony, TxReceipt);
     const error = getEthTransactionError(harmonyTx);
     if (error) throw new Error(error);
     // log.debug(polygonTx, `Parsed raw polygon tx to a valid evm tx`);
