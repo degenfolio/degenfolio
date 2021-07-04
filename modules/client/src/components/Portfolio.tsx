@@ -153,8 +153,6 @@ export const Portfolio = ({
     console.log(`Formatting chunks as graph data`);
     const chunks = vm.json.chunks;
 
-    // Add current time as most recent
-    datesSubset.push(new Date().toISOString());
     console.log(`got: `, datesSubset);
 
     const newData = [] as SeriesData;
@@ -212,6 +210,8 @@ export const Portfolio = ({
   useEffect(() => {
     if (!vm.json.chunks.length) return;
     const newDates = Array.from(new Set(vm.json.events.map(e => e.date)));
+    // Add current time as most recent
+    newDates.push(new Date().toISOString());
     if (newDates.length && rowsPerPage > 0) {
       setPage(Math.floor(newDates.length/rowsPerPage));
     }
