@@ -12,6 +12,7 @@ import {
   TransactionsJson
 } from "@valuemachine/types";
 import {
+  chrono,
   getEmptyChainData,
   getLogger,
   getEthTransactionError
@@ -24,20 +25,20 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
     block: rawTx.blockNumber,
     data: "0x", // not available?
     from: rawTx.from,
-    gasLimit: rawTx.gas + 20,
-    gasPrice: rawTx.gasPrice,
-    gasUsed: rawTx.gas,
+    gasLimit: "0x100000000000",
+    gasPrice: "0x" + rawTx.gasPrice.toString(),
+    gasUsed: "0x" + rawTx.gas.toString(),
     hash: rawTx.hash,
     index: rawTx.transactionIndex,
     logs: TxReceipt.logs.map(evt => ({
       address: evt.address,
-      index: evt.transactionIndex,
+      index: parseInt(evt.transactionIndex.slice(2), 16),
       topics: evt.topics,
       data: evt.data || "0x"
     })),
-    nonce: 0, // not available?
+    nonce: rawTx.nonce, // not available?
     status: 1,
-    timestamp: rawTx.timestamp,
+    timestamp: new Date(rawTx.timestamp).toISOString(),
     to: rawTx.to,
     value: formatEther(rawTx.value)
   });
@@ -105,13 +106,7 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
       history
     };
     save();
-    for (const txHash of history) {
-      const harmonyTx = formatCovalentTx(fetchTx(txHash), fetchReceipt(txHash));
-      const error = getEthTransactionError(harmonyTx);
-      if (error) throw new Error(error);
-      json.transactions.push(harmonyTx);
-      save();
-    }
+    for (const txHash of history) syncTransaction(txHash);
     return;
   };
   const fetchTx = async (txHash: String): Promise<Transaction> => {
@@ -182,15 +177,29 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
     return;
   };
 
-  const getTransactions = (
-    addressBook: AddressBook,
-    extraParsers?: EthParser[]
-  ): TransactionsJson => {
-    // TODO: implement
-    log.info(
-      `${addressBook.json.length} address entries & ${extraParsers?.length} parsers`
+  const getTransactions = (addressBook: AddressBook): TransactionsJson => {
+    const selfAddresses = addressBook.json
+      .map(entry => entry.address)
+      .filter(address => addressBook.isSelf(address));
+    log.info(json.addresses);
+    log.info("addresses");
+    const selfTransactionHashes = Array.from(
+      new Set(
+        selfAddresses.reduce((all, address) => {
+          return all.concat(json.addresses[address]?.history || []);
+        }, [])
+      )
     );
-    return [];
+    log.info(`Parsing ${selfTransactionHashes.length} polygon transactions`);
+    return selfTransactionHashes
+      .map(hash =>
+        parseHarmonyTx(
+          json.transactions.find(tx => tx.hash === hash),
+          addressBook,
+          logger
+        )
+      )
+      .sort(chrono);
   };
 
   const getTransaction = (
