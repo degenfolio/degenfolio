@@ -8,6 +8,8 @@ import {
   testLogger,
 } from "../testUtils";
 
+import { mergeTDATransactions } from "./TDA";
+
 const log = testLogger.child({
   // level: "debug",
   module: "TestTransactions",
@@ -34,7 +36,7 @@ describe("TDA", () => {
   });
 
   it("should merge TDA data", async () => {
-    txns.mergeCsv(exampleTDACsv, CsvSources.TDA);
+    txns.mergeCsv(exampleTDACsv, mergeTDATransactions);
     expect(getTransactionsErrors(txns.json)).to.be.null;
   });
 

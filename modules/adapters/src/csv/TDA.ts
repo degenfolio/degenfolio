@@ -1,6 +1,5 @@
 import {
   Transaction,
-  TransactionSources,
   Logger,
   TransferCategories,
   TransferCategory,
@@ -8,18 +7,18 @@ import {
 import csv from "csv-parse/lib/sync";
 import { gt } from "@valuemachine/utils";
 
-import { mergeTransaction } from "../merge";
+import { TransactionSources } from "../enums";
 
 const { Expense, SwapIn, SwapOut, Deposit, Withdraw, Unknown } = TransferCategories;
 
-export const mergeCoinbaseTransactions = (
+export const mergeTDATransactions = (
   oldTransactions: Transaction[],
   csvData: string,
   logger: Logger,
 ): Transaction[] => {
-  const source = TransactionSources.Coinbase;
+  const source = TransactionSources.TDA;
   const log = logger.child({ module: source }); 
-  log.info(`Processing ${csvData.split(`\n`).length - 2} rows of coinbase data`);
+  log.info(`Processing ${csvData.split(`\n`).length - 2} rows of TDA data`);
   csv(csvData, { columns: true, skip_empty_lines: true }).forEach(row => {
 
     const {
@@ -87,7 +86,6 @@ export const mergeCoinbaseTransactions = (
     }
 
     log.debug(transaction, "Parsed row into transaction:");
-    mergeTransaction(oldTransactions, transaction, log);
 
   });
   return oldTransactions;
