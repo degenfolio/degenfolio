@@ -85,6 +85,9 @@ pull-semver:
 dls:
 	@docker service ls && echo '=====' && docker container ls -a
 
+lint:
+	bash ops/lint.sh
+
 test-adapters: adapters
 	bash ops/test-unit.sh adapters test
 watch-adapters: adapters

@@ -98,19 +98,23 @@ export const Home = () => {
       logger,
     });
     if (addressBookJson?.length) {
+      let isEthSynced = false;
       // eslint-disable-next-line no-constant-condition
       while (true) {
         try {
           console.log(`Attempting to fetch for addressBook`, addressBookJson);
 
-          setSyncing(`Syncing Ethereum data for ${addressBookJson.length} addresses`);
-          const resEth = await axios.post("/api/ethereum", { addressBook: addressBookJson });
-          console.log(`Got ${resEth.data.length} Eth transactions`);
-          if (resEth.status === 200 && typeof(resEth.data) === "object") {
-            newTransactions.merge(resEth.data);
-          } else {
-            await new Promise((res) => setTimeout(res, 10000));
-            continue;
+          if (!isEthSynced) {
+            setSyncing(`Syncing Ethereum data for ${addressBookJson.length} addresses`);
+            const resEth = await axios.post("/api/ethereum", { addressBook: addressBookJson });
+            console.log(`Got ${resEth.data.length} Eth transactions`);
+            if (resEth.status === 200 && typeof(resEth.data) === "object") {
+              newTransactions.merge(resEth.data);
+              isEthSynced = true;
+            } else {
+              await new Promise((res) => setTimeout(res, 10000));
+              continue;
+            }
           }
 
           setSyncing(`Syncing Polygon data for ${addressBookJson.length} addresses`);
