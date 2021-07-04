@@ -1,14 +1,27 @@
 import React, { useEffect, useState } from "react";
-import { XYPlot, XAxis, YAxis, PolygonSeries, HorizontalGridLines, DiscreteColorLegend, Crosshair, GradientDefs } from "react-vis";
+import {
+  Crosshair,
+  DiscreteColorLegend,
+  GradientDefs,
+  HorizontalGridLines,
+  MarkSeries,
+  PolygonSeries,
+  VerticalGridLines,
+  XAxis,
+  XYPlot,
+  YAxis,
+} from "react-vis";
 import { format } from "d3-format";
-import { Asset, AssetChunk, Guard, Prices, ValueMachine } from "@valuemachine/types";
+import { Asset, AssetChunk, Event, EventTypes, Guard, Prices, ValueMachine } from "@valuemachine/types";
 import { Guards } from "@degenfolio/adapters";
 import { mul } from "@valuemachine/utils";
+import { describeEvent } from "@valuemachine/core";
 import { Typography } from "@material-ui/core";
 import Paper from "@material-ui/core/Paper";
 import Grid from "@material-ui/core/Grid";
 import TablePagination from "@material-ui/core/TablePagination";
 import makeStyles from "@material-ui/core/styles/makeStyles";
+// import { tickFormat } from "d3-scale";
 
 import { assetToColor } from "../utils";
 
@@ -41,22 +54,20 @@ type SeriesData = Array<{
 }>;
 
 const getChunksByDate = (chunks: AssetChunk[], dates: string[]) => {
+  console.log(`Getting chunks from dates ${dates}`);
   const empty = dates.reduce((output, date) => {
     output[date] = [];
     return output;
   }, {} as { [date: string]: number[] });
-
   return chunks.reduce((output, chunk, index) => {
     if (chunk.history[0]?.date > dates[dates.length - 1]) return output;
     if (chunk.disposeDate && chunk.disposeDate < dates[0]) return output;
-
     const i = dates.findIndex(d => d === chunk.history[0]?.date);
     const j = chunk.disposeDate ? dates.findIndex(d => d === chunk.disposeDate) : dates.length;
     dates.slice(i > 0 ? i : 0, j > 0 ? j : dates.length).forEach((date) => {
       output[date].push(index);
       output[date].sort((a,b) => chunks[a].asset < chunks[b].asset ? 1 : -1);
     });
-
     return output;
   }, empty as { [date: string]: number[] });
 };
@@ -73,12 +84,17 @@ export const Portfolio = ({
   const classes = useStyles();
 
   const [data, setData] = useState([] as SeriesData);
-  const [_chunksByDates, setChunksByDates] = useState({} as { [date: string]: number[] });
+  const [chunksByDates, setChunksByDates] = useState({} as { [date: string]: number[] });
   const [crosshairdata, setCrosshairdata] = useState([] as Array<{x: number, y: number}>);
   const [currentChunk, setCurrentChunk] = useState({} as AssetChunk);
+  const [currentEvents, setCurrentEvents] = useState([] as Event[]);
   const [dates, setDates] = useState([] as string[]);
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
+
+  console.log(`Rendering graph for vm with ${vm.json?.chunks?.length} chunks and events on ${
+    Array.from(new Set(...vm.json?.events?.map(evt => evt.date) || [])).length
+  } dates`);
 
   const handleChangePage = (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
     setPage(newPage);
@@ -91,23 +107,40 @@ export const Portfolio = ({
     setPage(0);
   };
 
-  const onNearestX = (value: any/*, { innerX }: any*/) => {
-    // console.log("Nearest X value", value, innerX);
-    const newcrosshairdata = data.reduce((output, seriesvalue) => {
-      const target = seriesvalue.series.filter(p => p.x === value.x);
-      if (target.length) {
-        return output.concat(target);
-      } else {
-        return output;
-      }
-    }, [] as any[]);
-    // console.log(dates[page*rowsPerPage + index]);
-    // console.log(chunksByDates[dates[page*rowsPerPage + index]]);
-    // console.log("Index = ", index);
-    // console.log(data);
-    // console.log(newcrosshairdata)
-    setCrosshairdata(newcrosshairdata);
-
+  const onNearestX = (value: { x: number, y: number }) => {
+    // console.log("Nearest X value", value);
+    // Get event date from graph index
+    const eventDate = Object.keys(chunksByDates)[value.x];
+    // Get event(s) on the date
+    const eventsOnNerestX = vm.json.events.filter(event => event.date === eventDate) as Event[];
+    // const disposedEvents = currentEvents.reduce((disposedChunks, event: Event) => {
+    //   if (event.type === EventTypes.Expense)
+    //     return disposedChunks.concat(event.outputs)
+    //   return disposedChunks;
+    // }, [] as number[]);
+    // Set events if x changed
+    if (JSON.stringify(currentEvents) !== JSON.stringify(eventsOnNerestX)) {
+      setCurrentEvents(eventsOnNerestX);
+      const disposedChunks = currentEvents.reduce((disposedChunks, event: Event) => {
+        if (event.type === EventTypes.Expense)
+          return disposedChunks.concat(event.outputs);
+        return disposedChunks;
+      }, [] as number[]).map(chunkIndex => vm.json.chunks[chunkIndex]);
+    }
+    // const newcrosshairdata = data.reduce((output, seriesvalue) => {
+    //   const target = seriesvalue.series.filter(p => p.x === value.x);
+    //   if (target.length) {
+    //     return output.concat(target);
+    //   } else {
+    //     return output;
+    //   }
+    // }, [] as any[]);
+    // // console.log(dates[page*rowsPerPage + index]);
+    // // console.log(chunksByDates[dates[page*rowsPerPage + index]]);
+    // // console.log("Index = ", index);
+    // // console.log(data);
+    // // console.log(newcrosshairdata)
+    // setCrosshairdata(Array.from(new Set(newcrosshairdata)));
   };
 
   const getChunkValue = (date: string, asset: string, quantity: string) => {
@@ -115,27 +148,30 @@ export const Portfolio = ({
     return parseFloat(mul(quantity, prices.getNearest(date, asset) || "0"));
   };
 
-  const formatChunksToGraphData = (dates: string[]) => {
+  const formatChunksToGraphData = (datesSubset: string[]) => {
     if (!vm?.json?.chunks?.length) return;
+    console.log(`Formatting chunks as graph data`);
     const chunks = vm.json.chunks;
-    const newData = [] as SeriesData;
 
-    const chunkByDate = getChunksByDate(chunks, dates);
+    // Add current time as most recent
+    datesSubset.push(new Date().toISOString());
+    console.log(`got: `, datesSubset);
+
+    const newData = [] as SeriesData;
+    const chunkByDate = getChunksByDate(chunks, datesSubset);
+    console.log(`Got chunks by date`, chunkByDate);
     setChunksByDates(chunkByDate);
 
-    // Exclude the last date
-    dates.slice(0,-1).forEach((date, index) => {
-
+    // Exclude the last timestamp
+    datesSubset.slice(0,-1).forEach((date, index) => {
       let yReceivePrevPos = 0;
       let yReceivePrevNeg = 0;
       let yDisposePrevPos = 0;
       let yDisposePrevNeg = 0;
-
       chunkByDate[date].forEach(async (chunkIndex) => {
         const chunk = chunks[chunkIndex];
         const receiveValue = getChunkValue(date, chunk.asset, chunk.quantity);
-        const disposeValue = getChunkValue(dates[index + 1], chunk.asset, chunk.quantity);
-
+        const disposeValue = getChunkValue(datesSubset[index + 1], chunk.asset, chunk.quantity);
         newData.push({
           series: [
             {
@@ -159,9 +195,9 @@ export const Portfolio = ({
         });
         disposeValue > 0 ? yDisposePrevPos += disposeValue : yDisposePrevNeg += disposeValue;
         receiveValue > 0 ? yReceivePrevPos += receiveValue : yReceivePrevNeg += receiveValue;
-
       });
     });
+    console.log(`Set new data`, newData);
     setData(newData);
   };
 
@@ -175,18 +211,22 @@ export const Portfolio = ({
 
   useEffect(() => {
     if (!vm.json.chunks.length) return;
-    const newDates = Array.from(new Set(vm.json.events.map(e => e.date))).sort();
-    console.log(newDates);
-    if (newDates.length && rowsPerPage > 0) setPage(Math.floor(newDates.length/rowsPerPage));
+    const newDates = Array.from(new Set(vm.json.events.map(e => e.date)));
+    if (newDates.length && rowsPerPage > 0) {
+      setPage(Math.floor(newDates.length/rowsPerPage));
+    }
     setDates(newDates);
   }, [vm.json, prices, rowsPerPage]);
 
   useEffect(() => {
     if (!dates.length) return;
     console.log("Generating graph data");
+    console.log(dates.length);
+    console.log(
+      page * rowsPerPage, page * rowsPerPage + rowsPerPage,
+    );
     formatChunksToGraphData(dates.slice(
-      page * rowsPerPage,
-      page * rowsPerPage + rowsPerPage
+      page * rowsPerPage, page * rowsPerPage + rowsPerPage,
     ));
     // eslint-disable-next-line
   }, [dates, rowsPerPage, page]);
@@ -206,15 +246,13 @@ export const Portfolio = ({
       break;
     default: guardColor = "#d6ffa6";
     }
-    const assetColor = assetToColor(asset);
-
     return (
       <linearGradient
         id={gradientId}
         x1="0%" y1="0%" x2="0%" y2="100%"
       >
         <stop offset="0%" stopColor={guardColor} stopOpacity="0" />
-        <stop offset="50%" stopColor={assetColor} stopOpacity="1" />
+        <stop offset="50%" stopColor={assetToColor(asset)} stopOpacity="1" />
         <stop offset="100%" stopColor={guardColor} stopOpacity="0" />
       </linearGradient>
     );
@@ -225,8 +263,8 @@ export const Portfolio = ({
   return (
     <Grid container spacing={0}>
       <Grid item xs={12} sm={8}>
-        <Grid item >
-          <div className={classes.graph}>
+        <Grid container>
+          <Grid item >
             <XYPlot margin={{ left: 100 }}
               height={300} width={600}
             >
@@ -237,6 +275,16 @@ export const Portfolio = ({
                 </div>
               </Crosshair>
 
+              <MarkSeries
+                sizeRange={[5, 15]}
+                data={[
+                  { x: 1, y: 0, size: 30 },
+                  { x: 3, y: 0, size: 10 },
+                  { x: 4, y: 0, size: 1 },
+                  { x: 5, y: 0, size: 12 },
+                  { x: 2, y: 0, size: 4 }
+                ]}
+              />
               <div className={classes.legend}>
                 <DiscreteColorLegend
                   orientation={"vertical"}
@@ -256,12 +304,16 @@ export const Portfolio = ({
               </div>
 
               <HorizontalGridLines />
+              <VerticalGridLines />
 
               <XAxis style={{
                 line: { stroke: "#ADDDE1" },
                 ticks: { stroke: "#ADDDE1" },
                 text: { stroke: "none", fill: "#6b6b76", fontWeight: 600 }
-              }} />
+              }}
+              tickValues={[0, Object.keys(chunksByDates).length - 1]}
+              tickFormat={ tick => Object.keys(chunksByDates)[tick] }
+              />
 
               <YAxis style={{
                 line: { stroke: "#ADDDE1" },
@@ -284,26 +336,16 @@ export const Portfolio = ({
 
                 })}
               </GradientDefs>
+
               {data.map((value, index) => {
                 const chunkStart = dates[value.series[0].x];
                 const chunkEnd = dates[value.series[1].x];
-
                 const currentGuard = value.chunk.history.reduce((output, history) => {
-                  // if (history.guard !== "MATIC") {
-                  //   console.log(history);
-                  //   console.log(`chunkStart ${chunkStart}, chunkEnd ${chunkEnd}`);
-                  // }
                   if(history.date > chunkStart && history.date < chunkEnd) return history.guard;
                   return output;
                 }, value.chunk.history[0].guard);
-
-                // if(value.chunk.history.date > chunkStart && value.chunk.history.date < chunkEnd)
-                // return value.chunk.history.guard;
-                // const chainGradient = value.chunk.asset === currentGuard ? "#fba01d" : null;
-                const assetColor = assetToColor(value.chunk.asset);
-
                 return <PolygonSeries
-                  color={currentGuard === "ETH" ? assetColor : `url(#${currentGuard}${value.chunk.asset})`} 
+                  color={currentGuard === "ETH" ? assetToColor(value.chunk.asset) : `url(#${currentGuard}${value.chunk.asset})`} 
                   key={index}
                   data={value.series}
                   onNearestX={onNearestX}
@@ -311,52 +353,92 @@ export const Portfolio = ({
                   style={{ strokeWidth: 0.5, strokeOpacity: 1 }}
                 />;
               })}
+
             </XYPlot>
-          </div>
-        </Grid>
-        <Grid item>
-          <TablePagination
-            labelRowsPerPage={"Actions per page:"}
-            count={dates.length}
-            page={page}
-            onChangePage={handleChangePage}
-            rowsPerPage={rowsPerPage}
-            onChangeRowsPerPage={handleChangeRowsPerPage}
-          />
+          </Grid>
+          <Grid item>
+            <TablePagination
+              labelRowsPerPage={"Actions per page:"}
+              count={dates.length}
+              page={page}
+              onChangePage={handleChangePage}
+              rowsPerPage={rowsPerPage}
+              onChangeRowsPerPage={handleChangeRowsPerPage}
+            />
+          </Grid>
         </Grid>
       </Grid>
 
       <Grid item xs={12} sm={4}>
-        <Paper id="chunk-detail" variant="outlined" className={classes.root}>
-          <Typography>
-            {`${currentChunk.quantity} ${currentChunk.asset}`}
-          </Typography>
-          <Typography> Received on: {currentChunk.history?.[0]?.date} </Typography>
-          <Typography>
-            Received value: {unit}
-            {getChunkValue(
-              currentChunk.history?.[0]?.date,
-              currentChunk.asset,
-              currentChunk.quantity,
-            )}
-          </Typography>
-          <Typography>
-            {currentChunk.disposeDate
-              ? `Disposed on: ${currentChunk.disposeDate} for `
-              : "Currently Held value: "
-            }
-            {unit}
-            {getChunkValue(
-              currentChunk.history?.[0]?.date,
-              currentChunk.asset,
-              currentChunk.quantity,
-            )} 
-          </Typography>
-          <Typography>
-          </Typography>
-        </Paper> 
+        <Grid container>
+          <Grid item>
+            <Paper id="chunk-detail" variant="outlined" className={classes.root}>
+              <Typography>
+                {`${currentChunk.quantity} ${currentChunk.asset}`}
+              </Typography>
+              <Typography> Received on: {currentChunk.history?.[0]?.date} </Typography>
+              <Typography>
+                Received value: {unit}
+                {getChunkValue(
+                  currentChunk.history?.[0]?.date,
+                  currentChunk.asset,
+                  currentChunk.quantity,
+                )}
+              </Typography>
+              <Typography>
+                {currentChunk.disposeDate
+                  ? `Disposed on: ${currentChunk.disposeDate} for `
+                  : "Currently Held value: "
+                }
+                {unit}
+                {getChunkValue(
+                  currentChunk.history?.[0]?.date,
+                  currentChunk.asset,
+                  currentChunk.quantity,
+                )} 
+              </Typography>
+              <Typography>
+              </Typography>
+            </Paper> 
+          </Grid>
+          <Grid item>
+            <Paper id="event-detail" variant="outlined" className={classes.root}>
+              {currentEvents.length > 0
+                ? <>
+                  <Typography> {describeEvent(currentEvents[0])} </Typography>
+                  <Typography> Disposed Chunks: </Typography>
+                  {
+                    currentEvents.reduce((disposedChunks, event: Event) => {
+                      if (event.type === EventTypes.Expense)
+                        return disposedChunks.concat(event.outputs);
+                      return disposedChunks;
+                    }, [] as number[]).map(chunkIndex => {
+                      return (
+                        <Typography key={`dispose-${chunkIndex}`}>
+                          {vm.json.chunks[chunkIndex].asset}: {vm.json.chunks[chunkIndex].quantity}
+                        </Typography>
+                      );
+                    })
+                  }
+                </>
+                : null
+              }
+            </Paper>
+          </Grid>
+          <Grid item>
+            <Paper id="final-balance-detail" variant="outlined" className={classes.root}>
+              {Object.entries(vm.json.events[dates.length - 1].newBalances)
+                .map(([asset,quantity], index) => {
+                  return (
+                    <Typography key={index}>  {asset} : {quantity} </Typography>
+                  );
+                })
+              }
+            </Paper>
+          </Grid>
+          
+        </Grid>
       </Grid>
-
     </Grid>
   );
 };
