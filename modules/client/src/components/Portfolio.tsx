@@ -19,6 +19,7 @@ import { describeEvent } from "@valuemachine/core";
 import { Typography } from "@material-ui/core";
 import Paper from "@material-ui/core/Paper";
 import Grid from "@material-ui/core/Grid";
+import Divider from "@material-ui/core/Divider";
 import TablePagination from "@material-ui/core/TablePagination";
 import makeStyles from "@material-ui/core/styles/makeStyles";
 // import { tickFormat } from "d3-scale";
@@ -413,15 +414,15 @@ export const Portfolio = ({
                           <Typography variant="overline">
                             {sigfigs(chunk.quantity)} {chunk.asset}
                           </Typography>
-                            {capChange === 0
+                          {capChange === 0
                             ? null
                             : <Typography variant="caption" key={`dispose-${chunkIndex}`}>
                                 {capChange > 0
-                                  ? `Cap Gain: ${sigfigs(capChange.toString())}`
-                                  : `Cap Loss: ${sigfigs((capChange * -1).toString())}`}
-                                {unit}
+                                  ? `Cap Gain: ${sigfigs(capChange.toString())} ${unit}`
+                                  : `Cap Loss: ${sigfigs((capChange * -1).toString())} ${unit}`}
                               </Typography>
-                            }
+                          }
+                          <Divider/>
                         </>
                       );
                     })
