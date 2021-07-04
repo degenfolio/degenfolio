@@ -216,7 +216,7 @@ export const Portfolio = ({
       setPage(Math.floor(newDates.length/rowsPerPage));
     }
     setDates(newDates);
-  }, [vm.json, prices, rowsPerPage]);
+  }, [vm.json, rowsPerPage]);
 
   useEffect(() => {
     if (!dates.length) return;
@@ -225,8 +225,10 @@ export const Portfolio = ({
     console.log(
       page * rowsPerPage, page * rowsPerPage + rowsPerPage,
     );
+    const totalPages = Math.ceil(dates.length/rowsPerPage);
     formatChunksToGraphData(dates.slice(
-      page * rowsPerPage, page * rowsPerPage + rowsPerPage,
+      (page - totalPages) * rowsPerPage,
+      (page - totalPages) * rowsPerPage + rowsPerPage || undefined,
     ));
     // eslint-disable-next-line
   }, [dates, rowsPerPage, page]);
