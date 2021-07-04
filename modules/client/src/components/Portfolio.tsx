@@ -55,6 +55,13 @@ type SeriesData = Array<{
 
 type MarkSeriesData = Array<{x: number, y: number, size: number}>;
 
+const getGuard = (chunk: AssetChunk, chunkStart: string, chunkEnd: string) => {
+    return chunk.history.reduce((output, history) => {
+    if(history.date > chunkStart && history.date < chunkEnd) return history.guard;
+    return output;
+  }, chunk.history[0].guard);
+}
+
 const getChunksByDate = (chunks: AssetChunk[], dates: string[]) => {
   // console.log(`Getting chunks from dates ${dates}`);
   const empty = dates.reduce((output, date) => {
@@ -66,10 +73,19 @@ const getChunksByDate = (chunks: AssetChunk[], dates: string[]) => {
     if (chunk.disposeDate && chunk.disposeDate < dates[0]) return output;
     const i = dates.findIndex(d => d === chunk.history[0]?.date);
     const j = chunk.disposeDate ? dates.findIndex(d => d === chunk.disposeDate) : dates.length;
-    dates.slice(i > 0 ? i : 0, j > 0 ? j : dates.length).forEach((date) => {
+
+    dates.slice(i > 0 ? i : 0, j > 0 ? j : dates.length).forEach((date, dateIndex) => {
       output[date].push(index);
-      output[date].sort((a,b) => chunks[a].asset < chunks[b].asset ? 1 : -1);
+      output[date].sort((a,b) => {
+        const currentGuardA = getGuard(chunks[a], date, dates[dateIndex + 1])
+        const currentGuardB = getGuard(chunks[b], date, dates[dateIndex + 1])
+        if (currentGuardA === currentGuardB)
+          return chunks[a].asset < chunks[b].asset ? 1 : -1
+        else 
+          return currentGuardA < currentGuardB ? -1 : 1
+      });
     });
+
     return output;
   }, empty as { [date: string]: number[] });
 };
@@ -355,10 +371,7 @@ export const Portfolio = ({
               {data.map((value, index) => {
                 const chunkStart = dates[value.series[0].x];
                 const chunkEnd = dates[value.series[1].x];
-                const currentGuard = value.chunk.history.reduce((output, history) => {
-                  if(history.date > chunkStart && history.date < chunkEnd) return history.guard;
-                  return output;
-                }, value.chunk.history[0].guard);
+                const currentGuard = getGuard(value.chunk, chunkStart, chunkEnd);
                 return <PolygonSeries
                   color={currentGuard === "ETH" ? assetToColor(value.chunk.asset) : `url(#${currentGuard}${value.chunk.asset})`} 
                   key={index}
