@@ -53,7 +53,6 @@ export const erc20Parser = (
   logger: Logger,
 ): Transaction => {
   const log = logger.child({ module: erc20Source });
-  log.info(`Parser activated`);
   const { getDecimals, getName, isSelf, isToken } = addressBook;
 
   for (const txLog of ethTx.logs) {
