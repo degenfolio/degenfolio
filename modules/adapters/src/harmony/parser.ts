@@ -6,7 +6,6 @@ import {
 } from "@valuemachine/types";
 
 import { Assets } from "../enums";
-
 import { parseEvmTx } from "../evmParser";
 
 export const parseHarmonyTx = (
