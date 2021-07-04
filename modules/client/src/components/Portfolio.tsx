@@ -53,6 +53,8 @@ type SeriesData = Array<{
   chunk: AssetChunk;
 }>;
 
+type MarkSeriesData = Array<{x: number, y: number, size: number}>;
+
 const getChunksByDate = (chunks: AssetChunk[], dates: string[]) => {
   // console.log(`Getting chunks from dates ${dates}`);
   const empty = dates.reduce((output, date) => {
@@ -84,6 +86,7 @@ export const Portfolio = ({
   const classes = useStyles();
 
   const [data, setData] = useState([] as SeriesData);
+  const [markSeriesData, setMarkSeriesData] = useState([] as MarkSeriesData);
   const [chunksByDates, setChunksByDates] = useState({} as { [date: string]: number[] });
   const [crosshairdata, setCrosshairdata] = useState([] as Array<{x: number, y: number}>);
   const [currentChunk, setCurrentChunk] = useState({} as AssetChunk);
@@ -148,7 +151,7 @@ export const Portfolio = ({
     return parseFloat(mul(quantity, prices.getNearest(date, asset) || "0"));
   };
 
-  const formatChunksToGraphData = (datesSubset: string[]) => {
+  const setGraphData = (datesSubset: string[]) => {
     if (!vm?.json?.chunks?.length) return;
     const chunks = vm.json.chunks;
 
@@ -159,12 +162,15 @@ export const Portfolio = ({
     // console.log(`Got chunks by date`, chunkByDate);
     setChunksByDates(chunkByDate);
 
+    let maxY = 0;
     // Exclude the last timestamp
     datesSubset.slice(0,-1).forEach((date, index) => {
+
       let yReceivePrevPos = 0;
       let yReceivePrevNeg = 0;
       let yDisposePrevPos = 0;
       let yDisposePrevNeg = 0;
+
       chunkByDate[date].forEach(async (chunkIndex) => {
         const chunk = chunks[chunkIndex];
         const receiveValue = getChunkValue(date, chunk.asset, chunk.quantity);
@@ -193,8 +199,25 @@ export const Portfolio = ({
         disposeValue > 0 ? yDisposePrevPos += disposeValue : yDisposePrevNeg += disposeValue;
         receiveValue > 0 ? yReceivePrevPos += receiveValue : yReceivePrevNeg += receiveValue;
       });
+
+      maxY = maxY < yReceivePrevPos || maxY < yDisposePrevPos
+      ? yReceivePrevPos > yDisposePrevPos ? yReceivePrevPos : yDisposePrevPos
+      : maxY;
     });
+
+    const newMarkSeriesData = [] as MarkSeriesData;
+
+    datesSubset.slice(0,-1).forEach((date, index) => {
+      newMarkSeriesData.push({
+        x: index,
+        y: maxY * 1.1,
+        size: 1
+      });
+    });
+    
+    console.log(newMarkSeriesData);
     // console.log(`Set new data`, newData);
+    setMarkSeriesData(newMarkSeriesData);
     setData(newData);
   };
 
@@ -221,7 +244,7 @@ export const Portfolio = ({
     if (!dates.length) return;
     console.log("Generating graph data");
     const totalPages = Math.ceil(dates.length/rowsPerPage);
-    formatChunksToGraphData(dates.slice(
+    setGraphData(dates.slice(
       (page - totalPages) * rowsPerPage,
       (page - totalPages) * rowsPerPage + rowsPerPage || undefined,
     ));
@@ -263,7 +286,7 @@ export const Portfolio = ({
         <Grid container>
           <Grid item >
             <XYPlot margin={{ left: 100 }}
-              height={300} width={600}
+              height={400} width={650}
             >
               <Crosshair values={crosshairdata} style={{ position: "relative" }}>
                 <div style={{ background: "red", top: "100px" }}>
@@ -274,13 +297,7 @@ export const Portfolio = ({
 
               <MarkSeries
                 sizeRange={[5, 15]}
-                data={[
-                  { x: 1, y: 0, size: 30 },
-                  { x: 3, y: 0, size: 10 },
-                  { x: 4, y: 0, size: 1 },
-                  { x: 5, y: 0, size: 12 },
-                  { x: 2, y: 0, size: 4 }
-                ]}
+                data={markSeriesData}
               />
               <div className={classes.legend}>
                 <DiscreteColorLegend
