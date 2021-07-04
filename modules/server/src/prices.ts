@@ -10,6 +10,8 @@ import {
   STATUS_YOUR_BAD,
 } from "./utils";
 
+const unsupported = ["idleDAI"];
+
 const log = getLogger(env.logLevel).child({
   // level: "debug",
   module: "Prices",
@@ -57,6 +59,8 @@ const syncPrice = async (rawDate: string, unit: string, asset: string): Promise<
     price = await fetchPrice(date, unit, asset.slice(3));
   } else if (asset === "PETH") {
     price = await fetchPrice(date, unit, "ETH");
+  } else if (unsupported.includes(asset)) {
+    throw new Error(`Price data for ${asset} is not supported`);
   } else
     price = await fetchPrice(date, unit, asset);
 
