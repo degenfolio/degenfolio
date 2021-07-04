@@ -90,7 +90,28 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
     const response = await axios.post("https://api.harmony.one", databc);
     console.log(response.data);
     // TODO: save result to json
-    // save();
+    const yesterday = Date.now() - 1000 * 60 * 60 * 24;
+    if (
+      new Date(json.addresses[address]?.lastUpdated || 0).getTime() > yesterday
+    ) {
+      log.info(`Info for address ${address} is up to date`);
+      return;
+    }
+    let data = response.data;
+    const items = data.result;
+    const history = items.sort();
+    json.addresses[address] = {
+      lastUpdated: new Date().toISOString(),
+      history
+    };
+    save();
+    for (const txHash of history) {
+      const harmonyTx = formatCovalentTx(fetchTx(txHash), fetchReceipt(txHash));
+      const error = getEthTransactionError(harmonyTx);
+      if (error) throw new Error(error);
+      json.transactions.push(harmonyTx);
+      save();
+    }
     return;
   };
   const fetchTx = async (txHash: String): Promise<Transaction> => {
