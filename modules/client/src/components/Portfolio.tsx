@@ -141,11 +141,17 @@ export const Portfolio = ({
     if (!vm?.json?.chunks?.length) return;
     console.log(`Formatting chunks as graph data`);
     const chunks = vm.json.chunks;
+
+    // Add current time as most recent
+    datesSubset.push(new Date().toISOString());
+    console.log(`got: `, datesSubset);
+
     const newData = [] as SeriesData;
     const chunkByDate = getChunksByDate(chunks, datesSubset);
     console.log(`Got chunks by date`, chunkByDate);
     setChunksByDates(chunkByDate);
-    // Exclude the last date
+
+    // Exclude the last timestamp
     datesSubset.slice(0,-1).forEach((date, index) => {
       let yReceivePrevPos = 0;
       let yReceivePrevNeg = 0;
@@ -194,19 +200,25 @@ export const Portfolio = ({
 
   useEffect(() => {
     if (!vm.json.chunks.length) return;
-    const newDates = Array.from(new Set(vm.json.events.map(e => e.date))).sort();
-    if (newDates.length && rowsPerPage > 0) setPage(Math.floor(newDates.length/rowsPerPage));
-    console.log(`got: ${newDates}`);
+    const newDates = Array.from(new Set(vm.json.events.map(e => e.date)))/*.sort((a,b) => b>=a? 1 : -1)*/;
+    if (newDates.length && rowsPerPage > 0) {
+      setPage(Math.floor(newDates.length/rowsPerPage));
+    }
     setDates(newDates);
   }, [vm.json, prices, rowsPerPage]);
 
   useEffect(() => {
     if (!dates.length) return;
     console.log("Generating graph data");
+    console.log(dates.length);
+    console.log(
+      // page * rowsPerPage + rowsPerPage, -1 * page * rowsPerPage,
+      page * rowsPerPage, page * rowsPerPage + rowsPerPage,
+    );
     formatChunksToGraphData(dates.slice(
-      page * rowsPerPage,
-      page * rowsPerPage + rowsPerPage
-    ));
+      page * rowsPerPage, page * rowsPerPage + rowsPerPage,
+      // page * rowsPerPage + rowsPerPage, -1 * page * rowsPerPage,
+    )/*.sort()*/);
     // eslint-disable-next-line
   }, [dates, rowsPerPage, page]);
 
