@@ -34,7 +34,7 @@ describe("TDA", () => {
     txns = getTransactions({ addressBook, logger: log });
   });
 
-  it.only("should merge TDA data", async () => {
+  it("should merge TDA data", async () => {
     txns.mergeCsv(exampleTDACsv, mergeTDATransactions);
     expect(getTransactionsError(txns.json)).to.be.null;
   });
