@@ -498,7 +498,7 @@ export const AddressBookManager = ({
                 {csvFiles.map((csvFile: { name: string; type: string; data: string }, i) => (
                   <TableRow key={i}>
                     <TableCell><strong> {csvFile.name} </strong></TableCell>
-                    <TableCell><strong> {csvFile.type} </strong></TableCell>
+                    <TableCell><strong> {typeof csvFile.type === "string" ? csvFile.type : "Custom"} </strong></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
