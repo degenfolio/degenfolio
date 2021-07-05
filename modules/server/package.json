@@ -11,12 +11,12 @@
     "@ethersproject/address": "5.4.0",
     "@ethersproject/bytes": "5.4.0",
     "@harmony-js/crypto": "0.1.56",
-    "@valuemachine/types": "0.6.3",
-    "@valuemachine/utils": "0.6.3",
+    "@valuemachine/types": "0.6.4",
+    "@valuemachine/utils": "0.6.4",
     "axios": "0.21.1",
     "express": "4.17.1",
     "nodemon": "2.0.9",
-    "valuemachine": "0.6.3"
+    "valuemachine": "0.6.4"
   },
   "devDependencies": {
     "@types/node": "15.12.3",

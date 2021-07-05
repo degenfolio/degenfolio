@@ -12,7 +12,7 @@ import {
 
 const stocks = ["ITUB", "DOCU", "AMGN", "AAPL"];
 
-const unsupported = [];
+const unsupported = ["idleDAI", "idleDAIYield", "idleUSDTYield"];
 
 const log = getLogger(env.logLevel).child({
   // level: "debug",
@@ -59,8 +59,6 @@ const syncPrice = async (rawDate: string, unit: string, asset: string): Promise<
     price = await fetchPrice(date, unit, asset.slice(1));
   } else if (asset.startsWith("stk")) {
     price = await fetchPrice(date, unit, asset.slice(3));
-  } else if (asset.startsWith("idle")) {
-    price = await fetchPrice(date, unit, asset.slice(4));
   } else if (asset === "PETH") {
     price = await fetchPrice(date, unit, "ETH");
   } else if (stocks.includes(asset)) {
