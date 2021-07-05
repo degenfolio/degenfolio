@@ -18,7 +18,7 @@ const logger = testLogger.child({ module: `TestHarmony`,
 
 describe.only("Harmony Data", () => {
   let harmonyData: ChainData;
-  const testAddress = "0xada083a3c06ee526F827b43695F2DcFf5C8C892B";
+  const testAddress = "one1z6n67znt38cpuxlufrs6cmarc4pmvgslaghfrh";
   const addressBook = getTestAddressBook(testAddress);
   beforeEach(() => {
     harmonyData = getHarmonyData({
@@ -30,7 +30,7 @@ describe.only("Harmony Data", () => {
   it("should sync & parse a transaction", async () => {
     const tx = await parseHarmonyTx({
       selfAddress: testAddress,
-      hash: "0xecd2d68981ed77625828d6f588babe6633fcb5968b10332bbfdc0aa74b13f5c8",
+      hash: "0xbab506616a52f8c80a5f8aa4976dcb91528e67c596b480cb4725d299b3219ee2",
       logger,
     });
     logger.info(tx, `Got harmony transaction`);

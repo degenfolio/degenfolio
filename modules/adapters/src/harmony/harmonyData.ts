@@ -1,4 +1,4 @@
-import { getAddress, isAddress } from "@ethersproject/address";
+import { isAddress } from "@ethersproject/address";
 import { formatEther } from "@ethersproject/units";
 import {
   Address,
@@ -18,12 +18,13 @@ import {
   getEthTransactionError
 } from "@valuemachine/utils";
 import axios from "axios";
+
 import { parseHarmonyTx } from "./parser";
 
 const HarmonyStoreKey = "HarmonyData";
 
 export const getHarmonyData = (params?: ChainDataParams): ChainData => {
-  const formatCovalentTx = (rawTx, TxReceipt) => ({
+  const formatHarmonyTx = (rawTx, TxReceipt) => ({
     block: rawTx.blockNumber,
     data: "0x", // not available?
     from: rawTx.from,
@@ -71,6 +72,12 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
 
   // TODO: rm key param?
   const syncAddress = async (address: Address): Promise<void> => {
+    const yesterday = Date.now() - 1000 * 60 * 60 * 24;
+    if (new Date(json.addresses[address]?.lastUpdated || 0).getTime() > yesterday) {
+      log.info(`Info for address ${address} is up to date`);
+      return;
+    }
+
     console.log(address);
     const databc = {
       jsonrpc: "2.0",
@@ -90,7 +97,6 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
     const response = await axios.post("https://api.s0.t.hmny.io", databc);
     console.log(response.data);
     // TODO: save result to json
-    const yesterday = Date.now() - 1000 * 60 * 60 * 24;
 
     let data = response.data;
     log.info(data);
@@ -156,12 +162,13 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
     if (!getEthTransactionError(existing)) {
       return;
     }
-    log.info(`Fetching polygon data for tx ${txHash}`);
+    log.info(`Fetching harmony data for tx ${txHash}`);
     const harmony = await fetchTx(txHash);
     const TxReceipt = await fetchReceipt(txHash);
-    const harmonyTx = formatCovalentTx(harmony, TxReceipt);
+    const harmonyTx = formatHarmonyTx(harmony, TxReceipt);
     logger.info("UNREAChED");
     const error = getEthTransactionError(harmonyTx);
+    if (error) throw new Error(error);
     json.transactions.push(harmonyTx);
     log.info("CHECK HERE");
     for (const entry of json.transactions) {
@@ -197,7 +204,7 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
         }, [])
       )
     );
-    log.info(`Parsing ${selfTransactionHashes.length} polygon transactions`);
+    log.info(`Parsing ${selfTransactionHashes.length} harmony transactions`);
 
     for (const entry of json.transactions) {
       const address = entry.hash;
