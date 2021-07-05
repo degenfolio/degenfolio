@@ -29,7 +29,7 @@ taxesRouter.post("/", async (req, res) => {
       const cmd = "bash taxes/f8949.sh";
       const stdout = execSync(cmd);
       log.info(`Got output from ${cmd}: ${stdout}`);
-      res.sendFile("/tmp/f8949.pdf");
+      res.download("/tmp/f8949.pdf", "f8949.pdf");
       return;
     } catch (e) {
       logAndSend(e.message, STATUS_MY_BAD);

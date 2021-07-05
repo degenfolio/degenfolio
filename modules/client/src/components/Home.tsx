@@ -91,6 +91,29 @@ export const Home = () => {
     setTab(selectedTab);
   };
 
+  const downloadF8949 = async () => {
+    logger.warn(`Downloading f8949 form`);
+    if (!vm) return;
+    setSyncing(`Downloading tax forms`);
+    axios({
+      url: "/api/taxes",
+      method: "post",
+      responseType: "blob",
+      data: { rows: [{
+        description: "Defi"
+      }] },
+    }).then((response) => {
+      setSyncing(``);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "f8949.pdf");
+      document.body.appendChild(link);
+      link.click();
+    });
+
+  };
+
   const syncAddressBook = async () => {
     if (syncing) return;
     setSyncing(`Syncing`);
@@ -248,7 +271,13 @@ export const Home = () => {
   }, [transactions]);
 
   return (<>
-    <NavBar syncing={syncing} unit={unit} setUnit={setUnit} syncAddressBook={syncAddressBook}/>
+    <NavBar
+      syncing={syncing}
+      unit={unit}
+      setUnit={setUnit}
+      syncAddressBook={syncAddressBook}
+      downloadF8949={downloadF8949}
+    />
     <TabContext value={tab}>
       <TabPanel value="portfolio" className={classes.panel}>
         <Portfolio vm={vm} prices={prices} unit={unit} />
