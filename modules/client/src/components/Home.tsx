@@ -164,7 +164,7 @@ export const Home = () => {
           if (!isEthSynced) {
             setSyncing(`Syncing Ethereum data for ${addressBookJson.length} addresses`);
             const resEth = await axios.post("/api/ethereum", { addressBook: addressBookJson });
-            console.log(`Got ${resEth.data.length} Eth transactions`);
+            // console.log(`Got ${resEth.data.length} Eth transactions`);
             if (resEth.status === 200 && typeof(resEth.data) === "object") {
               newTransactions.merge(resEth.data);
               isEthSynced = true;
