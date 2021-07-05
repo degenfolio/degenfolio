@@ -484,7 +484,9 @@ export const Portfolio = ({
                     <Typography>
                       {Number(getTotalCapitalChange(currentEventsInfo.capChangesPerChunk)) > 0
                         ? `Total capital gains: ${getTotalCapitalChange(currentEventsInfo.capChangesPerChunk)}`
-                        : `Total capital loss: ${getTotalCapitalChange(currentEventsInfo.capChangesPerChunk)}`
+                        : Number(getTotalCapitalChange(currentEventsInfo.capChangesPerChunk)) < 0
+                          ? `Total capital loss: ${getTotalCapitalChange(currentEventsInfo.capChangesPerChunk)}`
+                          : null
                       }
                     </Typography>
                     <Typography> Disposed Chunks: </Typography>
