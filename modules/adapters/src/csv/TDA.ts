@@ -23,10 +23,11 @@ export const mergeTDATransactions = (
 
     const {
       ["DATE"]: date,
-      ["TRANSACTION ID"]: txType,
+      ["DESCRIPTION"]: description,
+      ["TRANSACTION ID"]: txtype,
       ["SYMBOL"]: asset,
       ["QUANTITY"]: quantity,
-      ["AMOUNT)"]: usdQuantity,
+      ["AMOUNT"]: usdQuantity,
       ["REG FEE"]: fees,
     } = row;
     log.info(date);
@@ -42,26 +43,7 @@ export const mergeTDATransactions = (
 
     let [from, to, category] = ["", "", Unknown as TransferCategory];
 
-    if (txType === "Send") {
-      [from, to, category] = [account, external, Withdraw];
-      transaction.method = "Withdraw";
-
-    } else if (txType === "Receive") {
-      [from, to, category] = [external, account, Deposit];
-      transaction.method = "Deposit";
-
-    } else if (txType === "Sell") {
-      [from, to, category] = [account, exchange, SwapOut];
-      transaction.transfers.push({
-        asset: "USD",
-        category: SwapIn,
-        from: exchange,
-        quantity: usdQuantity,
-        to: account,
-      });
-      transaction.method = txType;
-
-    } else if (txType === "Buy") {
+    if (description.startsWith("Bought")) {
       [from, to, category] = [exchange, account, SwapIn];
       transaction.transfers.push({
         asset: "USD",
@@ -70,10 +52,22 @@ export const mergeTDATransactions = (
         quantity: usdQuantity,
         to: exchange,
       });
-      transaction.method = txType;
+      transaction.method = "Buy";
     }
 
-    transaction.transfers.push({ asset, category, from, quantity, to });
+    if (description.startsWith("Sold")) {
+      [from, to, category] = [account, exchange, SwapOut];
+      transaction.transfers.push({
+        asset: "USD",
+        category: SwapIn,
+        from: exchange,
+        quantity: usdQuantity,
+        to: account,
+      }); 
+      transaction.method = "Sell";
+    }
+
+    transaction.transfers.push({ asset, category, from, quantity, to});
 
     if (gt(fees, "0")) {
       transaction.transfers.push({
@@ -86,7 +80,7 @@ export const mergeTDATransactions = (
     }
 
     log.debug(transaction, "Parsed row into transaction:");
-
+    oldTransactions.push(transaction);
   });
   return oldTransactions;
 };

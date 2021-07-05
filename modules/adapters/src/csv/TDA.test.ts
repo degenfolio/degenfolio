@@ -1,6 +1,6 @@
 import { AddressZero } from "@ethersproject/constants";
 import { Transactions } from "@valuemachine/types";
-import { getTransactionsErrors } from "@valuemachine/utils";
+import { getTransactionsError } from "@valuemachine/utils";
 import { getTransactions } from "valuemachine";
 
 import {
@@ -37,7 +37,7 @@ describe("TDA", () => {
 
   it.only("should merge TDA data", async () => {
     txns.mergeCsv(exampleTDACsv, mergeTDATransactions);
-    expect(getTransactionsErrors(txns.json)).to.be.null;
+    expect(getTransactionsError(txns.json)).to.be.null;
   });
 
 });
