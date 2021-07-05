@@ -312,7 +312,7 @@ export const Portfolio = ({
       (page - totalPages) * rowsPerPage + rowsPerPage || undefined,
     ));
     // eslint-disable-next-line
-  }, [dates, rowsPerPage, page]);
+  }, [dates, prices, unit, rowsPerPage, page]);
 
   const getGradient = (asset : Asset, guard: Guard) => {
     const gradientId = `${guard}${asset}`;
