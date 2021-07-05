@@ -24,7 +24,7 @@ const { MATIC, ETH, WETH } = Assets;
 ////////////////////////////////////////
 /// Addresses
 
-const ZapperMaticBridge = "ZapperMaticBridge";
+const ZapperPolygonBridge = "ZapperPolygonBridge";
 const PlasmaBridge = "PlasmaBridge";
 
 export const govAddresses = [
@@ -33,7 +33,7 @@ export const govAddresses = [
 
 export const bridgeAddresses = [
   { name: PlasmaBridge, address: "0x401F6c983eA34274ec46f84D70b31C151321188b" },
-  { name: ZapperMaticBridge, address: "0xe34b087bf3c99e664316a15b01e5295eb3512760" },
+  { name: ZapperPolygonBridge, address: "0xe34b087bf3c99e664316a15b01e5295eb3512760" },
 ].map(setAddressCategory(AddressCategories.Defi));
 
 export const miscAddresses = [
@@ -73,10 +73,10 @@ export const polygonParser = (
   const log = logger.child({ module: source });
   const { getName, isToken, getDecimals } = addressBook;
 
-  if (getName(ethTx.to) === ZapperMaticBridge) {
+  if (getName(ethTx.to) === ZapperPolygonBridge) {
     const account = ethTx.from;
     tx.sources = rmDups([source, ...tx.sources]);
-    tx.method = `Zap to Matic`;
+    tx.method = `Zap to Polygon`;
     log.info(`Parsing ${tx.method}`);
 
     // Get all erc20 transfers (even non-self ones)
@@ -193,16 +193,31 @@ export const polygonParser = (
         }
       });
 
-  }
-
-  for (const txLog of ethTx.logs) {
-    const address = txLog.address;
-    if (polygonAddresses.map(e => e.address).includes(address)) {
-      tx.sources = rmDups([source, ...tx.sources]);
-      const name = getName(address);
-      const event = parseEvent(plasmaBridgeInterface, txLog);
-      if (event?.name === "NewDepositBlock") {
-        log.info(`Got a ${name} ${event.name}`);
+  // If not a zap bridge, then parse events normally
+  } else {
+    for (const txLog of ethTx.logs) {
+      const address = txLog.address;
+      if (polygonAddresses.map(e => e.address).includes(address)) {
+        tx.sources = rmDups([source, ...tx.sources]);
+        const name = getName(address);
+        const event = parseEvent(plasmaBridgeInterface, txLog);
+        if (event?.name === "NewDepositBlock") {
+          const quantity = formatUnits(event.args.amountOrNFTId, getDecimals(event.args.token));
+          const asset = getName(event.args.token);
+          log.info(`Got a ${name} ${event.name}`);
+          const deposit = tx.transfers.find(transfer =>
+            transfer.asset === asset
+            && transfer.quantity === quantity
+            && addressBook.isSelf(transfer.from)
+          );
+          if (deposit) {
+            deposit.category = TransferCategories.Deposit;
+            deposit.to = `${MATIC}-${event.args.owner}`;
+            tx.method = "Plasma Bridge to Polygon";
+          } else {
+            log.warn(`Couldn't find deposit of ${quantity} ${asset}`);
+          }
+        }
       }
     }
   }

@@ -1,8 +1,14 @@
 import {
   Assets as DefaultAssets,
   Guards as DefaultGuards,
+  CsvSources as DefaultCsvSources,
   TransactionSources as DefaultSources,
 } from "@valuemachine/types";
+
+export const CsvSources = {
+  ...DefaultCsvSources,
+  TDAmeritrade: "TDAmeritrade",
+};
 
 export const Guards = {
   ...DefaultGuards,
@@ -17,6 +23,7 @@ export const TransactionSources = {
   Idle: "Idle",
   Polygon: "Polygon",
   Harmony: "Harmony",
+  Quickswap: "Quickswap",
 };
 
 export const Assets = {

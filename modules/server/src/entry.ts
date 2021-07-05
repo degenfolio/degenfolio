@@ -5,6 +5,7 @@ import { env } from "./env";
 import { pricesRouter } from "./prices";
 import { ethereumRouter } from "./ethereum";
 import { polygonRouter } from "./polygon";
+import { taxesRouter } from "./taxes";
 import { getLogAndSend, STATUS_NOT_FOUND } from "./utils";
 
 const log = getLogger(env.logLevel).child({ module: "Entry" });
@@ -18,6 +19,7 @@ app.use(express.json({ limit: "10mb" }));
 app.use("/prices", pricesRouter);
 app.use("/ethereum", ethereumRouter);
 app.use("/polygon", polygonRouter);
+app.use("/taxes", taxesRouter);
 
 app.use((req, res) => {
   return getLogAndSend(res)(`not found`, STATUS_NOT_FOUND);

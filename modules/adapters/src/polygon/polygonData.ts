@@ -133,14 +133,14 @@ export const getPolygonData = (params?: {
       return;
     }
     let data = await queryCovalent(`${chainId}/address/${address}/transactions_v2`);
-    const items = data.items;
-    while (data.pagination.has_more) {
+    const items = data?.items;
+    while (items && data.pagination.has_more) {
       data = await queryCovalent(`${chainId}/address/${address}/transactions_v2`, {
         ["page-number"]: data.pagination.page_number + 1,
       });
       items.push(...data.items);
     }
-    const history = items.map(item => item.tx_hash).sort();
+    const history = items?.map(item => item.tx_hash).sort() || [];
     json.addresses[address] = {
       lastUpdated: new Date().toISOString(),
       history,

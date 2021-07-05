@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React from "react";
 import AppBar from "@material-ui/core/AppBar";
 import Toolbar from "@material-ui/core/Toolbar";
 import { makeStyles } from "@material-ui/core/styles";
@@ -9,9 +9,8 @@ import Typography from "@material-ui/core/Typography";
 import Select from "@material-ui/core/Select";
 // Icons
 import SyncIcon from "@material-ui/icons/Sync";
+import DownloadIcon from "@material-ui/icons/GetApp";
 import { Asset, Assets, FiatCurrencies } from "@valuemachine/types";
-
-import { AccountContext } from "./AccountManager";
 
 const useStyles = makeStyles( theme => ({
   navbar: {
@@ -23,7 +22,6 @@ const useStyles = makeStyles( theme => ({
     flexGrow: 1,
     justifyContent: "right",
     padding: theme.spacing(2),
-    display: "flex",
   },
   selector: {
     padding: theme.spacing(1),
@@ -32,12 +30,18 @@ const useStyles = makeStyles( theme => ({
 }));
 
 export const NavBar = ({
+  setUnit,
+  syncAddressBook,
+  downloadF8949,
   syncing,
   unit,
-  setUnit,
-}: { syncing: { state: boolean, msg: string }, unit: Asset, setUnit: (val: Asset) => void }) => {
-
-  const { syncAddressBook } = useContext(AccountContext);
+}: {
+  setUnit: (val: Asset) => void,
+  syncAddressBook: () => Promise<void>,
+  downloadF8949: () => Promise<void>,
+  syncing: string,
+  unit: Asset,
+}) => {
   const classes = useStyles();
 
   const handleUnitChange = (event: React.ChangeEvent<{ value: unknown }>) => {
@@ -64,21 +68,33 @@ export const NavBar = ({
           </Select>
         </FormControl>
 
-        <Typography className={classes.sync}>
-          {syncing.state
-            ? syncing.msg
-            : `Synced`
-          }
+        <Typography align="right" className={classes.sync}>
+          {syncing || "Synced"}
         </Typography>
+
         <IconButton
           edge="start"
           color="inherit"
           aria-label="sync"
-          disabled={syncing.state}
+          disabled={!!syncing}
           onClick={syncAddressBook}
         >
           <SyncIcon />
         </IconButton>
+
+        <IconButton
+          edge="start"
+          color="inherit"
+          aria-label="download"
+          disabled={!!syncing}
+          onClick={() => {
+            console.log(`Calling form downloader`);
+            downloadF8949();
+          }}
+        >
+          <DownloadIcon />
+        </IconButton>
+
       </Toolbar>
     </AppBar>
   );

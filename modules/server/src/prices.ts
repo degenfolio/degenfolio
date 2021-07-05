@@ -10,6 +10,8 @@ import {
   STATUS_YOUR_BAD,
 } from "./utils";
 
+const unsupported = ["idleDAI"];
+
 const log = getLogger(env.logLevel).child({
   // level: "debug",
   module: "Prices",
@@ -24,7 +26,7 @@ const fetchPrice = async (rawDate: string, unit: string, asset: string): Promise
   }&key=${env.covalentKey}`;
   log.info(`GET ${url}`);
   try {
-    const response = await axios.get(url);
+    const response = await axios.get(url, { timeout: 5000 });
     if (response.status !== 200) {
       log.warn(`Bad Status: ${response.status}`);
       return "";
@@ -47,8 +49,21 @@ const syncPrice = async (rawDate: string, unit: string, asset: string): Promise<
   const date = rawDate.includes("T") ? rawDate.split("T")[0] : rawDate;
   let price = prices.getPrice(date, asset);
   if (price) { return price; }
+
   // fetch price from Covalent
-  price = await fetchPrice(date, unit, asset);
+  if (asset.startsWith("am")) {
+    price = await fetchPrice(date, unit, asset.slice(2));
+  } else if (asset.startsWith("a")) {
+    price = await fetchPrice(date, unit, asset.slice(1));
+  } else if (asset.startsWith("stk")) {
+    price = await fetchPrice(date, unit, asset.slice(3));
+  } else if (asset === "PETH") {
+    price = await fetchPrice(date, unit, "ETH");
+  } else if (unsupported.includes(asset)) {
+    throw new Error(`Price data for ${asset} is not supported`);
+  } else
+    price = await fetchPrice(date, unit, asset);
+
   if (price) { prices.setPrice(price, date, asset, unit); return price; }
   price = await prices.syncPrice(date, asset);
   if (price) { prices.setPrice(price, date, asset, unit); return price; }
