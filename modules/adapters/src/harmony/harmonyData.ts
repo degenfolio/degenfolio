@@ -52,8 +52,8 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
     data: "0x", // not available?
     from: rawTx.from,
     gasLimit: "0x100000000000",
-    gasPrice: "0x" + rawTx.gasPrice.toString(),
-    gasUsed: "0x" + rawTx.gas.toString(),
+    gasPrice: hexlify(rawTx.gasPrice),
+    gasUsed: hexlify(rawTx.gas),
     hash: rawTx.hash,
     index: rawTx.transactionIndex,
     logs: TxReceipt.logs.map(evt => ({
