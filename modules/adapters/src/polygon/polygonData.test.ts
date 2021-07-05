@@ -44,7 +44,7 @@ describe("Polygon Data", () => {
     expect(getTransactionsError([tx])).to.be.null;
   });
 
-  it("should sync & parse an address book", async () => {
+  it.skip("should sync & parse an address book", async () => {
     await polygonData.syncAddressBook(addressBook);
     const transactions = polygonData.getTransactions(addressBook);
     expect(transactions[0].sources).to.include(Guards.MATIC);

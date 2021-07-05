@@ -40,7 +40,7 @@ describe("Harmony Data", () => {
     expect(getTransactionsError([tx])).to.be.null;
   });
 
-  it("should sync & parse an address book", async () => {
+  it.skip("should sync & parse an address book", async () => {
     await harmonyData.syncAddressBook(addressBook);
     const transactions = harmonyData.getTransactions(addressBook);
     expect(transactions[0].sources).to.include(Guards.ONE);
