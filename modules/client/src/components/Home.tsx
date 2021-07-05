@@ -165,7 +165,7 @@ export const Home = () => {
           if (!isEthSynced) {
             setSyncing(`Syncing Ethereum data for ${addressBookJson.length} addresses`);
             const resEth = await axios.post("/api/ethereum", { addressBook: addressBookJson });
-            console.log(`Got ${resEth.data.length} Eth transactions`);
+            // console.log(`Got ${resEth.data.length} Eth transactions`);
             if (resEth.status === 200 && typeof(resEth.data) === "object") {
               newTransactions.merge(resEth.data);
               isEthSynced = true;
@@ -177,7 +177,7 @@ export const Home = () => {
 
           setSyncing(`Syncing Polygon data for ${addressBookJson.length} addresses`);
           const resPolygon = await axios.post("/api/polygon", { addressBook: addressBookJson });
-          console.log(`Got ${resPolygon.data.length} Polygon transactions`);
+          // console.log(`Got ${resPolygon.data.length} Polygon transactions`);
           if (resPolygon.status === 200 && typeof(resPolygon.data) === "object") {
             newTransactions.merge(resPolygon.data);
           } else {
