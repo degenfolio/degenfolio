@@ -184,12 +184,17 @@ export const Portfolio = ({
     dates.forEach((date, index) => {
 
       const capChangesPerChunk = [] as Array<{ asset: string; capChange: number; quantity: string; }>;
+      const descriptionIn = "";
+      const descriptionOut = "";
 
       // Get all capital changes for given date
       eventsByDate[date].forEach((event) => {
-        if (event.type === EventTypes.Expense || event.type === EventTypes.Trade) {
 
-        // Get capital changes for all chunks of a given event
+        // if (event.type === EventTypes.Income) {
+
+        // }
+        if (event.type === EventTypes.Expense || event.type === EventTypes.Trade) {
+          // Get capital changes for all chunks of a given event
           event.outputs.forEach((chunkIndex) => {
             const chunk = vm.json.chunks[chunkIndex];
             const { asset, history, quantity, disposeDate } = chunk;
@@ -418,7 +423,7 @@ export const Portfolio = ({
                 const chunkEnd = dates[value.series[1].x];
                 const currentGuard = getGuard(value.chunk, chunkStart, chunkEnd);
                 return <PolygonSeries
-                  color={currentGuard === "ETH" ? assetToColor(value.chunk.asset) : `url(#${currentGuard}${value.chunk.asset})`} 
+                  color={(currentGuard === "ETH" || currentGuard === "None") ? assetToColor(value.chunk.asset) : `url(#${currentGuard}${value.chunk.asset})`} 
                   key={index}
                   data={value.series}
                   onSeriesMouseOver={(d) => handlePopoverOpen(d, value.chunk, value.series)}
