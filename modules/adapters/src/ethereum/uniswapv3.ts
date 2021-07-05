@@ -18,16 +18,11 @@ const source = TransactionSources.Uniswap;
 ////////////////////////////////////////
 /// Addresses
 
-export const routerAddresses = [
-  { name: "UniswapV3Router", address: "0xE592427A0AEce92De3Edee1F18E0157C05861564" },
-].map(setAddressCategory(AddressCategories.Defi));
-
 export const marketAddresses = [
   { name: "UniV3_MATIC_USDT", address: "0x972f43Bb94B76B9e2D036553d818879860b6A114" },
 ].map(setAddressCategory(AddressCategories.Defi));
 
 export const uniswapAddresses = [
-  ...routerAddresses,
   ...marketAddresses,
 ];
 
@@ -37,16 +32,18 @@ export const uniswapAddresses = [
 export const uniswapParser = (
   tx: Transaction,
   _ethTx: EthTransaction,
-  _addressBook: AddressBook,
+  addressBook: AddressBook,
   _logger: Logger,
 ): Transaction => {
   tx.transfers.forEach(transfer => {
-    if (uniswapAddresses.some(e => e.address === transfer.from)) {
+    const fromName = addressBook.getName(transfer.from);
+    const toName = addressBook.getName(transfer.to);
+    if (fromName.startsWith("Uni")) {
       transfer.category = TransferCategories.SwapIn;
       tx.method = source;
       tx.sources = rmDups([...tx.sources, source]);
     }
-    if (uniswapAddresses.some(e => e.address === transfer.to)) {
+    if (toName.startsWith("Uni")) {
       transfer.category = TransferCategories.SwapOut;
       tx.method = source;
       tx.sources = rmDups([...tx.sources, source]);
