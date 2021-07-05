@@ -213,6 +213,7 @@ export const Home = () => {
 
     setTransactions(newTransactions);
     setSyncing("");
+    syncPrices();
 
   };
 
