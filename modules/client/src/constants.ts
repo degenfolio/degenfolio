@@ -9,7 +9,9 @@ export const Examples = {
   Polygon: "Polygon",
   Idle: "Idle",
   Coinbase: "Coinbase",
+  Aave: "Aave",
   Custom: "Custom",
+  
 };
 
 export const getExampleAddressBook = (example: string): AddressBookJson =>
@@ -18,7 +20,12 @@ export const getExampleAddressBook = (example: string): AddressBookJson =>
     address: "0x5bCfC2dee33fBD19771d4063C15cFB6dD555bb4C",
     category: AddressCategories.Self,
     guard: Guards.ETH,
-  }] : example === Examples.Polygon ? [{
+  }] :example === Examples.Aave ? [{
+    name: "AaveUser",
+    address: "0xeE0c753f1ea84b0aDDe35FD45D1bA3691174010b",
+    category: AddressCategories.Self,
+    guard: Guards.ETH,
+  }]: example === Examples.Polygon ? [{
     name: "PolygonUser",
     address: "0x8266C20Cb25A5E1425cb126D78799B2A138B6c46",
     category: AddressCategories.Self,
