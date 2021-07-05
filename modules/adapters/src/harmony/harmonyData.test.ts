@@ -12,9 +12,8 @@ import {
   parseHarmonyTx
 } from "./testUtils";
 
-const logger = testLogger.child({
-  module: `TestHarmony`,
-  level: "debug" // Uncomment to enable verbose logging
+const logger = testLogger.child({ module: `TestHarmony`,
+  // level: "debug" // Uncomment to enable verbose logging
 });
 
 describe("Harmony Data", () => {

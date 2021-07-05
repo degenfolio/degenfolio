@@ -80,7 +80,7 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
       return;
     }
 
-    console.log(address);
+    log.info(address);
     const databc = {
       jsonrpc: "2.0",
       id: 1,
@@ -97,7 +97,7 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
       ]
     };
     const response = await axios.post("https://api.s0.t.hmny.io", databc);
-    console.log(response.data);
+    log.info(response.data);
     // TODO: save result to json
 
     const data = response.data;
@@ -110,7 +110,7 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
       history
     };
     save();
-    console.log("sync here");
+    log.info("sync here");
     for (const txHash of history) syncTransaction(txHash);
 
     return;
@@ -129,7 +129,7 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
     } catch (e) {
       log.warn(`Axios error: ${e.message}`);
     }
-    console.log(response.data);
+    log.info(response.data);
     if (response.data) logger.info("GOTIT");
     else logger.info("FAILED");
     return response.data.result;
@@ -143,7 +143,7 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
       params: [txHash]
     };
     const response = await axios.post("https://api.harmony.one", databc);
-    console.log(response.data.result.logs[1]);
+    log.info(response.data.result.logs[1]);
     if (response.data) logger.info("GOTIT");
     else logger.info("FAILED");
     return response.data.result;
@@ -209,13 +209,13 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
     log.debug(selfTransactionHashes);
     for (const entry of json.transactions) {
       const address = entry.hash;
-      console.log("JSONS", address);
+      log.info("JSONS", address);
     }
 
     const selfTransactionHashestoParse = selfTransactionHashes
       .map(hash => json.transactions.find(tx => tx.hash === hash))
       .filter(e => !!e);
-    console.log("sef", selfTransactionHashestoParse);
+    log.info("sef", selfTransactionHashestoParse);
     return selfTransactionHashestoParse
       .map(tx => parseHarmonyTx(tx, addressBook, logger))
       .sort(chrono);
