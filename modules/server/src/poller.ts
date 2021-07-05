@@ -19,6 +19,9 @@ export const getPollerHandler = (
   ): Promise<void> => {
     const logAndSend = getLogAndSend(res);
     const label = `${dataType} history`;
+    if (!addresses?.length) {
+      return logAndSend([]);
+    }
     if (addresses.every(address => syncing.includes(address))) {
       return logAndSend(`${label} for ${addresses.length} addresses is already syncing.`);
     }

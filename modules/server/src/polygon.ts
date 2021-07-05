@@ -1,5 +1,6 @@
 import { appAddresses, getPolygonData, Guards } from "@degenfolio/adapters";
-import { isAddress as isEthAddress } from "@ethersproject/address";
+import { getAddress, isAddress as isEthAddress } from "@ethersproject/address";
+import { fromBech32 } from "@harmony-js/crypto";
 import { getLogger, getAddressBookError } from "@valuemachine/utils";
 import express from "express";
 import { getAddressBook } from "valuemachine";
@@ -17,11 +18,22 @@ const handlePoller = getPollerHandler(
   Guards.MATIC,
 );
 
+const getEthAddress = (address: string) => {
+  if (address.startsWith("one")) {
+    return fromBech32(address);
+  } else {
+    return getAddress(address);
+  }
+};
+
 export const polygonRouter = express.Router();
 
 polygonRouter.post("/", async (req, res) => {
   const logAndSend = getLogAndSend(res);
-  const addressBookJson = req.body.addressBook;
+  const addressBookJson = req.body.addressBook.map(e => ({
+    ...e,
+    address: getEthAddress(e.address),
+  }));
   const addressBookError = getAddressBookError(addressBookJson);
   if (addressBookError) {
     return logAndSend("Invalid AddressBook" + addressBookError, STATUS_YOUR_BAD);

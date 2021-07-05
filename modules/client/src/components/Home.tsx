@@ -119,7 +119,6 @@ export const Home = () => {
         }
       }
     }
-
     if (trades.length) {
       setSyncing(`Downloading tax forms for ${trades.length} trades`);
       axios({
@@ -140,13 +139,11 @@ export const Home = () => {
         await new Promise(res => setTimeout(res, 2000));
         setSyncing(``);
       });
-
     } else {
       setSyncing(`No Taxable trades detected`);
       await new Promise(res => setTimeout(res, 2000));
       setSyncing(``);
     }
-
   };
 
   const syncAddressBook = async () => {
