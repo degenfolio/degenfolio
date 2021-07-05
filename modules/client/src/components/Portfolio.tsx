@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import {
-  Crosshair,
   DiscreteColorLegend,
   GradientDefs,
   HorizontalGridLines,
@@ -12,7 +11,7 @@ import {
   YAxis,
 } from "react-vis";
 import { format } from "d3-format";
-import { Asset, AssetChunk, ChunkIndex, Event, EventTypes, Guard, Prices, ValueMachine } from "@valuemachine/types";
+import { Asset, AssetChunk, Event, EventTypes, Guard, Prices, ValueMachine } from "@valuemachine/types";
 import { Guards } from "@degenfolio/adapters";
 import { mul, sigfigs } from "@valuemachine/utils";
 import { describeEvent } from "@valuemachine/core";
@@ -57,11 +56,11 @@ type PolygonSeriesData = Array<{
 type MarkSeriesData = Array<{x: number, y: number, size: number, color: string}>;
 
 const getGuard = (chunk: AssetChunk, chunkStart: string, chunkEnd: string) => {
-    return chunk.history.reduce((output, history) => {
+  return chunk.history.reduce((output, history) => {
     if(history.date > chunkStart && history.date < chunkEnd) return history.guard;
     return output;
   }, chunk.history[0].guard);
-}
+};
 
 const getChunksByDate = (chunks: AssetChunk[], dates: string[]) => {
   // console.log(`Getting chunks from dates ${dates}`);
@@ -78,12 +77,12 @@ const getChunksByDate = (chunks: AssetChunk[], dates: string[]) => {
     dates.slice(i > 0 ? i : 0, j > 0 ? j : dates.length).forEach((date, dateIndex) => {
       output[date].push(index);
       output[date].sort((a,b) => {
-        const currentGuardA = getGuard(chunks[a], date, dates[dateIndex + 1])
-        const currentGuardB = getGuard(chunks[b], date, dates[dateIndex + 1])
+        const currentGuardA = getGuard(chunks[a], date, dates[dateIndex + 1]);
+        const currentGuardB = getGuard(chunks[b], date, dates[dateIndex + 1]);
         if (currentGuardA === currentGuardB)
-          return chunks[a].asset < chunks[b].asset ? 1 : -1
+          return chunks[a].asset < chunks[b].asset ? 1 : -1;
         else 
-          return currentGuardA < currentGuardB ? -1 : 1
+          return currentGuardA < currentGuardB ? -1 : 1;
       });
     });
 
@@ -189,8 +188,8 @@ export const Portfolio = ({
       });
 
       maxY = maxY < yReceivePrevPos || maxY < yDisposePrevPos
-      ? yReceivePrevPos > yDisposePrevPos ? yReceivePrevPos : yDisposePrevPos
-      : maxY;
+        ? yReceivePrevPos > yDisposePrevPos ? yReceivePrevPos : yDisposePrevPos
+        : maxY;
     });
 
     const newMarkSeriesData = [] as MarkSeriesData;
@@ -200,12 +199,15 @@ export const Portfolio = ({
 
     console.log(eventsSubset);
     datesSubset.slice(0,-1).forEach((date, index) => {
-      const capChange = eventsSubset.filter(event => event.date === date).reduce((capChange, event) => {
-        if (event.type === EventTypes.Expense || event.type === EventTypes.Trade) {
+      const capChange = eventsSubset
+        .filter(event => event.date === date)
+        .reduce((capChange, event) => {
+          if (event.type === EventTypes.Expense || event.type === EventTypes.Trade) {
             capChange += event.outputs.reduce((capChangeChunk, chunkIndex) => {
               const chunk = vm.json.chunks[chunkIndex];
-              const receiveValue = getChunkValue(chunk.history[0].date, chunk.asset, chunk.quantity);
-              const disposeValue = getChunkValue(chunk.disposeDate || "0", chunk.asset, chunk.quantity);
+              const { asset, quantity } = chunk;
+              const receiveValue = getChunkValue(chunk.history[0].date, asset, quantity);
+              const disposeValue = getChunkValue(chunk.disposeDate || "0", asset, quantity);
               return capChangeChunk += receiveValue - disposeValue;
             }, 0);
           }
@@ -424,9 +426,10 @@ export const Portfolio = ({
                       return disposedChunks;
                     }, [] as number[]).map(chunkIndex => {
                       const chunk = vm.json.chunks[chunkIndex];
-                      const receiveValue = getChunkValue(chunk.history[0].date, chunk.asset, chunk.quantity);
-                      const disposeValue = getChunkValue(chunk.disposeDate || "0", chunk.asset, chunk.quantity)
-                      const capChange = receiveValue - disposeValue;
+                      const { asset, quantity } = chunk;
+                      const receiveValue = getChunkValue(chunk.history[0].date, asset, quantity);
+                      const disposeValue = getChunkValue(chunk.disposeDate || "0", asset, quantity);
+                      const capChange = disposeValue - receiveValue;
                       return (
                         <>
                           <Typography variant="overline">
@@ -435,10 +438,10 @@ export const Portfolio = ({
                           {capChange === 0
                             ? null
                             : <Typography variant="caption" key={`dispose-${chunkIndex}`}>
-                                {capChange > 0
-                                  ? `Cap Gain: ${sigfigs(capChange.toString())} ${unit}`
-                                  : `Cap Loss: ${sigfigs((capChange * -1).toString())} ${unit}`}
-                              </Typography>
+                              {capChange > 0
+                                ? `Cap Gain: ${sigfigs(capChange.toString())} ${unit}`
+                                : `Cap Loss: ${sigfigs((capChange * -1).toString())} ${unit}`}
+                            </Typography>
                           }
                           <Divider/>
                         </>
