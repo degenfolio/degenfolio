@@ -1,6 +1,5 @@
-import { appAddresses, getPolygonData, Guards } from "@degenfolio/adapters";
-import { getAddress, isAddress as isEthAddress } from "@ethersproject/address";
-import { fromBech32 } from "@harmony-js/crypto";
+import { appAddresses, getHarmonyData, Guards } from "@degenfolio/adapters";
+import { isAddress as isEthAddress } from "@ethersproject/address";
 import { getLogger, getAddressBookError } from "@valuemachine/utils";
 import express from "express";
 import { getAddressBook } from "valuemachine";
@@ -11,29 +10,18 @@ import { getLogAndSend, store, STATUS_YOUR_BAD } from "./utils";
 
 const log = getLogger(env.logLevel).child({ module: `${Guards.MATIC}Transactions` });
 
-const polygonData = getPolygonData({ covalentKey: env.covalentKey, logger: log, store });
+const harmonyData = getHarmonyData({ logger: log, store });
 const handlePoller = getPollerHandler(
-  polygonData.syncAddressBook,
-  polygonData.getTransactions,
+  harmonyData.syncAddressBook,
+  harmonyData.getTransactions,
   Guards.MATIC,
 );
 
-const getEthAddress = (address: string) => {
-  if (address.startsWith("one")) {
-    return fromBech32(address);
-  } else {
-    return getAddress(address);
-  }
-};
+export const harmonyRouter = express.Router();
 
-export const polygonRouter = express.Router();
-
-polygonRouter.post("/", async (req, res) => {
+harmonyRouter.post("/", async (req, res) => {
   const logAndSend = getLogAndSend(res);
-  const addressBookJson = req.body.addressBook.map(e => ({
-    ...e,
-    address: getEthAddress(e.address),
-  }));
+  const addressBookJson = req.body.addressBook;
   const addressBookError = getAddressBookError(addressBookJson);
   if (addressBookError) {
     return logAndSend("Invalid AddressBook" + addressBookError, STATUS_YOUR_BAD);

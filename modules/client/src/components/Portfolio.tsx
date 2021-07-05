@@ -72,11 +72,12 @@ type CurrentEventInfo = {
 type EventsInfo = CurrentEventInfo[]
 
 const getGuard = (chunk: AssetChunk, chunkStart: string, chunkEnd: string) => {
-    return chunk.history.reduce((output, history) => {
-    if(history.date > chunkStart && history.date < chunkEnd) return history.guard;
+  const res = chunk.history.reduce((output, history) => {
+    if (history.date > chunkStart && history.date < chunkEnd) return history.guard;
     return output;
   }, chunk.history[0].guard);
-}
+  return res === "TDA" ? "USD" : res;
+};
 
 const getChunksByDate = (chunks: AssetChunk[], dates: string[]) => {
   // console.log(`Getting chunks from dates ${dates}`);
@@ -474,7 +475,7 @@ export const Portfolio = ({
                 ? <>
                     <Typography> {currentEventsInfo.date} </Typography>
                     <Typography>
-                      {getTotalCapitalChange(currentEventsInfo.capChangesPerChunk) > 0
+                      {Number(getTotalCapitalChange(currentEventsInfo.capChangesPerChunk)) > 0
                         ? `Total capital gains: ${getTotalCapitalChange(currentEventsInfo.capChangesPerChunk)}`
                         : `Total capital loss: ${getTotalCapitalChange(currentEventsInfo.capChangesPerChunk)}`
                       }

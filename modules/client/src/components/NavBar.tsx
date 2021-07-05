@@ -31,13 +31,13 @@ const useStyles = makeStyles( theme => ({
 
 export const NavBar = ({
   setUnit,
-  syncAddressBook,
+  syncEverything,
   downloadF8949,
   syncing,
   unit,
 }: {
   setUnit: (val: Asset) => void,
-  syncAddressBook: () => Promise<void>,
+  syncEverything: () => Promise<void>,
   downloadF8949: () => Promise<void>,
   syncing: string,
   unit: Asset,
@@ -77,7 +77,7 @@ export const NavBar = ({
           color="inherit"
           aria-label="sync"
           disabled={!!syncing}
-          onClick={syncAddressBook}
+          onClick={syncEverything}
         >
           <SyncIcon />
         </IconButton>

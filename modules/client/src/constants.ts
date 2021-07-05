@@ -6,13 +6,13 @@ import {
 import { getEmptyAddressBook } from "@valuemachine/utils";
 
 export const Examples = {
-  Polygon: "Polygon",
-  Idle: "Idle",
-  TDA: "TDA",
-  Coinbase: "Coinbase",
   Aave: "Aave",
+  Coinbase: "Coinbase",
   Custom: "Custom",
-  
+  Harmony: "Harmony",
+  Idle: "Idle",
+  Polygon: "Polygon",
+  TDA: "TDA",
 };
 
 export const getExampleAddressBook = (example: string): AddressBookJson =>
@@ -31,6 +31,11 @@ export const getExampleAddressBook = (example: string): AddressBookJson =>
     address: "0x8266C20Cb25A5E1425cb126D78799B2A138B6c46",
     category: AddressCategories.Self,
     guard: Guards.ETH,
+  }] :example === Examples.Harmony ? [{
+    name: "HarmonyUser",
+    address: "one1r2006xslvv70ph28zsa3mcff8vnrypgr8utxml",
+    category: AddressCategories.Self,
+    guard: Guards.ONE,
   }] : getEmptyAddressBook();
 
 export type CsvFile = {
