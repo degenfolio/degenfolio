@@ -92,25 +92,60 @@ export const Home = () => {
   };
 
   const downloadF8949 = async () => {
-    logger.warn(`Downloading f8949 form`);
-    if (!vm) return;
-    setSyncing(`Downloading tax forms`);
-    axios({
-      url: "/api/taxes",
-      method: "post",
-      responseType: "blob",
-      data: { rows: [{
-        description: "Defi"
-      }] },
-    }).then((response) => {
-      setSyncing(``);
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", "f8949.pdf");
-      document.body.appendChild(link);
-      link.click();
+    if (!vm?.json?.chunks?.length || !prices.json) return;
+    const usdPrices = getPrices({
+      json: prices.json,
+      logger,
+      store,
+      unit: Assets.USD,
     });
+    const taxYear = new Date().getFullYear().toString();
+    const getDate = (timestamp: string): string => timestamp.split("T")[0];
+    const trades = [];
+    for (const chunk of vm.json.chunks) {
+      if (chunk.disposeDate?.startsWith(taxYear)) {
+        const purchaseDate = getDate(chunk.history[0].date);
+        const receivePrice = usdPrices.getNearest(purchaseDate, chunk.asset);
+        const assetPrice = usdPrices.getNearest(chunk.disposeDate, chunk.asset);
+        if (receivePrice !== assetPrice) {
+          trades.push({
+            date: getDate(chunk.disposeDate),
+            asset: chunk.asset,
+            receivePrice,
+            assetPrice,
+            purchaseDate: purchaseDate,
+            quantity: chunk.quantity,
+          });
+        }
+      }
+    }
+
+    if (trades.length) {
+      setSyncing(`Downloading tax forms for ${trades.length} trades`);
+      axios({
+        url: "/api/taxes",
+        method: "post",
+        responseType: "blob",
+        data: { trades },
+      }).then((response) => {
+        setSyncing(``);
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", "f8949.pdf");
+        document.body.appendChild(link);
+        link.click();
+      }).catch(async () => {
+        setSyncing(`Error occured`);
+        await new Promise(res => setTimeout(res, 2000));
+        setSyncing(``);
+      });
+
+    } else {
+      setSyncing(`No Taxable trades detected`);
+      await new Promise(res => setTimeout(res, 2000));
+      setSyncing(``);
+    }
 
   };
 
