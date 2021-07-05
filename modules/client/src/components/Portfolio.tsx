@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import {
-  Crosshair,
   DiscreteColorLegend,
   GradientDefs,
   HorizontalGridLines,
@@ -14,11 +13,12 @@ import {
 import { format } from "d3-format";
 import { Asset, AssetChunk, Event, EventTypes, Guard, Prices, ValueMachine } from "@valuemachine/types";
 import { Guards } from "@degenfolio/adapters";
-import { mul } from "@valuemachine/utils";
+import { mul, sigfigs } from "@valuemachine/utils";
 import { describeEvent } from "@valuemachine/core";
 import { Typography } from "@material-ui/core";
 import Paper from "@material-ui/core/Paper";
 import Grid from "@material-ui/core/Grid";
+import Divider from "@material-ui/core/Divider";
 import TablePagination from "@material-ui/core/TablePagination";
 import makeStyles from "@material-ui/core/styles/makeStyles";
 // import { tickFormat } from "d3-scale";
@@ -48,13 +48,22 @@ const useStyles = makeStyles( theme => ({
 
 type LegendData = { title: string,  color: string, strokeWidth: number }
 
-type SeriesData = Array<{
+type PolygonSeriesData = Array<{
   series: Array<{x: number, y: number}>;
   chunk: AssetChunk;
 }>;
 
+type MarkSeriesData = Array<{x: number, y: number, size: number, color: string}>;
+
+const getGuard = (chunk: AssetChunk, chunkStart: string, chunkEnd: string) => {
+  return chunk.history.reduce((output, history) => {
+    if(history.date > chunkStart && history.date < chunkEnd) return history.guard;
+    return output;
+  }, chunk.history[0].guard);
+};
+
 const getChunksByDate = (chunks: AssetChunk[], dates: string[]) => {
-  console.log(`Getting chunks from dates ${dates}`);
+  // console.log(`Getting chunks from dates ${dates}`);
   const empty = dates.reduce((output, date) => {
     output[date] = [];
     return output;
@@ -64,10 +73,19 @@ const getChunksByDate = (chunks: AssetChunk[], dates: string[]) => {
     if (chunk.disposeDate && chunk.disposeDate < dates[0]) return output;
     const i = dates.findIndex(d => d === chunk.history[0]?.date);
     const j = chunk.disposeDate ? dates.findIndex(d => d === chunk.disposeDate) : dates.length;
-    dates.slice(i > 0 ? i : 0, j > 0 ? j : dates.length).forEach((date) => {
+
+    dates.slice(i > 0 ? i : 0, j > 0 ? j : dates.length).forEach((date, dateIndex) => {
       output[date].push(index);
-      output[date].sort((a,b) => chunks[a].asset < chunks[b].asset ? 1 : -1);
+      output[date].sort((a,b) => {
+        const currentGuardA = getGuard(chunks[a], date, dates[dateIndex + 1]);
+        const currentGuardB = getGuard(chunks[b], date, dates[dateIndex + 1]);
+        if (currentGuardA === currentGuardB)
+          return chunks[a].asset < chunks[b].asset ? 1 : -1;
+        else 
+          return currentGuardA < currentGuardB ? -1 : 1;
+      });
     });
+
     return output;
   }, empty as { [date: string]: number[] });
 };
@@ -83,18 +101,18 @@ export const Portfolio = ({
 }) => {
   const classes = useStyles();
 
-  const [data, setData] = useState([] as SeriesData);
+  const [data, setData] = useState([] as PolygonSeriesData);
+  const [markSeriesData, setMarkSeriesData] = useState([] as MarkSeriesData);
   const [chunksByDates, setChunksByDates] = useState({} as { [date: string]: number[] });
-  const [crosshairdata, setCrosshairdata] = useState([] as Array<{x: number, y: number}>);
   const [currentChunk, setCurrentChunk] = useState({} as AssetChunk);
   const [currentEvents, setCurrentEvents] = useState([] as Event[]);
   const [dates, setDates] = useState([] as string[]);
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
 
-  console.log(`Rendering graph for vm with ${vm.json?.chunks?.length} chunks and events on ${
-    Array.from(new Set(...vm.json?.events?.map(evt => evt.date) || [])).length
-  } dates`);
+  // console.log(`Rendering graph for vm with ${vm.json?.chunks?.length} chunks and events on ${
+  //   Array.from(new Set(...vm.json?.events?.map(evt => evt.date) || [])).length
+  // } dates`);
 
   const handleChangePage = (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
     setPage(newPage);
@@ -107,67 +125,39 @@ export const Portfolio = ({
     setPage(0);
   };
 
-  const onNearestX = (value: { x: number, y: number }) => {
-    // console.log("Nearest X value", value);
+  const onNearestX = (value: any) => {
     // Get event date from graph index
     const eventDate = Object.keys(chunksByDates)[value.x];
     // Get event(s) on the date
     const eventsOnNerestX = vm.json.events.filter(event => event.date === eventDate) as Event[];
-    // const disposedEvents = currentEvents.reduce((disposedChunks, event: Event) => {
-    //   if (event.type === EventTypes.Expense)
-    //     return disposedChunks.concat(event.outputs)
-    //   return disposedChunks;
-    // }, [] as number[]);
-    // Set events if x changed
-    if (JSON.stringify(currentEvents) !== JSON.stringify(eventsOnNerestX)) {
-      setCurrentEvents(eventsOnNerestX);
-      const disposedChunks = currentEvents.reduce((disposedChunks, event: Event) => {
-        if (event.type === EventTypes.Expense)
-          return disposedChunks.concat(event.outputs);
-        return disposedChunks;
-      }, [] as number[]).map(chunkIndex => vm.json.chunks[chunkIndex]);
-    }
-    // const newcrosshairdata = data.reduce((output, seriesvalue) => {
-    //   const target = seriesvalue.series.filter(p => p.x === value.x);
-    //   if (target.length) {
-    //     return output.concat(target);
-    //   } else {
-    //     return output;
-    //   }
-    // }, [] as any[]);
-    // // console.log(dates[page*rowsPerPage + index]);
-    // // console.log(chunksByDates[dates[page*rowsPerPage + index]]);
-    // // console.log("Index = ", index);
-    // // console.log(data);
-    // // console.log(newcrosshairdata)
-    // setCrosshairdata(Array.from(new Set(newcrosshairdata)));
+    setCurrentEvents(eventsOnNerestX);
   };
 
   const getChunkValue = (date: string, asset: string, quantity: string) => {
     if (!date) return 0;
-    return parseFloat(mul(quantity, prices.getNearest(date, asset) || "0"));
+    return parseFloat(sigfigs(mul(quantity, prices.getNearest(date, asset) || "0")));
   };
 
-  const formatChunksToGraphData = (datesSubset: string[]) => {
+  const setGraphData = (datesSubset: string[]) => {
     if (!vm?.json?.chunks?.length) return;
-    console.log(`Formatting chunks as graph data`);
     const chunks = vm.json.chunks;
 
-    // Add current time as most recent
-    datesSubset.push(new Date().toISOString());
-    console.log(`got: `, datesSubset);
+    // console.log(`got: `, datesSubset);
 
-    const newData = [] as SeriesData;
+    const newData = [] as PolygonSeriesData;
     const chunkByDate = getChunksByDate(chunks, datesSubset);
-    console.log(`Got chunks by date`, chunkByDate);
+    // console.log(`Got chunks by date`, chunkByDate);
     setChunksByDates(chunkByDate);
 
+    let maxY = 0;
     // Exclude the last timestamp
     datesSubset.slice(0,-1).forEach((date, index) => {
+
       let yReceivePrevPos = 0;
       let yReceivePrevNeg = 0;
       let yDisposePrevPos = 0;
       let yDisposePrevNeg = 0;
+
       chunkByDate[date].forEach(async (chunkIndex) => {
         const chunk = chunks[chunkIndex];
         const receiveValue = getChunkValue(date, chunk.asset, chunk.quantity);
@@ -196,8 +186,45 @@ export const Portfolio = ({
         disposeValue > 0 ? yDisposePrevPos += disposeValue : yDisposePrevNeg += disposeValue;
         receiveValue > 0 ? yReceivePrevPos += receiveValue : yReceivePrevNeg += receiveValue;
       });
+
+      maxY = maxY < yReceivePrevPos || maxY < yDisposePrevPos
+        ? yReceivePrevPos > yDisposePrevPos ? yReceivePrevPos : yDisposePrevPos
+        : maxY;
     });
-    console.log(`Set new data`, newData);
+
+    const newMarkSeriesData = [] as MarkSeriesData;
+    const eventsSubset = vm.json.events.filter(
+      event => event.date >= datesSubset[0] && event.date <= datesSubset[datesSubset.length - 1]
+    );
+
+    console.log(eventsSubset);
+    datesSubset.slice(0,-1).forEach((date, index) => {
+      const capChange = eventsSubset
+        .filter(event => event.date === date)
+        .reduce((capChange, event) => {
+          if (event.type === EventTypes.Expense || event.type === EventTypes.Trade) {
+            capChange += event.outputs.reduce((capChangeChunk, chunkIndex) => {
+              const chunk = vm.json.chunks[chunkIndex];
+              const { asset, quantity } = chunk;
+              const receiveValue = getChunkValue(chunk.history[0].date, asset, quantity);
+              const disposeValue = getChunkValue(chunk.disposeDate || "0", asset, quantity);
+              return capChangeChunk += receiveValue - disposeValue;
+            }, 0);
+          }
+          return capChange;
+        }, 0);
+
+      newMarkSeriesData.push({
+        x: index,
+        y: maxY * 1.1,
+        size: capChange,
+        color: capChange > 0 ? "green" : capChange < 0 ? "red" : "grey"
+      });
+    });
+
+    console.log(newMarkSeriesData);
+    // console.log(`Set new data`, newData);
+    setMarkSeriesData(newMarkSeriesData);
     setData(newData);
   };
 
@@ -212,21 +239,21 @@ export const Portfolio = ({
   useEffect(() => {
     if (!vm.json.chunks.length) return;
     const newDates = Array.from(new Set(vm.json.events.map(e => e.date)));
+    // Add current time as most recent
+    newDates.push(new Date().toISOString());
     if (newDates.length && rowsPerPage > 0) {
       setPage(Math.floor(newDates.length/rowsPerPage));
     }
     setDates(newDates);
-  }, [vm.json, prices, rowsPerPage]);
+  }, [vm.json, rowsPerPage]);
 
   useEffect(() => {
     if (!dates.length) return;
     console.log("Generating graph data");
-    console.log(dates.length);
-    console.log(
-      page * rowsPerPage, page * rowsPerPage + rowsPerPage,
-    );
-    formatChunksToGraphData(dates.slice(
-      page * rowsPerPage, page * rowsPerPage + rowsPerPage,
+    const totalPages = Math.ceil(dates.length/rowsPerPage);
+    setGraphData(dates.slice(
+      (page - totalPages) * rowsPerPage,
+      (page - totalPages) * rowsPerPage + rowsPerPage || undefined,
     ));
     // eslint-disable-next-line
   }, [dates, rowsPerPage, page]);
@@ -266,24 +293,13 @@ export const Portfolio = ({
         <Grid container>
           <Grid item >
             <XYPlot margin={{ left: 100 }}
-              height={300} width={600}
+              height={400} width={650}
             >
-              <Crosshair values={crosshairdata} style={{ position: "relative" }}>
-                <div style={{ background: "red", top: "100px" }}>
-                  <p>Series Length: {crosshairdata.length} </p>
-                  <p>Series : {crosshairdata[0]?.x} </p>
-                </div>
-              </Crosshair>
-
               <MarkSeries
                 sizeRange={[5, 15]}
-                data={[
-                  { x: 1, y: 0, size: 30 },
-                  { x: 3, y: 0, size: 10 },
-                  { x: 4, y: 0, size: 1 },
-                  { x: 5, y: 0, size: 12 },
-                  { x: 2, y: 0, size: 4 }
-                ]}
+                onNearestX={onNearestX}
+                colorType="literal"
+                data={markSeriesData}
               />
               <div className={classes.legend}>
                 <DiscreteColorLegend
@@ -340,15 +356,11 @@ export const Portfolio = ({
               {data.map((value, index) => {
                 const chunkStart = dates[value.series[0].x];
                 const chunkEnd = dates[value.series[1].x];
-                const currentGuard = value.chunk.history.reduce((output, history) => {
-                  if(history.date > chunkStart && history.date < chunkEnd) return history.guard;
-                  return output;
-                }, value.chunk.history[0].guard);
+                const currentGuard = getGuard(value.chunk, chunkStart, chunkEnd);
                 return <PolygonSeries
                   color={currentGuard === "ETH" ? assetToColor(value.chunk.asset) : `url(#${currentGuard}${value.chunk.asset})`} 
                   key={index}
                   data={value.series}
-                  onNearestX={onNearestX}
                   onSeriesMouseOver={(d) => handlePopoverOpen(d, value.chunk, value.series)}
                   style={{ strokeWidth: 0.5, strokeOpacity: 1 }}
                 />;
@@ -378,12 +390,12 @@ export const Portfolio = ({
               </Typography>
               <Typography> Received on: {currentChunk.history?.[0]?.date} </Typography>
               <Typography>
-                Received value: {unit}
+                Received value:
                 {getChunkValue(
                   currentChunk.history?.[0]?.date,
                   currentChunk.asset,
                   currentChunk.quantity,
-                )}
+                )} {unit}
               </Typography>
               <Typography>
                 {currentChunk.disposeDate
@@ -413,10 +425,26 @@ export const Portfolio = ({
                         return disposedChunks.concat(event.outputs);
                       return disposedChunks;
                     }, [] as number[]).map(chunkIndex => {
+                      const chunk = vm.json.chunks[chunkIndex];
+                      const { asset, quantity } = chunk;
+                      const receiveValue = getChunkValue(chunk.history[0].date, asset, quantity);
+                      const disposeValue = getChunkValue(chunk.disposeDate || "0", asset, quantity);
+                      const capChange = disposeValue - receiveValue;
                       return (
-                        <Typography key={`dispose-${chunkIndex}`}>
-                          {vm.json.chunks[chunkIndex].asset}: {vm.json.chunks[chunkIndex].quantity}
-                        </Typography>
+                        <>
+                          <Typography variant="overline">
+                            {sigfigs(chunk.quantity)} {chunk.asset}
+                          </Typography>
+                          {capChange === 0
+                            ? null
+                            : <Typography variant="caption" key={`dispose-${chunkIndex}`}>
+                              {capChange > 0
+                                ? `Cap Gain: ${sigfigs(capChange.toString())} ${unit}`
+                                : `Cap Loss: ${sigfigs((capChange * -1).toString())} ${unit}`}
+                            </Typography>
+                          }
+                          <Divider/>
+                        </>
                       );
                     })
                   }

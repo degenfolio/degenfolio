@@ -7,7 +7,7 @@ import {
 
 export const CsvSources = {
   ...DefaultCsvSources,
-  TDAmeritrade: "TDAmeritrade",
+  TDA: "TDA",
 };
 
 export const Guards = {
@@ -20,6 +20,7 @@ export const TransactionSources = {
   ...DefaultSources,
   ...Guards,
   Aave: "Aave",
+  TDA: "TDA",
   Idle: "Idle",
   Polygon: "Polygon",
   Harmony: "Harmony",

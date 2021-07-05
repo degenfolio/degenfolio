@@ -10,7 +10,9 @@ import {
   STATUS_YOUR_BAD,
 } from "./utils";
 
-const unsupported = ["idleDAI"];
+const stocks = ["ITUB", "DOCU", "AMGN", "AAPL"];
+
+const unsupported = [];
 
 const log = getLogger(env.logLevel).child({
   // level: "debug",
@@ -57,8 +59,12 @@ const syncPrice = async (rawDate: string, unit: string, asset: string): Promise<
     price = await fetchPrice(date, unit, asset.slice(1));
   } else if (asset.startsWith("stk")) {
     price = await fetchPrice(date, unit, asset.slice(3));
+  } else if (asset.startsWith("idle")) {
+    price = await fetchPrice(date, unit, asset.slice(4));
   } else if (asset === "PETH") {
     price = await fetchPrice(date, unit, "ETH");
+  } else if (stocks.includes(asset)) {
+    price = (Math.round(Math.random() * 1000)/10).toString();
   } else if (unsupported.includes(asset)) {
     throw new Error(`Price data for ${asset} is not supported`);
   } else
