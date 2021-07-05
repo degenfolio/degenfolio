@@ -211,10 +211,9 @@ export const Home = () => {
       }
     }
 
-    setTransactions(newTransactions);
     setSyncing("");
+    setTransactions(newTransactions);
     syncPrices();
-
   };
 
   const syncPrices = async () => {
@@ -256,6 +255,7 @@ export const Home = () => {
       console.warn(e);
     }
     setSyncing("");
+    processTransactions();
   };
 
   const processTransactions = async () => {
