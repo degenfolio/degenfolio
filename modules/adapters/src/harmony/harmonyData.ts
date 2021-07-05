@@ -7,7 +7,6 @@ import {
   ChainData,
   ChainDataParams,
   EthParser,
-  StoreKeys,
   Transaction,
   TransactionsJson
 } from "@valuemachine/types";
@@ -24,6 +23,29 @@ import { parseHarmonyTx } from "./parser";
 const HarmonyStoreKey = "HarmonyData";
 
 export const getHarmonyData = (params?: ChainDataParams): ChainData => {
+  const { json: chainDataJson, logger, store } = params || {};
+  const log = (logger || getLogger()).child?.({ module: "ChainData" });
+  const json =
+    chainDataJson || store?.load(HarmonyStoreKey as any) || getEmptyChainData();
+  const save = () => store
+    ? store.save(HarmonyStoreKey as any, json)
+    : log.warn(`No store provided, can't save chain data`);
+
+  if (!json.addresses) json.addresses = {};
+  if (!json.calls) json.calls = [];
+  if (!json.transactions) json.transactions = [];
+
+  log.info(
+    `Loaded harmony data containing ${
+      json.transactions.length
+    } transactions from ${
+      chainDataJson ? "input" : store ? "store" : "default"
+    }`
+  );
+
+  ////////////////////////////////////////
+  // Internal Heleprs
+
   const formatHarmonyTx = (rawTx, TxReceipt) => ({
     block: rawTx.blockNumber,
     data: "0x", // not available?
@@ -45,30 +67,6 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
     to: rawTx.to,
     value: formatEther(rawTx.value)
   });
-
-  const { json: chainDataJson, logger, store } = params || {};
-
-  const log = (logger || getLogger()).child?.({ module: "ChainData" });
-  const json =
-    chainDataJson || store?.load(StoreKeys.ChainData) || getEmptyChainData();
-  const save = () => store
-    ? store.save(HarmonyStoreKey as any, json)
-    : log.warn(`No store provided, can't save chain data`);
-
-  if (!json.addresses) json.addresses = {};
-  if (!json.calls) json.calls = [];
-  if (!json.transactions) json.transactions = [];
-
-  log.info(
-    `Loaded harmony data containing ${
-      json.transactions.length
-    } transactions from ${
-      chainDataJson ? "input" : store ? "store" : "default"
-    }`
-  );
-
-  ////////////////////////////////////////
-  // Internal Heleprs
 
   // TODO: rm key param?
   const syncAddress = async (address: Address): Promise<void> => {
@@ -98,7 +96,7 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
     console.log(response.data);
     // TODO: save result to json
 
-    let data = response.data;
+    const data = response.data;
     log.info(data);
     const items = data.result.transactions;
     const history = items.sort();
@@ -113,6 +111,7 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
 
     return;
   };
+
   async function fetchTx(txHash: String): Promise<Transaction> {
     const databc = {
       jsonrpc: "2.0",
@@ -129,10 +128,9 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
     console.log(response.data);
     if (response.data) logger.info("GOTIT");
     else logger.info("FAILED");
-    // TODO: save result to json
-    save();
     return response.data.result;
   }
+
   const fetchReceipt = async (txHash: String): Promise<Transaction> => {
     const databc = {
       jsonrpc: "2.0",
@@ -144,10 +142,9 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
     console.log(response.data.result.logs[1]);
     if (response.data) logger.info("GOTIT");
     else logger.info("FAILED");
-    // TODO: save result to json
-    // save();
     return response.data.result;
   };
+
   ////////////////////////////////////////
   // Exported Methods
 
@@ -159,10 +156,10 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
     const existing = json.transactions.find(
       existing => existing.hash === txHash
     );
-    if (!getEthTransactionError(existing)) {
+    if (existing && !getEthTransactionError(existing)) {
       return;
     }
-    log.info(`Fetching harmony data for tx ${txHash}`);
+    log.info(`Fetching harmony data for tx ${txHash} (existing: ${existing})`);
     const harmony = await fetchTx(txHash);
     const TxReceipt = await fetchReceipt(txHash);
     const harmonyTx = formatHarmonyTx(harmony, TxReceipt);
