@@ -14,7 +14,7 @@ import {
 import { format } from "d3-format";
 import { Asset, AssetChunk, ChunkIndex, Event, EventTypes, Guard, Prices, ValueMachine } from "@valuemachine/types";
 import { Guards } from "@degenfolio/adapters";
-import { mul, sigfigs } from "@valuemachine/utils";
+import { mul, round, sigfigs } from "@valuemachine/utils";
 import { describeEvent } from "@valuemachine/core";
 import { Typography } from "@material-ui/core";
 import Paper from "@material-ui/core/Paper";
@@ -107,7 +107,7 @@ const getChunksByDate = (chunks: AssetChunk[], dates: string[]) => {
 };
 
 const getTotalCapitalChange = (capChanges: CapChanges) => {
-  return capChanges.reduce((total, info) => total += info.capChange , 0);
+  return round(capChanges.reduce((total, info) => total += info.capChange , 0).toString());
 };
 
 export const Portfolio = ({
@@ -486,14 +486,14 @@ export const Portfolio = ({
                         return (
                           <>
                             <Typography variant="overline">
-                              {sigfigs(quantity)} {asset}
+                              {round(quantity)} {asset}
                             </Typography>
                             {capChange === 0
                               ? null
                               : <Typography variant="caption" key={`dispose-${index}`}>
                                   {capChange > 0
-                                  ? `Cap Gain: ${sigfigs(capChange.toString())} ${unit}`
-                                  : `Cap Loss: ${sigfigs((capChange * -1).toString())} ${unit}`}
+                                  ? `Cap Gain: ${round(capChange.toString())} ${unit}`
+                                  : `Cap Loss: ${round((capChange * -1).toString())} ${unit}`}
                                 </Typography>
                             }
                             <Divider/>
@@ -506,18 +506,6 @@ export const Portfolio = ({
               }
             </Paper>
           </Grid>
-          <Grid item>
-            <Paper id="final-balance-detail" variant="outlined" className={classes.root}>
-              {Object.entries(vm.json.events[dates.length - 1].newBalances)
-                .map(([asset,quantity], index) => {
-                  return (
-                    <Typography key={index}>  {asset} : {quantity} </Typography>
-                  );
-                })
-              }
-            </Paper>
-          </Grid>
-          
         </Grid>
       </Grid>
     </Grid>
