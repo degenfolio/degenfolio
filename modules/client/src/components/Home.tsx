@@ -157,6 +157,7 @@ export const Home = () => {
     });
     if (addressBookJson?.length) {
       let isEthSynced = false;
+      let isPolygonSynced = false;
       // eslint-disable-next-line no-constant-condition
       while (true) {
         try {
@@ -175,11 +176,24 @@ export const Home = () => {
             }
           }
 
-          setSyncing(`Syncing Polygon data for ${addressBookJson.length} addresses`);
-          const resPolygon = await axios.post("/api/polygon", { addressBook: addressBookJson });
-          console.log(`Got ${resPolygon.data.length} Polygon transactions`);
-          if (resPolygon.status === 200 && typeof(resPolygon.data) === "object") {
-            newTransactions.merge(resPolygon.data);
+          if (!isPolygonSynced) {
+            setSyncing(`Syncing Polygon data for ${addressBookJson.length} addresses`);
+            const resPolygon = await axios.post("/api/polygon", { addressBook: addressBookJson });
+            console.log(`Got ${resPolygon.data.length} Polygon transactions`);
+            if (resPolygon.status === 200 && typeof(resPolygon.data) === "object") {
+              newTransactions.merge(resPolygon.data);
+              isPolygonSynced = true;
+            } else {
+              await new Promise((res) => setTimeout(res, 10000));
+              continue;
+            }
+          }
+
+          setSyncing(`Syncing Harmony data for ${addressBookJson.length} addresses`);
+          const resHarmony = await axios.post("/api/harmony", { addressBook: addressBookJson });
+          console.log(`Got ${resHarmony.data.length} Harmony transactions`);
+          if (resHarmony.status === 200 && typeof(resHarmony.data) === "object") {
+            newTransactions.merge(resHarmony.data);
           } else {
             await new Promise((res) => setTimeout(res, 10000));
             continue;

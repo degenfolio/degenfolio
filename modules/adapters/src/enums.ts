@@ -23,6 +23,7 @@ export const TransactionSources = {
   TDA: "TDA",
   Idle: "Idle",
   Polygon: "Polygon",
+  Harmony: "Harmony",
   Quickswap: "Quickswap",
 };
 

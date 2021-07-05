@@ -5,6 +5,7 @@ import { env } from "./env";
 import { pricesRouter } from "./prices";
 import { ethereumRouter } from "./ethereum";
 import { polygonRouter } from "./polygon";
+import { harmonyRouter } from "./harmony";
 import { taxesRouter } from "./taxes";
 import { getLogAndSend, STATUS_NOT_FOUND } from "./utils";
 
@@ -19,6 +20,7 @@ app.use(express.json({ limit: "10mb" }));
 app.use("/prices", pricesRouter);
 app.use("/ethereum", ethereumRouter);
 app.use("/polygon", polygonRouter);
+app.use("/harmony", harmonyRouter);
 app.use("/taxes", taxesRouter);
 
 app.use((req, res) => {

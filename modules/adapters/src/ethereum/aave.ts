@@ -146,11 +146,11 @@ export const aaveParser = (
   tx: Transaction,
   ethTx: EthTransaction,
   addressBook: AddressBook,
-  _logger: Logger,
+  logger: Logger,
 ): Transaction => {
-  //const log = logger.child({ module: aaveSource });
+  const log = logger.child({ module: aaveSource });
   //log.info(`Parser activated`);
- const { getDecimals, getName, isSelf, isToken } = addressBook;
+  const { getDecimals, getName, isSelf, isToken } = addressBook;
 
   if (aaveAddresses.some(entry => ethTx.from === entry.address)) {
     tx.sources = rmDups([aaveSource, ...tx.sources]) as TransactionSource[];
@@ -161,7 +161,7 @@ export const aaveParser = (
 		const event = parseEvent(lendingPoolInterface, ethTxLog);
 		
 		if(event.name === "Deposit" && (event.args.user===event.args.onBehalfOf) ){
-			console.log("event is : " + event.name)
+			log.debug("event is : " + event.name)
 			const asset = getName(event.args.reserve) as Asset ;
 			const amount = formatUnits(
 				event.args.amount,
@@ -176,9 +176,9 @@ export const aaveParser = (
 			const swapOut = tx.transfers.find(associatedTransfer(asset, amount));
 			const swapIn = tx.transfers.find(associatedTransfer(aasset,amount2));
 				if (!swapOut) {
-					console.log(`${event.name}: Can't find swapOut of ${amount} ${asset}`);
+					log.debug(`${event.name}: Can't find swapOut of ${amount} ${asset}`);
 				} else if (!swapIn) {
-					console.log(`${event.name}: Can't find swapIn of ${amount2} ${aasset}`);
+					log.debug(`${event.name}: Can't find swapIn of ${amount2} ${aasset}`);
 				} else {
 					swapOut.category = SwapOut;
 					swapOut.to = address;
@@ -189,7 +189,7 @@ export const aaveParser = (
 		}
 		
 		else	if(event.name === "Withdraw" && (event.args.user===event.args.to)) {
-			console.log("event is : " + event.name)
+			log.debug("event is : " + event.name)
 			const asset = getName(event.args.reserve) as Asset ;
 			const amount = formatUnits(
 				event.args.amount,
@@ -205,9 +205,9 @@ export const aaveParser = (
 			const swapIn = tx.transfers.find(associatedTransfer(asset,amount));
 			
 			if (!swapOut) {
-					console.log(`${event.name}: Can't find swapOut of ${amount} ${aasset}`);
+					log.debug(`${event.name}: Can't find swapOut of ${amount} ${aasset}`);
 				} else if (!swapIn) {
-					console.log(`${event.name}: Can't find swapIn of ${amount} ${asset}`);
+					log.debug(`${event.name}: Can't find swapIn of ${amount} ${asset}`);
 				} else {
 					swapOut.category = SwapOut;
 					swapOut.to = address;
@@ -218,7 +218,7 @@ export const aaveParser = (
 		}
 		
 		else if (event.name === "Borrow" && (event.args.user===event.args.onBehalfOf) ) {
-			console.log("event is : " + event.name)
+			log.debug("event is : " + event.name)
 			const asset = getName(event.args.reserve) as Asset ;
 			const amount = formatUnits(
 				event.args.amount,
@@ -229,13 +229,13 @@ export const aaveParser = (
 				borrow.category = Borrow;
 				borrow.from = address; // should this be a non-address account?
 			} else {
-				console.log(`${event.name}: Can't find borrow of ${amount} ${asset}`);
+				log.debug(`${event.name}: Can't find borrow of ${amount} ${asset}`);
 			}
 				tx.method = "Borrow";	
 		}
 		
 		else if (event.name === "Repay"&& (event.args.user===event.args.repayer) ) {
-			console.log("event is : " + event.name)
+			log.debug("event is : " + event.name)
 			const asset = getName(event.args.reserve) as Asset ;
 			const amount = formatUnits(
 				event.args.amount,
@@ -246,13 +246,13 @@ export const aaveParser = (
 				repay.category = Repay;
 				repay.from = address; // should this be a non-address account?
 			} else {
-				console.log(`${event.name}: Can't find repayment of ${amount} ${asset}`);
+				log.debug(`${event.name}: Can't find repayment of ${amount} ${asset}`);
 			}
 				tx.method = "Repay";	
 		}
 		
 		else {
-			console.log(`Skipping ${event.name} event`);
+			log.debug(`Skipping ${event.name} event`);
 		}
 		
 	}
@@ -260,7 +260,7 @@ export const aaveParser = (
 	else if (stkAAVEAddress === address) {
 			const event = parseEvent(aaveStakeInterface, ethTxLog);
 			if(event.name === "Staked"&& (event.args.from===event.args.onBehalfOf) ) {
-				console.log("event is : " + event.name)
+				log.debug("event is : " + event.name)
 				const asset1 = "AAVE" as Asset ;
 				const asset2 = "stkAAVE" as Asset ;
 				const amount = formatUnits(
@@ -270,23 +270,23 @@ export const aaveParser = (
 				const swapOut = tx.transfers.find(associatedTransfer(asset1, amount));
 				const swapIn = tx.transfers.find(associatedTransfer(asset2,amount));
 				if (!swapOut) {
-					console.log(`${event.name}: Can't find swapOut of ${amount} ${asset1}`);
+					log.debug(`${event.name}: Can't find swapOut of ${amount} ${asset1}`);
 				} else if (!swapIn) {
-					console.log(`${event.name}: Can't find swapIn of ${amount} ${asset2}`);
+					log.debug(`${event.name}: Can't find swapIn of ${amount} ${asset2}`);
 				} else {
 					swapOut.category = SwapOut;
 					swapOut.to = address;
 					swapIn.category = SwapIn;
 					swapIn.from = address;
 					tx.method = "Deposit"; 
-					console.log(`${event.name}: for ${amount} ${asset1} has been processed`);
+					log.debug(`${event.name}: for ${amount} ${asset1} has been processed`);
 				}
 				
 				
 			}
 			
 			else	if(event.name === "Redeem" && (event.args.from===event.args.to)) {
-				console.log("event is : " + event.name)
+				log.debug("event is : " + event.name)
 				const asset1 = "AAVE" as Asset ;
 				const asset2 = "stkAAVE" as Asset ;
 				const amount = formatUnits(
@@ -296,23 +296,23 @@ export const aaveParser = (
 				const swapOut = tx.transfers.find(associatedTransfer(asset2, amount));
 				const swapIn = tx.transfers.find(associatedTransfer(asset1,amount));
 				if (!swapOut) {
-					console.log(`${event.name}: Can't find swapOut of ${amount} ${asset2}`);
+					log.debug(`${event.name}: Can't find swapOut of ${amount} ${asset2}`);
 				} else if (!swapIn) {
-					console.log(`${event.name}: Can't find swapIn of ${amount} ${asset1}`);
+					log.debug(`${event.name}: Can't find swapIn of ${amount} ${asset1}`);
 				} else {
 					swapOut.category = SwapOut;
 					swapOut.to = address;
 					swapIn.category = SwapIn;
 					swapIn.from = address;
 					tx.method = "Withdraw"; 
-					console.log(`${event.name}: for ${amount} ${asset1} has been processed`);
+					log.debug(`${event.name}: for ${amount} ${asset1} has been processed`);
 				}
 			
 		
 			}
 			
 			else {
-				console.log(`Skipping ${event.name} event`);
+				log.debug(`Skipping ${event.name} event`);
 			}
 		
 	}
