@@ -27,9 +27,10 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
   const log = (logger || getLogger()).child?.({ module: "ChainData" });
   const json =
     chainDataJson || store?.load(HarmonyStoreKey as any) || getEmptyChainData();
-  const save = () => store
-    ? store.save(HarmonyStoreKey as any, json)
-    : log.warn(`No store provided, can't save chain data`);
+  const save = () =>
+    store
+      ? store.save(HarmonyStoreKey as any, json)
+      : log.warn(`No store provided, can't save chain data`);
 
   if (!json.addresses) json.addresses = {};
   if (!json.calls) json.calls = [];
@@ -65,13 +66,15 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
     status: 1,
     timestamp: new Date(rawTx.timestamp).toISOString(),
     to: rawTx.to,
-    value: formatEther(rawTx.value)
+    value: formatEther(rawTx.value.toString())
   });
 
   // TODO: rm key param?
   const syncAddress = async (address: Address): Promise<void> => {
     const yesterday = Date.now() - 1000 * 60 * 60 * 24;
-    if (new Date(json.addresses[address]?.lastUpdated || 0).getTime() > yesterday) {
+    if (
+      new Date(json.addresses[address]?.lastUpdated || 0).getTime() > yesterday
+    ) {
       log.info(`Info for address ${address} is up to date`);
       return;
     }
@@ -180,7 +183,7 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
     log.info(`addressBook has ${addressBook.json.length} entries`);
     for (const entry of addressBook.json) {
       const address = entry.address;
-      if (addressBook.isSelf(address) && isAddress(address)) {
+      if (addressBook.isSelf(address)) {
         await syncAddress(address);
       }
     }
@@ -191,8 +194,8 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
   const getTransactions = (addressBook: AddressBook): TransactionsJson => {
     const selfAddresses = addressBook.json
       .map(entry => entry.address)
-      .filter(address => addressBook.isSelf(address))
-      .filter(address => isAddress(address));
+      .filter(address => addressBook.isSelf(address));
+
     log.info("addresses");
     const selfTransactionHashes = Array.from(
       new Set(
@@ -202,20 +205,18 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
       )
     );
     log.info(`Parsing ${selfTransactionHashes.length} harmony transactions`);
-
+    log.debug(selfTransactionHashes);
     for (const entry of json.transactions) {
       const address = entry.hash;
-      console.log(address);
+      console.log("JSONS", address);
     }
 
-    return selfTransactionHashes
-      .map(hash =>
-        parseHarmonyTx(
-          json.transactions.find(tx => tx.hash === hash),
-          addressBook,
-          logger
-        )
-      )
+    const selfTransactionHashestoParse = selfTransactionHashes
+      .map(hash => json.transactions.find(tx => tx.hash === hash))
+      .filter(e => !!e);
+    console.log("sef", selfTransactionHashestoParse);
+    return selfTransactionHashestoParse
+      .map(tx => parseHarmonyTx(tx, addressBook, logger))
       .sort(chrono);
   };
 

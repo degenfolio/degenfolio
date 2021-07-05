@@ -9,11 +9,12 @@ import {
   getTestAddressBook,
   testStore,
   testLogger,
-  parseHarmonyTx,
+  parseHarmonyTx
 } from "./testUtils";
 
-const logger = testLogger.child({ module: `TestHarmony`,
-  level: "debug", // Uncomment to enable verbose logging
+const logger = testLogger.child({
+  module: `TestHarmony`,
+  level: "debug" // Uncomment to enable verbose logging
 });
 
 describe("Harmony Data", () => {
@@ -23,15 +24,16 @@ describe("Harmony Data", () => {
   beforeEach(() => {
     harmonyData = getHarmonyData({
       store: testStore,
-      logger,
+      logger
     });
   });
 
   it("should sync & parse a transaction", async () => {
     const tx = await parseHarmonyTx({
       selfAddress: testAddress,
-      hash: "0xbab506616a52f8c80a5f8aa4976dcb91528e67c596b480cb4725d299b3219ee2",
-      logger,
+      hash:
+        "0x15d4caf9f67a32880bc70f3eaae0c45032c1f82a24ea92be5c44a28cce2acbb4",
+      logger
     });
     logger.info(tx, `Got harmony transaction`);
     expect(tx).to.be.ok;
@@ -45,6 +47,4 @@ describe("Harmony Data", () => {
     expect(transactions[0].sources).to.include(Guards.ONE);
     expect(getTransactionsError(transactions)).to.be.null;
   });
-
 });
-
