@@ -11,9 +11,8 @@ import {
 
 import { mergeTDATransactions } from "./TDA";
 
-const log = testLogger.child({
-  level: "debug",
-  module: "TestTransactions",
+const log = testLogger.child({ module: "TestTDA",
+  // level: "debug",
 });
 
 const exampleTDACsv =
@@ -39,6 +38,4 @@ describe("TDA", () => {
     txns.mergeCsv(exampleTDACsv, mergeTDATransactions);
     expect(getTransactionsError(txns.json)).to.be.null;
   });
-
 });
-

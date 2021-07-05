@@ -9,7 +9,7 @@ import { gt } from "@valuemachine/utils";
 
 import { TransactionSources } from "../enums";
 
-const { Expense, SwapIn, SwapOut, Deposit, Withdraw, Unknown } = TransferCategories;
+const { Expense, SwapIn, SwapOut, Unknown } = TransferCategories;
 
 export const mergeTDATransactions = (
   oldTransactions: Transaction[],
@@ -24,7 +24,6 @@ export const mergeTDATransactions = (
     const {
       ["DATE"]: date,
       ["DESCRIPTION"]: description,
-      ["TRANSACTION ID"]: txtype,
       ["SYMBOL"]: asset,
       ["QUANTITY"]: quantity,
       ["AMOUNT"]: usdQuantity,
@@ -33,7 +32,6 @@ export const mergeTDATransactions = (
     log.info(date);
     const account = `${source}-account`;
     const exchange = `${source}-exchange`;
-    const external = `${asset}-account`;
 
     const transaction = {
       date: (new Date(date)).toISOString(),
@@ -67,7 +65,7 @@ export const mergeTDATransactions = (
       transaction.method = "Sell";
     }
 
-    transaction.transfers.push({ asset, category, from, quantity, to});
+    transaction.transfers.push({ asset, category, from, quantity, to });
 
     if (gt(fees, "0")) {
       transaction.transfers.push({
@@ -84,4 +82,3 @@ export const mergeTDATransactions = (
   });
   return oldTransactions;
 };
-
