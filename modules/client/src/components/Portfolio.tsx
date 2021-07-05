@@ -56,15 +56,17 @@ type PolygonSeriesData = Array<{
 
 type MarkSeriesData = Array<{x: number, y: number, size: number, color: string}>;
 
+type CapChanges = Array<{
+  asset: string;
+  capChange: number;
+  quantity: string;
+}>
+
 type CurrentEventInfo = {
   date: string;
   descriptionOut?: string;
   descriptionIn?: string;
-  capChangesPerChunk: Array<{
-    asset: string;
-    capChange: number;
-    quantity: string;
-  }>
+  capChangesPerChunk: CapChanges;
 }
 
 type EventsInfo = CurrentEventInfo[]
@@ -102,6 +104,10 @@ const getChunksByDate = (chunks: AssetChunk[], dates: string[]) => {
 
     return output;
   }, empty as { [date: string]: number[] });
+};
+
+const getTotalCapitalChange = (capChanges: CapChanges) => {
+  return capChanges.reduce((total, info) => total += info.capChange , 0);
 };
 
 export const Portfolio = ({
@@ -466,28 +472,35 @@ export const Portfolio = ({
             <Paper id="event-detail" variant="outlined" className={classes.root}>
               { currentEventsInfo?.capChangesPerChunk?.length > 0
                 ? <>
-                  <Typography> Disposed Chunks: </Typography>
-                  {
-                    currentEventsInfo.capChangesPerChunk.map((capChangeInfo, index) => {
-                      const { capChange, quantity, asset } = capChangeInfo;
-                      return (
-                        <>
-                          <Typography variant="overline">
-                            {sigfigs(quantity)} {asset}
-                          </Typography>
-                          {capChange === 0
-                            ? null
-                            : <Typography variant="caption" key={`dispose-${index}`}>
-                                {capChange > 0
-                                ? `Cap Gain: ${sigfigs(capChange.toString())} ${unit}`
-                                : `Cap Loss: ${sigfigs((capChange * -1).toString())} ${unit}`}
-                              </Typography>
-                          }
-                          <Divider/>
-                        </>
-                      );
-                    })
-                  }
+                    <Typography> {currentEventsInfo.date} </Typography>
+                    <Typography>
+                      {getTotalCapitalChange(currentEventsInfo.capChangesPerChunk) > 0
+                        ? `Total capital gains: ${getTotalCapitalChange(currentEventsInfo.capChangesPerChunk)}`
+                        : `Total capital loss: ${getTotalCapitalChange(currentEventsInfo.capChangesPerChunk)}`
+                      }
+                    </Typography>
+                    <Typography> Disposed Chunks: </Typography>
+                    {
+                      currentEventsInfo.capChangesPerChunk.map((capChangeInfo, index) => {
+                        const { capChange, quantity, asset } = capChangeInfo;
+                        return (
+                          <>
+                            <Typography variant="overline">
+                              {sigfigs(quantity)} {asset}
+                            </Typography>
+                            {capChange === 0
+                              ? null
+                              : <Typography variant="caption" key={`dispose-${index}`}>
+                                  {capChange > 0
+                                  ? `Cap Gain: ${sigfigs(capChange.toString())} ${unit}`
+                                  : `Cap Loss: ${sigfigs((capChange * -1).toString())} ${unit}`}
+                                </Typography>
+                            }
+                            <Divider/>
+                          </>
+                        );
+                      })
+                    }
                 </>
                 : null
               }
