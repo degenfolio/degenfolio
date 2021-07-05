@@ -1,6 +1,4 @@
-import {
-  TransferCategories,
-} from "@valuemachine/types";
+import { TransferCategories } from "@valuemachine/types";
 
 import { TransactionSources } from "../enums";
 

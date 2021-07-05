@@ -9,6 +9,7 @@ import Typography from "@material-ui/core/Typography";
 import Select from "@material-ui/core/Select";
 // Icons
 import SyncIcon from "@material-ui/icons/Sync";
+import DownloadIcon from "@material-ui/icons/GetApp";
 import { Asset, Assets, FiatCurrencies } from "@valuemachine/types";
 
 const useStyles = makeStyles( theme => ({
@@ -21,7 +22,6 @@ const useStyles = makeStyles( theme => ({
     flexGrow: 1,
     justifyContent: "right",
     padding: theme.spacing(2),
-    display: "flex",
   },
   selector: {
     padding: theme.spacing(1),
@@ -32,11 +32,13 @@ const useStyles = makeStyles( theme => ({
 export const NavBar = ({
   setUnit,
   syncAddressBook,
+  downloadF8949,
   syncing,
   unit,
 }: {
   setUnit: (val: Asset) => void,
   syncAddressBook: () => Promise<void>,
+  downloadF8949: () => Promise<void>,
   syncing: string,
   unit: Asset,
 }) => {
@@ -66,9 +68,10 @@ export const NavBar = ({
           </Select>
         </FormControl>
 
-        <Typography className={classes.sync}>
+        <Typography align="right" className={classes.sync}>
           {syncing || "Synced"}
         </Typography>
+
         <IconButton
           edge="start"
           color="inherit"
@@ -78,6 +81,20 @@ export const NavBar = ({
         >
           <SyncIcon />
         </IconButton>
+
+        <IconButton
+          edge="start"
+          color="inherit"
+          aria-label="download"
+          disabled={!!syncing}
+          onClick={() => {
+            console.log(`Calling form downloader`);
+            downloadF8949();
+          }}
+        >
+          <DownloadIcon />
+        </IconButton>
+
       </Toolbar>
     </AppBar>
   );

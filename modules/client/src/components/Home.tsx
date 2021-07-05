@@ -91,6 +91,61 @@ export const Home = () => {
     setTab(selectedTab);
   };
 
+  const downloadF8949 = async () => {
+    if (!vm?.json?.chunks?.length || !prices.json) return;
+    const usdPrices = getPrices({
+      json: prices.json,
+      logger,
+      store,
+      unit: Assets.USD,
+    });
+    const taxYear = new Date().getFullYear().toString();
+    const getDate = (timestamp: string): string => timestamp.split("T")[0];
+    const trades = [];
+    for (const chunk of vm.json.chunks) {
+      if (chunk.disposeDate?.startsWith(taxYear)) {
+        const purchaseDate = getDate(chunk.history[0].date);
+        const receivePrice = usdPrices.getNearest(purchaseDate, chunk.asset);
+        const assetPrice = usdPrices.getNearest(chunk.disposeDate, chunk.asset);
+        if (receivePrice !== assetPrice) {
+          trades.push({
+            date: getDate(chunk.disposeDate),
+            asset: chunk.asset,
+            receivePrice,
+            assetPrice,
+            purchaseDate: purchaseDate,
+            quantity: chunk.quantity,
+          });
+        }
+      }
+    }
+    if (trades.length) {
+      setSyncing(`Downloading tax forms for ${trades.length} trades`);
+      axios({
+        url: "/api/taxes",
+        method: "post",
+        responseType: "blob",
+        data: { trades },
+      }).then((response) => {
+        setSyncing(``);
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", "f8949.pdf");
+        document.body.appendChild(link);
+        link.click();
+      }).catch(async () => {
+        setSyncing(`Error occured`);
+        await new Promise(res => setTimeout(res, 2000));
+        setSyncing(``);
+      });
+    } else {
+      setSyncing(`No Taxable trades detected`);
+      await new Promise(res => setTimeout(res, 2000));
+      setSyncing(``);
+    }
+  };
+
   const syncAddressBook = async () => {
     if (syncing) return;
     setSyncing(`Syncing`);
@@ -98,26 +153,44 @@ export const Home = () => {
       logger,
     });
     if (addressBookJson?.length) {
+      let isEthSynced = false;
+      let isPolygonSynced = false;
       // eslint-disable-next-line no-constant-condition
       while (true) {
         try {
           console.log(`Attempting to fetch for addressBook`, addressBookJson);
 
-          setSyncing(`Syncing Ethereum data for ${addressBookJson.length} addresses`);
-          const resEth = await axios.post("/api/ethereum", { addressBook: addressBookJson });
-          console.log(`Got ${resEth.data.length} Eth transactions`);
-          if (resEth.status === 200 && typeof(resEth.data) === "object") {
-            newTransactions.merge(resEth.data);
-          } else {
-            await new Promise((res) => setTimeout(res, 10000));
-            continue;
+          if (!isEthSynced) {
+            setSyncing(`Syncing Ethereum data for ${addressBookJson.length} addresses`);
+            const resEth = await axios.post("/api/ethereum", { addressBook: addressBookJson });
+            console.log(`Got ${resEth.data.length} Eth transactions`);
+            if (resEth.status === 200 && typeof(resEth.data) === "object") {
+              newTransactions.merge(resEth.data);
+              isEthSynced = true;
+            } else {
+              await new Promise((res) => setTimeout(res, 10000));
+              continue;
+            }
           }
 
-          setSyncing(`Syncing Polygon data for ${addressBookJson.length} addresses`);
-          const resPolygon = await axios.post("/api/polygon", { addressBook: addressBookJson });
-          console.log(`Got ${resPolygon.data.length} Polygon transactions`);
-          if (resPolygon.status === 200 && typeof(resPolygon.data) === "object") {
-            newTransactions.merge(resPolygon.data);
+          if (!isPolygonSynced) {
+            setSyncing(`Syncing Polygon data for ${addressBookJson.length} addresses`);
+            const resPolygon = await axios.post("/api/polygon", { addressBook: addressBookJson });
+            console.log(`Got ${resPolygon.data.length} Polygon transactions`);
+            if (resPolygon.status === 200 && typeof(resPolygon.data) === "object") {
+              newTransactions.merge(resPolygon.data);
+              isPolygonSynced = true;
+            } else {
+              await new Promise((res) => setTimeout(res, 10000));
+              continue;
+            }
+          }
+
+          setSyncing(`Syncing Harmony data for ${addressBookJson.length} addresses`);
+          const resHarmony = await axios.post("/api/harmony", { addressBook: addressBookJson });
+          console.log(`Got ${resHarmony.data.length} Harmony transactions`);
+          if (resHarmony.status === 200 && typeof(resHarmony.data) === "object") {
+            newTransactions.merge(resHarmony.data);
           } else {
             await new Promise((res) => setTimeout(res, 10000));
             continue;
@@ -244,7 +317,13 @@ export const Home = () => {
   }, [transactions]);
 
   return (<>
-    <NavBar syncing={syncing} unit={unit} setUnit={setUnit} syncAddressBook={syncAddressBook}/>
+    <NavBar
+      syncing={syncing}
+      unit={unit}
+      setUnit={setUnit}
+      syncAddressBook={syncAddressBook}
+      downloadF8949={downloadF8949}
+    />
     <TabContext value={tab}>
       <TabPanel value="portfolio" className={classes.panel}>
         <Portfolio vm={vm} prices={prices} unit={unit} />

@@ -46,6 +46,53 @@ export const getPolygonData = (params?: {
   ////////////////////////////////////////
   // Internal Heleprs
 
+  /*
+  export const EthTransactionLog = Type.Object({
+    address: Address,
+    data: HexString,
+    index: Type.Number(),
+    topics: Type.Array(Bytes32),
+  });
+  export const EthTransaction = Type.Object({
+    block: Type.Number(),
+    data: HexString,
+    from: Address,
+    gasLimit: HexString,
+    gasPrice: HexString,
+    gasUsed: HexString,
+    hash: Bytes32,
+    index: Type.Number(),
+    logs: Type.Array(EthTransactionLog),
+    nonce: Type.Number(),
+    status: Type.Optional(Type.Number()),
+    timestamp: TimestampString,
+    to: Type.Union([Address, Type.Null()]),
+    value: DecimalString,
+  });
+  */
+
+  const formatCovalentTx = rawTx => ({
+    block: rawTx.block_height,
+    data: "0x", // not available?
+    from: getAddress(rawTx.from_address),
+    gasLimit: hexlify(rawTx.gas_offered),
+    gasPrice: hexlify(rawTx.gas_price),
+    gasUsed: hexlify(rawTx.gas_spent),
+    hash: rawTx.tx_hash,
+    index: rawTx.tx_offset,
+    logs: rawTx.log_events.map(evt => ({
+      address: getAddress(evt.sender_address),
+      index: evt.log_offset,
+      topics: evt.raw_log_topics,
+      data: evt.raw_log_data || "0x",
+    })),
+    nonce: 0, // not available?
+    status: rawTx.successful ? 1 : 0,
+    timestamp: rawTx.block_signed_at,
+    to: getAddress(rawTx.to_address),
+    value: formatEther(rawTx.value),
+  });
+
   const covalentUrl = "https://api.covalenthq.com/v1";
   const queryCovalent = async (path: string, query?: any): Promise<any> => {
     if (!covalentKey) throw new Error(`A covalent api key is required to sync polygon data`);
@@ -74,28 +121,6 @@ export const getPolygonData = (params?: {
     return res.data.data;
   };
 
-  const formatCovalentTx = rawTx => ({
-    block: rawTx.block_height,
-    data: "0x", // not available?
-    from: getAddress(rawTx.from_address),
-    gasLimit: hexlify(rawTx.gas_offered),
-    gasPrice: hexlify(rawTx.gas_price),
-    gasUsed: hexlify(rawTx.gas_spent),
-    hash: rawTx.tx_hash,
-    index: rawTx.tx_offset,
-    logs: rawTx.log_events.map(evt => ({
-      address: getAddress(evt.sender_address),
-      index: evt.log_offset,
-      topics: evt.raw_log_topics,
-      data: evt.raw_log_data || "0x",
-    })),
-    nonce: 0, // not available?
-    status: rawTx.successful ? 1 : 0,
-    timestamp: rawTx.block_signed_at,
-    to: getAddress(rawTx.to_address),
-    value: formatEther(rawTx.value),
-  });
-
   const fetchTx = async (txHash: Bytes32): Promise<any> => {
     const data = await queryCovalent(`${chainId}/transaction_v2/${txHash}`);
     return data?.items?.[0];
@@ -108,14 +133,14 @@ export const getPolygonData = (params?: {
       return;
     }
     let data = await queryCovalent(`${chainId}/address/${address}/transactions_v2`);
-    const items = data.items;
-    while (data.pagination.has_more) {
+    const items = data?.items;
+    while (items && data.pagination.has_more) {
       data = await queryCovalent(`${chainId}/address/${address}/transactions_v2`, {
         ["page-number"]: data.pagination.page_number + 1,
       });
       items.push(...data.items);
     }
-    const history = items.map(item => item.tx_hash).sort();
+    const history = items?.map(item => item.tx_hash).sort() || [];
     json.addresses[address] = {
       lastUpdated: new Date().toISOString(),
       history,
@@ -136,31 +161,6 @@ export const getPolygonData = (params?: {
 
   ////////////////////////////////////////
   // Exported Methods
-
-  /*
-  export const EthTransactionLog = Type.Object({
-    address: Address,
-    data: HexString,
-    index: Type.Number(),
-    topics: Type.Array(Bytes32),
-  });
-  export const EthTransaction = Type.Object({
-    block: Type.Number(),
-    data: HexString,
-    from: Address,
-    gasLimit: HexString,
-    gasPrice: HexString,
-    gasUsed: HexString,
-    hash: Bytes32,
-    index: Type.Number(),
-    logs: Type.Array(EthTransactionLog),
-    nonce: Type.Number(),
-    status: Type.Optional(Type.Number()),
-    timestamp: TimestampString,
-    to: Type.Union([Address, Type.Null()]),
-    value: DecimalString,
-  });
-  */
 
   const getTransaction = (
     hash: Bytes32,
