@@ -22,14 +22,14 @@ export const mergeTDATransactions = (
   csv(csvData, { columns: true, skip_empty_lines: true }).forEach(row => {
 
     const {
-      ["Timestamp"]: date,
-      ["Transaction Type"]: txType,
-      ["Asset"]: asset,
-      ["Quantity Transacted"]: quantity,
-      ["USD Total (inclusive of fees)"]: usdQuantity,
-      ["USD Fees"]: fees,
+      ["DATE"]: date,
+      ["TRANSACTION ID"]: txType,
+      ["SYMBOL"]: asset,
+      ["QUANTITY"]: quantity,
+      ["AMOUNT)"]: usdQuantity,
+      ["REG FEE"]: fees,
     } = row;
-
+    log.info(date);
     const account = `${source}-account`;
     const exchange = `${source}-exchange`;
     const external = `${asset}-account`;

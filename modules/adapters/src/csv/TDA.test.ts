@@ -1,7 +1,8 @@
-import { CsvSources, Transactions } from "@valuemachine/types";
+import { AddressZero } from "@ethersproject/constants";
+import { Transactions } from "@valuemachine/types";
 import { getTransactionsErrors } from "@valuemachine/utils";
+import { getTransactions } from "valuemachine";
 
-import { getTransactions } from "../index";
 import {
   expect,
   getTestAddressBook,
@@ -11,7 +12,7 @@ import {
 import { mergeTDATransactions } from "./TDA";
 
 const log = testLogger.child({
-  // level: "debug",
+  level: "debug",
   module: "TestTransactions",
 });
 
@@ -30,12 +31,11 @@ describe("TDA", () => {
   let txns: Transactions;
 
   beforeEach(() => {
-    addressBook = getTestAddressBook();
+    addressBook = getTestAddressBook(AddressZero);
     txns = getTransactions({ addressBook, logger: log });
-    expect(txns.getJson().length).to.equal(0);
   });
 
-  it("should merge TDA data", async () => {
+  it.only("should merge TDA data", async () => {
     txns.mergeCsv(exampleTDACsv, mergeTDATransactions);
     expect(getTransactionsErrors(txns.json)).to.be.null;
   });
