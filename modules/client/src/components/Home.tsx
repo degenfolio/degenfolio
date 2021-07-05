@@ -38,13 +38,11 @@ const useStyles = makeStyles( theme => ({
 }));
 
 const store = getLocalStore(localStorage);
-
 const logger = getLogger("warn");
 
 // localstorage keys
 const {
   AddressBook: AddressBookStore,
-  Transactions: TransactionsStore,
   ValueMachine: ValueMachineStore,
   Prices: PricesStore,
 } = StoreKeys;
@@ -68,10 +66,6 @@ export const Home = () => {
   const [addressBook, setAddressBook] = useState(getAddressBook({
     json: addressBookJson,
     hardcoded: appAddresses,
-    logger,
-  }));
-  const [transactions, setTransactions] = useState(getTransactions({
-    json: store.load(TransactionsStore),
     logger,
   }));
   const [vm, setVM] = useState(getValueMachine({
@@ -146,12 +140,15 @@ export const Home = () => {
     }
   };
 
-  const syncAddressBook = async () => {
+  const syncEverything = async () => {
     if (syncing) return;
-    setSyncing(`Syncing`);
+    setSyncing(`Syncing ${addressBookJson.length} addresses`);
+    await new Promise(res => setTimeout(res, 1000));
     const newTransactions = getTransactions({
       logger,
     });
+
+    // Sync Chain Data
     if (addressBookJson?.length) {
       let isEthSynced = false;
       let isPolygonSynced = false;
@@ -159,7 +156,6 @@ export const Home = () => {
       while (true) {
         try {
           console.log(`Attempting to fetch for addressBook`, addressBookJson);
-
           if (!isEthSynced) {
             setSyncing(`Syncing Ethereum data for ${addressBookJson.length} addresses`);
             const resEth = await axios.post("/api/ethereum", { addressBook: addressBookJson });
@@ -172,7 +168,6 @@ export const Home = () => {
               continue;
             }
           }
-
           if (!isPolygonSynced) {
             setSyncing(`Syncing Polygon data for ${addressBookJson.length} addresses`);
             const resPolygon = await axios.post("/api/polygon", { addressBook: addressBookJson });
@@ -185,7 +180,6 @@ export const Home = () => {
               continue;
             }
           }
-
           setSyncing(`Syncing Harmony data for ${addressBookJson.length} addresses`);
           const resHarmony = await axios.post("/api/harmony", { addressBook: addressBookJson });
           console.log(`Got ${resHarmony.data.length} Harmony transactions`);
@@ -195,15 +189,12 @@ export const Home = () => {
             await new Promise((res) => setTimeout(res, 10000));
             continue;
           }
-
           break;
-
         } catch (e) {
           console.warn(e);
         }
       }
     }
-
     if (csvFiles.length) {
       for (const csvFile of csvFiles) {
         setSyncing(`Merging ${csvFile.type} data from ${csvFile.name}`);
@@ -211,29 +202,36 @@ export const Home = () => {
       }
     }
 
+    // Process Transactions
+    setSyncing(`Processing ${newTransactions.json.length} transactions`);
+    await new Promise(res => setTimeout(res, 1000));
+    const newVM = getValueMachine({ addressBook, logger });
+    for (const tx of newTransactions.json.sort(chrono)) {
+      setSyncing(`Processing transactions on ${tx.date.split("T")[0]}`);
+      newVM.execute(tx);
+      await new Promise(res => setTimeout(res, 1)); // yield
+    }
     setSyncing("");
-    setTransactions(newTransactions);
-    syncPrices();
-  };
+    store.save(ValueMachineStore, newVM.json);
+    setVM(newVM);
 
-  const syncPrices = async () => {
-    if (syncing || !vm || !unit || !prices) return;
+    // Sync Prices
+    setSyncing(`Syncing Prices`);
+    await new Promise(res => setTimeout(res, 1000));
     try {
-      setSyncing(`Syncing Prices for ${vm.json.chunks.length} asset chunks`);
+      setSyncing(`Syncing Prices for ${newVM.json.chunks.length} asset chunks`);
       // Fetch and merge prices for all chunks
-      const chunkPrices = await fetchPricesForChunks(unit, vm.json.chunks);
+      const chunkPrices = await fetchPricesForChunks(unit, newVM.json.chunks);
       prices.merge(chunkPrices);
-
       // Fetch and merge today's prices for currently held assets
-      const netWorth = vm.getNetWorth();
+      const netWorth = newVM.getNetWorth();
       const today = (new Date()).toISOString().split("T")[0];
       const currentPrices = await fetchPriceForAssetsOnDate(
         unit, Object.keys(netWorth), today, prices
       );
       prices.merge(currentPrices);
-
       // Fetch and merge prices for assets on each event date
-      for (const txEvent of vm.json.events) {
+      for (const txEvent of newVM.json.events) {
         setSyncing(`Syncing Prices on ${txEvent.date.split("T")[0]}`);
         prices.merge((await fetchPriceForAssetsOnDate(
           unit,
@@ -242,7 +240,6 @@ export const Home = () => {
           prices
         )));
       }
-
       // Set prices state to trigger re-render
       setPrices(getPrices({
         json: prices.json,
@@ -250,27 +247,9 @@ export const Home = () => {
         store,
         unit,
       }));
-
     } catch (e) {
       console.warn(e);
     }
-    setSyncing("");
-    processTransactions();
-  };
-
-  const processTransactions = async () => {
-    if (syncing) return;
-    const newVM = getValueMachine({
-      addressBook,
-      logger,
-    });
-    for (const tx of transactions.json.sort(chrono)) {
-      setSyncing(`Processing transactions on ${tx.date.split("T")[0]}`);
-      newVM.execute(tx);
-      await new Promise(res => setTimeout(res, 1));
-    }
-    store.save(ValueMachineStore, newVM.json);
-    setVM(newVM);
     setSyncing("");
   };
 
@@ -283,11 +262,6 @@ export const Home = () => {
   }, [example]);
 
   useEffect(() => {
-    syncPrices();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unit, vm.json]);
-
-  useEffect(() => {
     if (!addressBookJson) return;
     console.log(`Refreshing ${addressBookJson.length} address book entries`);
     const newAddressBook = getAddressBook({
@@ -296,7 +270,7 @@ export const Home = () => {
       logger
     });
     setAddressBook(newAddressBook);
-    syncAddressBook();
+    syncEverything();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addressBookJson]);
 
@@ -309,20 +283,12 @@ export const Home = () => {
     localStorage.setItem(ExampleStore, example);
   }, [example]);
 
-  useEffect(() => {
-    if (!transactions?.json?.length) return;
-    setSyncing("");
-    store.save(TransactionsStore, transactions.json);
-    processTransactions();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [transactions]);
-
   return (<>
     <NavBar
       syncing={syncing}
       unit={unit}
       setUnit={setUnit}
-      syncAddressBook={syncAddressBook}
+      syncEverything={syncEverything}
       downloadF8949={downloadF8949}
     />
     <TabContext value={tab}>
