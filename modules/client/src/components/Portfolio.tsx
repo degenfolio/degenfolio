@@ -12,7 +12,7 @@ import {
   YAxis,
 } from "react-vis";
 import { format } from "d3-format";
-import { Asset, AssetChunk, Event, EventTypes, Guard, Prices, ValueMachine } from "@valuemachine/types";
+import { Asset, AssetChunk, ChunkIndex, Event, EventTypes, Guard, Prices, ValueMachine } from "@valuemachine/types";
 import { Guards } from "@degenfolio/adapters";
 import { mul, sigfigs } from "@valuemachine/utils";
 import { describeEvent } from "@valuemachine/core";
@@ -49,12 +49,12 @@ const useStyles = makeStyles( theme => ({
 
 type LegendData = { title: string,  color: string, strokeWidth: number }
 
-type SeriesData = Array<{
+type PolygonSeriesData = Array<{
   series: Array<{x: number, y: number}>;
   chunk: AssetChunk;
 }>;
 
-type MarkSeriesData = Array<{x: number, y: number, size: number}>;
+type MarkSeriesData = Array<{x: number, y: number, size: number, color: string}>;
 
 const getGuard = (chunk: AssetChunk, chunkStart: string, chunkEnd: string) => {
     return chunk.history.reduce((output, history) => {
@@ -102,7 +102,7 @@ export const Portfolio = ({
 }) => {
   const classes = useStyles();
 
-  const [data, setData] = useState([] as SeriesData);
+  const [data, setData] = useState([] as PolygonSeriesData);
   const [markSeriesData, setMarkSeriesData] = useState([] as MarkSeriesData);
   const [chunksByDates, setChunksByDates] = useState({} as { [date: string]: number[] });
   const [currentChunk, setCurrentChunk] = useState({} as AssetChunk);
@@ -145,7 +145,7 @@ export const Portfolio = ({
 
     // console.log(`got: `, datesSubset);
 
-    const newData = [] as SeriesData;
+    const newData = [] as PolygonSeriesData;
     const chunkByDate = getChunksByDate(chunks, datesSubset);
     // console.log(`Got chunks by date`, chunkByDate);
     setChunksByDates(chunkByDate);
@@ -194,15 +194,32 @@ export const Portfolio = ({
     });
 
     const newMarkSeriesData = [] as MarkSeriesData;
+    const eventsSubset = vm.json.events.filter(
+      event => event.date >= datesSubset[0] && event.date <= datesSubset[datesSubset.length - 1]
+    );
 
+    console.log(eventsSubset);
     datesSubset.slice(0,-1).forEach((date, index) => {
+      const capChange = eventsSubset.filter(event => event.date === date).reduce((capChange, event) => {
+        if (event.type === EventTypes.Expense || event.type === EventTypes.Trade) {
+            capChange += event.outputs.reduce((capChangeChunk, chunkIndex) => {
+              const chunk = vm.json.chunks[chunkIndex];
+              const receiveValue = getChunkValue(chunk.history[0].date, chunk.asset, chunk.quantity);
+              const disposeValue = getChunkValue(chunk.disposeDate || "0", chunk.asset, chunk.quantity);
+              return capChangeChunk += receiveValue - disposeValue;
+            }, 0);
+          }
+          return capChange;
+        }, 0);
+
       newMarkSeriesData.push({
         x: index,
         y: maxY * 1.1,
-        size: 1
+        size: capChange,
+        color: capChange > 0 ? "green" : capChange < 0 ? "red" : "grey"
       });
     });
-    
+
     console.log(newMarkSeriesData);
     // console.log(`Set new data`, newData);
     setMarkSeriesData(newMarkSeriesData);
@@ -279,6 +296,7 @@ export const Portfolio = ({
               <MarkSeries
                 sizeRange={[5, 15]}
                 onNearestX={onNearestX}
+                colorType="literal"
                 data={markSeriesData}
               />
               <div className={classes.legend}>
