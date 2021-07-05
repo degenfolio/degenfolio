@@ -56,10 +56,11 @@ type PolygonSeriesData = Array<{
 type MarkSeriesData = Array<{x: number, y: number, size: number, color: string}>;
 
 const getGuard = (chunk: AssetChunk, chunkStart: string, chunkEnd: string) => {
-  return chunk.history.reduce((output, history) => {
-    if(history.date > chunkStart && history.date < chunkEnd) return history.guard;
+  const res = chunk.history.reduce((output, history) => {
+    if (history.date > chunkStart && history.date < chunkEnd) return history.guard;
     return output;
   }, chunk.history[0].guard);
+  return res === "TDA" ? "USD" : res;
 };
 
 const getChunksByDate = (chunks: AssetChunk[], dates: string[]) => {

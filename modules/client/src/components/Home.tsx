@@ -43,6 +43,7 @@ const logger = getLogger("warn");
 // localstorage keys
 const {
   AddressBook: AddressBookStore,
+  Transactions: TransactionsStore,
   ValueMachine: ValueMachineStore,
   Prices: PricesStore,
 } = StoreKeys;
@@ -66,6 +67,10 @@ export const Home = () => {
   const [addressBook, setAddressBook] = useState(getAddressBook({
     json: addressBookJson,
     hardcoded: appAddresses,
+    logger,
+  }));
+  const [transactions, setTransactions] = useState(getTransactions({
+    json: store.load(TransactionsStore),
     logger,
   }));
   const [vm, setVM] = useState(getValueMachine({
@@ -201,6 +206,7 @@ export const Home = () => {
         newTransactions.mergeCsv(csvFile.data, csvFile.type as any);
       }
     }
+    setTransactions(newTransactions);
 
     // Process Transactions
     setSyncing(`Processing ${newTransactions.json.length} transactions`);
@@ -211,27 +217,29 @@ export const Home = () => {
       newVM.execute(tx);
       await new Promise(res => setTimeout(res, 1)); // yield
     }
-    setSyncing("");
     store.save(ValueMachineStore, newVM.json);
     setVM(newVM);
+    syncPrices();
+  };
 
+  const syncPrices = async () => {
     // Sync Prices
     setSyncing(`Syncing Prices`);
     await new Promise(res => setTimeout(res, 1000));
     try {
-      setSyncing(`Syncing Prices for ${newVM.json.chunks.length} asset chunks`);
+      setSyncing(`Syncing Prices for ${vm.json.chunks.length} asset chunks`);
       // Fetch and merge prices for all chunks
-      const chunkPrices = await fetchPricesForChunks(unit, newVM.json.chunks);
+      const chunkPrices = await fetchPricesForChunks(unit, vm.json.chunks);
       prices.merge(chunkPrices);
       // Fetch and merge today's prices for currently held assets
-      const netWorth = newVM.getNetWorth();
+      const netWorth = vm.getNetWorth();
       const today = (new Date()).toISOString().split("T")[0];
       const currentPrices = await fetchPriceForAssetsOnDate(
         unit, Object.keys(netWorth), today, prices
       );
       prices.merge(currentPrices);
       // Fetch and merge prices for assets on each event date
-      for (const txEvent of newVM.json.events) {
+      for (const txEvent of vm.json.events) {
         setSyncing(`Syncing Prices on ${txEvent.date.split("T")[0]}`);
         prices.merge((await fetchPriceForAssetsOnDate(
           unit,
@@ -275,7 +283,17 @@ export const Home = () => {
   }, [addressBookJson]);
 
   useEffect(() => {
+    if (!transactions?.json?.length) return;
+    console.log(`Saving ${transactions.json.length} transactions to localStorage`);
+    store.save(TransactionsStore, transactions.json);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transactions]);
+
+
+  useEffect(() => {
     localStorage.setItem(UnitStore, unit);
+    syncPrices();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unit]);
 
   useEffect(() => {
