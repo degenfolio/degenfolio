@@ -69,10 +69,8 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
   // Internal Heleprs
 
   // TODO: rm key param?
-  const syncAddress = async (
-    address: Address,
-    _key?: string
-  ): Promise<void> => {
+  const syncAddress = async (address: Address): Promise<void> => {
+    console.log(address);
     const databc = {
       jsonrpc: "2.0",
       id: 1,
@@ -81,49 +79,53 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
         {
           address, // : "one1rvaqpfukjsxz5gaqtjr8hz9mtqevr9p4gfuncs",
           pageIndex: 0,
-          pageSize: 20,
-          fullTx: true,
+          pageSize: 4,
+          fullTx: false,
           txType: "ALL",
           order: "ASC"
         }
       ]
     };
-    const response = await axios.post("https://api.harmony.one", databc);
+    const response = await axios.post("https://api.s0.t.hmny.io", databc);
     console.log(response.data);
     // TODO: save result to json
     const yesterday = Date.now() - 1000 * 60 * 60 * 24;
-    if (
-      new Date(json.addresses[address]?.lastUpdated || 0).getTime() > yesterday
-    ) {
-      log.info(`Info for address ${address} is up to date`);
-      return;
-    }
+
     let data = response.data;
-    const items = data.result;
+    log.info(data);
+    const items = data.result.transactions;
     const history = items.sort();
+
     json.addresses[address] = {
       lastUpdated: new Date().toISOString(),
       history
     };
     save();
+    console.log("sync here");
     for (const txHash of history) syncTransaction(txHash);
+
     return;
   };
-  const fetchTx = async (txHash: String): Promise<Transaction> => {
+  async function fetchTx(txHash: String): Promise<Transaction> {
     const databc = {
       jsonrpc: "2.0",
       id: 1,
       method: "hmyv2_getTransactionByHash",
       params: [txHash]
     };
-    const response = await axios.post("https://api.harmony.one", databc);
+    let response;
+    try {
+      response = await axios.post("https://api.s0.t.hmny.io", databc);
+    } catch (e) {
+      log.warn(`Axios error: ${e.message}`);
+    }
     console.log(response.data);
     if (response.data) logger.info("GOTIT");
     else logger.info("FAILED");
     // TODO: save result to json
-    // save();
+    save();
     return response.data.result;
-  };
+  }
   const fetchReceipt = async (txHash: String): Promise<Transaction> => {
     const databc = {
       jsonrpc: "2.0",
@@ -157,22 +159,26 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
     const harmony = await fetchTx(txHash);
     const TxReceipt = await fetchReceipt(txHash);
     const harmonyTx = formatCovalentTx(harmony, TxReceipt);
+    logger.info("UNREAChED");
     const error = getEthTransactionError(harmonyTx);
-    if (error) throw new Error(error);
-    // log.debug(polygonTx, `Parsed raw polygon tx to a valid evm tx`);
     json.transactions.push(harmonyTx);
+    log.info("CHECK HERE");
+    for (const entry of json.transactions) {
+      const address = entry.hash;
+      log.info(address);
+    }
     save();
     return;
   };
 
-  const syncAddressBook = async (
-    addressBook: AddressBook,
-    key?: string
-  ): Promise<void> => {
-    log.info(`addressBook has ${addressBook.json.length} entries, key=${key}`);
-    addressBook.addresses.forEach(function(e) {
-      syncAddress(e);
-    }); // TODO: implement for real
+  const syncAddressBook = async (addressBook: AddressBook): Promise<void> => {
+    log.info(`addressBook has ${addressBook.json.length} entries`);
+    for (const entry of addressBook.json) {
+      const address = entry.address;
+      if (addressBook.isSelf(address) && isAddress(address)) {
+        await syncAddress(address);
+      }
+    }
     save();
     return;
   };
@@ -180,8 +186,8 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
   const getTransactions = (addressBook: AddressBook): TransactionsJson => {
     const selfAddresses = addressBook.json
       .map(entry => entry.address)
-      .filter(address => addressBook.isSelf(address));
-    log.info(json.addresses);
+      .filter(address => addressBook.isSelf(address))
+      .filter(address => isAddress(address));
     log.info("addresses");
     const selfTransactionHashes = Array.from(
       new Set(
@@ -191,6 +197,12 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
       )
     );
     log.info(`Parsing ${selfTransactionHashes.length} polygon transactions`);
+
+    for (const entry of json.transactions) {
+      const address = entry.hash;
+      console.log(address);
+    }
+
     return selfTransactionHashes
       .map(hash =>
         parseHarmonyTx(
