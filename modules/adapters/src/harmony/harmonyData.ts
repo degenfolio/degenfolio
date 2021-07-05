@@ -20,6 +20,8 @@ import {
 import axios from "axios";
 import { parseHarmonyTx } from "./parser";
 
+const HarmonyStoreKey = "HarmonyData";
+
 export const getHarmonyData = (params?: ChainDataParams): ChainData => {
   const formatCovalentTx = (rawTx, TxReceipt) => ({
     block: rawTx.blockNumber,
@@ -48,10 +50,9 @@ export const getHarmonyData = (params?: ChainDataParams): ChainData => {
   const log = (logger || getLogger()).child?.({ module: "ChainData" });
   const json =
     chainDataJson || store?.load(StoreKeys.ChainData) || getEmptyChainData();
-  const save = () =>
-    store
-      ? store.save(StoreKeys.ChainData, json)
-      : log.warn(`No store provided, can't save chain data`);
+  const save = () => store
+    ? store.save(HarmonyStoreKey as any, json)
+    : log.warn(`No store provided, can't save chain data`);
 
   if (!json.addresses) json.addresses = {};
   if (!json.calls) json.calls = [];
