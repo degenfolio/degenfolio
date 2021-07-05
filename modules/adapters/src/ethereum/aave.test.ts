@@ -12,7 +12,7 @@ import { aaveSource } from "./aave";
 
 const { Expense, SwapIn, SwapOut, Borrow, Repay } = TransferCategories;
 const logger = testLogger.child({ module: `Test${aaveSource}`,
-  level: "debug", // Uncomment to enable verbose logging
+  // level: "debug", // Uncomment to enable verbose logging
 });
 
 describe(aaveSource, () => {
