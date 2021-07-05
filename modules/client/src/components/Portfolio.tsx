@@ -441,32 +441,35 @@ export const Portfolio = ({
         <Grid container>
           <Grid item>
             <Paper id="chunk-detail" variant="outlined" className={classes.root}>
-              <Typography>
-                {`${currentChunk.quantity} ${currentChunk.asset}`}
-              </Typography>
-              <Typography> Received on: {currentChunk.history?.[0]?.date} </Typography>
-              <Typography>
-                Received value:
-                {getChunkValue(
-                  currentChunk.history?.[0]?.date,
-                  currentChunk.asset,
-                  currentChunk.quantity,
-                )} {unit}
-              </Typography>
-              <Typography>
-                {currentChunk.disposeDate
-                  ? `Disposed on: ${currentChunk.disposeDate} for `
-                  : "Currently Held value: "
-                }
-                {unit}
-                {getChunkValue(
-                  currentChunk.history?.[0]?.date,
-                  currentChunk.asset,
-                  currentChunk.quantity,
-                )} 
-              </Typography>
-              <Typography>
-              </Typography>
+              {currentChunk.quantity
+                ? <>
+                    <Typography>
+                      {`${currentChunk.quantity} ${currentChunk.asset}`}
+                    </Typography>
+                    <Typography> Received on: {currentChunk.history?.[0]?.date} </Typography>
+                    <Typography>
+                      Received value:
+                      {getChunkValue(
+                        currentChunk.history?.[0]?.date,
+                        currentChunk.asset,
+                        currentChunk.quantity,
+                      )} {unit}
+                    </Typography>
+                    <Typography>
+                      {currentChunk.disposeDate
+                        ? `Disposed on: ${currentChunk.disposeDate} for `
+                        : "Currently Held value: "
+                      }
+                      {unit}
+                      {getChunkValue(
+                        currentChunk.history?.[0]?.date,
+                        currentChunk.asset,
+                        currentChunk.quantity,
+                      )} 
+                    </Typography>
+                  </>
+                : null
+              }
             </Paper> 
           </Grid>
           <Grid item>
