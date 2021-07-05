@@ -14,7 +14,7 @@ import {
 import { format } from "d3-format";
 import { Asset, AssetChunk, ChunkIndex, Event, EventTypes, Guard, Prices, ValueMachine } from "@valuemachine/types";
 import { Guards } from "@degenfolio/adapters";
-import { mul, round, sigfigs } from "@valuemachine/utils";
+import { mul, round as rnd, sigfigs } from "@valuemachine/utils";
 import { describeEvent } from "@valuemachine/core";
 import { Typography } from "@material-ui/core";
 import Paper from "@material-ui/core/Paper";
@@ -25,6 +25,10 @@ import makeStyles from "@material-ui/core/styles/makeStyles";
 // import { tickFormat } from "d3-scale";
 
 import { assetToColor } from "../utils";
+
+const round = (a: number | string) => {
+  return rnd(a.toLocaleString('fullwide', {useGrouping:false}));
+} 
 
 const useStyles = makeStyles( theme => ({
   graph: {
@@ -108,7 +112,7 @@ const getChunksByDate = (chunks: AssetChunk[], dates: string[]) => {
 };
 
 const getTotalCapitalChange = (capChanges: CapChanges) => {
-  return round(capChanges.reduce((total, info) => total += info.capChange , 0).toString());
+  return round(capChanges.reduce((total, info) => total += info.capChange , 0));
 };
 
 export const Portfolio = ({
@@ -480,7 +484,9 @@ export const Portfolio = ({
                     <Typography>
                       {Number(getTotalCapitalChange(currentEventsInfo.capChangesPerChunk)) > 0
                         ? `Total capital gains: ${getTotalCapitalChange(currentEventsInfo.capChangesPerChunk)}`
-                        : `Total capital loss: ${getTotalCapitalChange(currentEventsInfo.capChangesPerChunk)}`
+                        : Number(getTotalCapitalChange(currentEventsInfo.capChangesPerChunk)) < 0
+                          ? `Total capital loss: ${getTotalCapitalChange(currentEventsInfo.capChangesPerChunk)}`
+                          : null
                       }
                     </Typography>
                     <Typography> Disposed Chunks: </Typography>
@@ -496,8 +502,8 @@ export const Portfolio = ({
                               ? null
                               : <Typography variant="caption" key={`dispose-${index}`}>
                                   {capChange > 0
-                                  ? `Cap Gain: ${round(capChange.toString())} ${unit}`
-                                  : `Cap Loss: ${round((capChange * -1).toString())} ${unit}`}
+                                  ? `Cap Gain: ${round(capChange)} ${unit}`
+                                  : `Cap Loss: ${round((capChange * -1))} ${unit}`}
                                 </Typography>
                             }
                             <Divider/>
